@@ -14,33 +14,33 @@ cd "$(dirname "$0")/.."
 TARGET="${*:-all}"
 
 run() {
-  local pkg="$1"
+  local pkg="$1" label="$2" color="$3"
   echo "[dev] starting $pkg ..."
-  pnpm -F "$pkg" dev &
+  pnpm -F "$pkg" dev 2>&1 | node scripts/prefix.mjs "$label" "$color" &
 }
 
 case "$TARGET" in
   all)
-    run @owl/api-service
-    run @owl/cron-service
-    run @owl/owl-web
-    run @owl/admin-web
-    run @owl/cron-web
+    run @owl/api-service api 36
+    run @owl/cron-service cron 35
+    run @owl/owl-web owl 32
+    run @owl/admin-web admin 33
+    run @owl/cron-web cronweb 34
     ;;
   api)
-    run @owl/api-service
+    run @owl/api-service api 36
     ;;
   cron)
-    run @owl/cron-service
+    run @owl/cron-service cron 35
     ;;
   owl)
-    run @owl/owl-web
+    run @owl/owl-web owl 32
     ;;
   admin)
-    run @owl/admin-web
+    run @owl/admin-web admin 33
     ;;
   cronweb | cron-web | "cron web")
-    run @owl/cron-web
+    run @owl/cron-web cronweb 34
     ;;
   *)
     echo "usage: pnpm dev [all|api|cron|owl|admin|cronweb]"
