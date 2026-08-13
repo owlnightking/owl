@@ -3,7 +3,9 @@
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$STAGED" ]; then
-  echo "$STAGED" | grep -q '\.\(ts\|tsx\|js\|jsx\|json\|md\|css\|yml\|yaml\)$' && \
-    npx prettier --check $STAGED
+  FORMATTABLE=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx|json|md|css|yml|yaml)$' || true)
+  if [ -n "$FORMATTABLE" ]; then
+    npx prettier --check $FORMATTABLE
+  fi
   bash scripts/scan-ai-residue.sh --staged
 fi
