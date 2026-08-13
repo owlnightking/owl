@@ -4,8 +4,9 @@ import axios from "axios";
 import type { AuthPort, FeishuUserInfo } from "../domain/auth.ports";
 
 const FEISHU_AUTHORIZE_URL = "https://open.feishu.cn/open-apis/authen/v1/authorize";
-const FEISHU_TOKEN_URL = "https://open.feishu.cn/open-apis/authen/v1/oauth2/token";
+const FEISHU_TOKEN_URL = "https://open.feishu.cn/open-apis/authen/v2/oauth/token";
 const FEISHU_USERINFO_URL = "https://open.feishu.cn/open-apis/authen/v1/user_info";
+const FEISHU_SCOPE = "contact:user.base:readonly";
 
 @Injectable()
 export class FeishuAuthClient implements AuthPort {
@@ -27,8 +28,9 @@ export class FeishuAuthClient implements AuthPort {
     const params = new URLSearchParams({
       app_id: this.appId,
       redirect_uri: this.redirectUri,
+      response_type: "code",
       state,
-      scope: "openapi:contact:user.base:readonly",
+      scope: FEISHU_SCOPE,
     });
     return `${FEISHU_AUTHORIZE_URL}?${params.toString()}`;
   }
@@ -36,22 +38,23 @@ export class FeishuAuthClient implements AuthPort {
   async exchangeCodeForUser(code: string): Promise<FeishuUserInfo> {
     const tokenRes = await axios.post(
       FEISHU_TOKEN_URL,
-      new URLSearchParams({
+      {
         grant_type: "authorization_code",
         code,
         client_id: this.appId,
         client_secret: this.appSecret,
         redirect_uri: this.redirectUri,
-      }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 10000 }
+      },
+      { headers: { "Content-Type": "application/json" }, timeout: 10000 }
     );
-    const tokenData = tokenRes.data?.data;
-    if (!tokenData?.access_token) {
-      this.logger.error(`feishu token 换取失败: ${JSON.stringify(tokenRes.data)}`);
+    const body = tokenRes.data;
+    const accessToken = body?.access_token;
+    if (!accessToken) {
+      this.logger.error(`feishu token 换取失败: ${JSON.stringify(body)}`);
       throw new Error("feishu oauth token exchange failed");
     }
     const infoRes = await axios.get(FEISHU_USERINFO_URL, {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
       timeout: 10000,
     });
     const info = infoRes.data?.data;

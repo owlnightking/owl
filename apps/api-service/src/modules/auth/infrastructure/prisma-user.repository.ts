@@ -4,6 +4,8 @@ import type { FeishuUserInfo, StoredUser, UserRepository } from "../domain/auth.
 
 export type { StoredUser, UserRepository };
 
+const DEFAULT_NEW_USER_ROLE_CODE = "business_user";
+
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -47,24 +49,33 @@ export class PrismaUserRepository implements UserRepository {
   }
 
   async upsertFromFeishu(info: FeishuUserInfo): Promise<StoredUser> {
-    const user = await this.prisma.user.upsert({
-      where: { unionId: info.unionId },
-      update: {
-        openId: info.openId,
-        name: info.name,
-        avatarUrl: info.avatarUrl,
-        email: info.email ?? null,
-      },
-      create: {
+    const existing = await this.prisma.user.findUnique({ where: { unionId: info.unionId } });
+    if (existing) {
+      const updated = await this.prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          openId: info.openId,
+          name: info.name,
+          avatarUrl: info.avatarUrl,
+          email: info.email ?? null,
+        },
+        include: { roles: { include: { role: true } } },
+      });
+      return this.toStored(updated);
+    }
+    const role = await this.prisma.role.findUnique({ where: { code: DEFAULT_NEW_USER_ROLE_CODE } });
+    const created = await this.prisma.user.create({
+      data: {
         unionId: info.unionId,
         openId: info.openId,
         name: info.name,
         avatarUrl: info.avatarUrl,
         email: info.email ?? null,
+        roles: role ? { create: [{ roleId: role.id }] } : undefined,
       },
       include: { roles: { include: { role: true } } },
     });
-    return this.toStored(user);
+    return this.toStored(created);
   }
 
   async list(options: {

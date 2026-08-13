@@ -4,6 +4,7 @@ import { get, http, post } from "../api/client";
 export interface MeResponse {
   sub: string;
   name: string;
+  unionId?: string;
   client: string;
 }
 

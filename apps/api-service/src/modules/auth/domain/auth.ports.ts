@@ -87,5 +87,5 @@ export interface AuthService {
   handleCallback(code: string, state: string): Promise<{ tokens: AuthTokens; redirectPath: string }>;
   refreshSession(refreshToken: string): Promise<AuthTokens>;
   logout(accessToken: string, refreshToken: string): Promise<void>;
-  resolveSession(accessToken: string): Promise<JwtPayload>;
+  resolveSession(accessToken: string): Promise<{ payload: JwtPayload; user: StoredUser | null }>;
 }

@@ -1,10 +1,14 @@
 import { useEffect, type ReactNode } from "react";
-import { Navigate } from "react-router-dom";
 import { Spin } from "@arco-design/web-react";
 import { useAuthStore } from "../store/auth";
 
 interface Props {
   children: ReactNode;
+}
+
+function loginRedirect() {
+  const redirect = encodeURIComponent(window.location.pathname);
+  window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
 }
 
 export function AuthGuard({ children }: Props) {
@@ -19,6 +23,12 @@ export function AuthGuard({ children }: Props) {
     }
   }, [checked, fetchMe]);
 
+  useEffect(() => {
+    if (checked && !loading && !user) {
+      loginRedirect();
+    }
+  }, [checked, loading, user]);
+
   if (!checked || loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
@@ -28,7 +38,7 @@ export function AuthGuard({ children }: Props) {
   }
 
   if (!user) {
-    return <Navigate to={`/api/auth/feishu/login?redirect=${encodeURIComponent(window.location.pathname)}`} replace />;
+    return null;
   }
 
   return <>{children}</>;

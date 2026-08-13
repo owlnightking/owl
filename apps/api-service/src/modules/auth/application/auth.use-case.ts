@@ -13,6 +13,7 @@ import {
   type OAuthStateStorePort,
   type SessionRecord,
   type SessionStorePort,
+  type StoredUser,
   type TokenPort,
   type UserRepository,
 } from "../domain/auth.ports";
@@ -104,13 +105,14 @@ export class AuthUseCase implements AuthService {
     }
   }
 
-  async resolveSession(accessToken: string): Promise<JwtPayload> {
+  async resolveSession(accessToken: string): Promise<{ payload: JwtPayload; user: StoredUser | null }> {
     const payload = await this.tokenService.verifyAccess(accessToken);
     const session = await this.sessionStore.find(payload.jti);
     if (!session || session.status !== "active") {
       throw new UnauthorizedException("session revoked");
     }
-    return payload;
+    const user = await this.users.findById(session.userId);
+    return { payload, user };
   }
 
   private normalizeRedirectPath(redirectPath: string): string {

@@ -166,8 +166,9 @@ describe("AuthUseCase", () => {
         expiresAt: Date.now() + 10000,
         status: "active",
       });
-      const payload = await useCase.resolveSession("access-token");
-      expect(payload.sub).toBe("u1");
+      const result = await useCase.resolveSession("access-token");
+      expect(result.payload.sub).toBe("u1");
+      expect(result.user?.name).toBe("张三");
     });
 
     it("失败路径：session 被吊销抛 UnauthorizedException", async () => {

@@ -18,7 +18,7 @@ export class JwtAuthGuard implements CanActivate {
     if (!access) {
       throw new UnauthorizedException("missing access token");
     }
-    const payload = await this.authService.resolveSession(access);
+    const { payload } = await this.authService.resolveSession(access);
     (req as AuthenticatedRequest).auth = {
       userId: payload.sub,
       unionId: payload.name,

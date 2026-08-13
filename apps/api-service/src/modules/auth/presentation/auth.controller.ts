@@ -71,8 +71,13 @@ export class AuthController {
   @Get("me")
   async me(@Req() req: Request) {
     const access = (req.cookies as Record<string, string> | undefined)?.[ACCESS_COOKIE] ?? "";
-    const payload = await this.authService.resolveSession(access);
-    return ok({ sub: payload.sub, name: payload.name, client: payload.client });
+    const { payload, user } = await this.authService.resolveSession(access);
+    return ok({
+      sub: payload.sub,
+      name: user?.name ?? payload.name,
+      unionId: user?.unionId ?? payload.name,
+      client: payload.client,
+    });
   }
 
   private setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string; expiresIn: number }) {
