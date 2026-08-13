@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { resolve } from "node:path";
 import { HealthController } from "./health.controller";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UserModule } from "./modules/user/user.module";
@@ -14,7 +15,10 @@ import { ProjectModule } from "./modules/project/project.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [resolve(__dirname, "../../../.env"), ".env"],
+    }),
     AuthModule,
     UserModule,
     RoleModule,

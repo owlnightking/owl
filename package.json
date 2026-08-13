@@ -10,7 +10,8 @@
   "scripts": {
     "prepare": "husky",
     "build": "pnpm -r build",
-    "dev": "pnpm -r --parallel dev",
+    "dev": "bash scripts/dev.sh",
+    "stop": "bash scripts/stop.sh",
     "verify:quick": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm arch:check",
     "verify:full": "pnpm verify:quick && pnpm smoke",
     "feature:check": "bash scripts/check-feature-rules.sh",
