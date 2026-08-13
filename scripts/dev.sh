@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # dev.sh — 顺序启动开发服务
 # 用法:
-#   pnpm dev           全部 5 个服务（后端先行，前端随后）
+#   pnpm dev           全部 5 个服务 + 统一入口网关
 #   pnpm dev api       仅 api-service
 #   pnpm dev cron      仅 cron-service
 #   pnpm dev owl       仅 owl-web 前端
 #   pnpm dev admin     仅 admin-web 前端
 #   pnpm dev cronweb   仅 cron-web 前端（兼容 pnpm dev cron web / cron-web）
-# 启动顺序: api-service → cron-service → cron-web → admin-web → owl-web
+# 启动顺序: api-service → cron-service → cron-web → admin-web → owl-web → gateway
 # 后端通过 /api/health 探活，前端通过端口连通性探活，就绪后才启动下一个。
+# 全部就绪后 gateway 监听 GATEWAY_PORT，按 /owl /admin /cron 前缀分发。
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -24,9 +25,10 @@ read_env_port() {
 
 API_PORT="$(read_env_port API_PORT 3000)"
 CRON_PORT="$(read_env_port CRON_PORT 3001)"
-CRON_WEB_PORT="$(read_env_port CRON_WEB_PORT 5175)"
-ADMIN_WEB_PORT="$(read_env_port ADMIN_WEB_PORT 5174)"
-OWL_WEB_PORT="$(read_env_port OWL_WEB_PORT 5173)"
+GATEWAY_PORT="$(read_env_port GATEWAY_PORT 5173)"
+CRON_WEB_PORT="$(read_env_port CRON_WEB_PORT 5275)"
+ADMIN_WEB_PORT="$(read_env_port ADMIN_WEB_PORT 5274)"
+OWL_WEB_PORT="$(read_env_port OWL_WEB_PORT 5273)"
 
 launch() {
   local pkg="$1" label="$2" color="$3"
@@ -72,6 +74,9 @@ case "$TARGET" in
     wait_port "$ADMIN_WEB_PORT" admin-web
     launch @owl/owl-web owl 32
     wait_port "$OWL_WEB_PORT" owl-web
+    echo "[dev] starting gateway ..."
+    node scripts/gateway.mjs 2>&1 | node scripts/prefix.mjs gateway 35 &
+    wait_port "$GATEWAY_PORT" gateway
     ;;
   api)
     launch @owl/api-service api 36

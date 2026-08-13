@@ -6,10 +6,11 @@ export default defineConfig(({ mode }) => {
   const rootEnv = loadEnv(mode, resolve(__dirname, "../.."), "");
   const apiPort = rootEnv.API_PORT ?? "3000";
   return {
+    base: "/owl/",
     plugins: [react()],
     server: {
       host: true,
-      port: 5173,
+      port: Number(rootEnv.OWL_WEB_PORT ?? 5273),
       proxy: {
         "/api": {
           target: `http://localhost:${apiPort}`,

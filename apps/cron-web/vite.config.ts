@@ -6,10 +6,11 @@ export default defineConfig(({ mode }) => {
   const rootEnv = loadEnv(mode, resolve(__dirname, "../.."), "");
   const cronPort = rootEnv.CRON_PORT ?? "3001";
   return {
+    base: "/cron/",
     plugins: [react()],
     server: {
       host: true,
-      port: 5175,
+      port: Number(rootEnv.CRON_WEB_PORT ?? 5275),
       proxy: {
         "/api": {
           target: `http://localhost:${cronPort}`,
