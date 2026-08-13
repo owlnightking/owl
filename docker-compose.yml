@@ -1,83 +1,28 @@
+# Owl 应用 Docker 编排
+# 中间件（PostgreSQL / Redis / RabbitMQ / MinIO）复用本机已运行的 Docker 容器，
+# 本项目不自行启动中间件。连接信息见 .env.example。
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: owl-postgres
-    environment:
-      POSTGRES_USER: owl
-      POSTGRES_PASSWORD: owl_dev_only
-      POSTGRES_DB: owl
-    ports:
-      - "5433:5432"
-    volumes:
-      - owl-pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U owl -d owl"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    container_name: owl-redis
-    ports:
-      - "6380:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: owl-rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: owl
-      RABBITMQ_DEFAULT_PASS: owl_dev_only
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  minio:
-    image: minio/minio:latest
-    container_name: owl-minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: owl
-      MINIO_ROOT_PASSWORD: owl_dev_only
-    ports:
-      - "9002:9000"
-      - "9003:9001"
-    volumes:
-      - owl-miniodata:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   api-service:
     build:
       context: .
       dockerfile: apps/api-service/Dockerfile
     container_name: owl-api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: postgresql://owl:owl_dev_only@postgres:5432/owl
+      DATABASE_URL: postgresql://admin:123456@host.docker.internal:5432/owl
+      REDIS_HOST: host.docker.internal
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "123456"
+      RABBITMQ_URL: amqp://admin:123456@host.docker.internal:5672
+      MINIO_ENDPOINT: host.docker.internal
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: minio123456
     ports:
       - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 3s
       retries: 10
-
-volumes:
-  owl-pgdata:
-  owl-miniodata:

@@ -35,8 +35,9 @@
    - `scripts/check-typecheck.sh`、`scripts/check-lint.sh`、`scripts/verify.sh`
    - `.husky/pre-commit`、`.husky/pre-push`
    - `AGENTS.md`（SSOT 规则）
-3. **本地基础设施**
-   - `docker/docker-compose.yml`：PostgreSQL 18、Redis 7、RabbitMQ 3、MinIO
+3. **本地基础设施（复用本机 docker 中间件）**
+   - 复用本机已有容器：PostgreSQL `postgresql`(5432/admin:123456)、Redis `redis`(6379 无密码)、RabbitMQ `rabbitmq`(5672/admin:123456)、MinIO `minio`(9000/admin:minio123456)；本项目不自起中间件
+   - `docker-compose.yml`：仅编排应用服务（api-service 连 host 中间件）
    - `docker/`：5 个 Dockerfile（api、cron-service、owl、admin、cron）
 4. **CI/CD**
    - `.github/workflows/ci.yml`（PR：lint/typecheck/arch/单测）
@@ -47,7 +48,7 @@
 
 ### 验收标准
 
-- [x] `docker compose up` 一次性拉起 PG/Redis/RabbitMQ/MinIO，端口连通
+- [x] `docker compose up` 拉起应用服务，API 连通本机 PG/Redis/RabbitMQ/MinIO
 - [x] 5 个 app 的 dev server 都能启动，3 个前端页面可访问
 - [x] 新写一个含跨模块违规的测试文件 → `scripts/check-architecture.sh` 报 ERROR 并 exit 1
 - [x] `.husky/pre-commit` 门禁生效：违规代码 commit 被阻止
