@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     base: "/cron/",
     plugins: [react()],
     server: {
-      host: true,
+      host: "127.0.0.1",
       port: Number(rootEnv.CRON_WEB_PORT ?? 5275),
       proxy: {
         "/api": {

@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     base: "/owl/",
     plugins: [react()],
     server: {
-      host: true,
+      host: "127.0.0.1",
       port: Number(rootEnv.OWL_WEB_PORT ?? 5273),
       proxy: {
         "/api": {

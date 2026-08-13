@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     base: "/admin/",
     plugins: [react()],
     server: {
-      host: true,
+      host: "127.0.0.1",
       port: Number(rootEnv.ADMIN_WEB_PORT ?? 5274),
       proxy: {
         "/api": {

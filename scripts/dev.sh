@@ -77,6 +77,14 @@ case "$TARGET" in
     echo "[dev] starting gateway ..."
     node scripts/gateway.mjs 2>&1 | node scripts/prefix.mjs gateway 35 &
     wait_port "$GATEWAY_PORT" gateway
+    echo "[dev] ==================================================="
+    echo "[dev]   访问入口（唯一）:  http://localhost:$GATEWAY_PORT"
+    echo "[dev]     业务工作台 owl :  http://localhost:$GATEWAY_PORT/owl/"
+    echo "[dev]     管理台 admin  :  http://localhost:$GATEWAY_PORT/admin/"
+    echo "[dev]     定时任务 cron :  http://localhost:$GATEWAY_PORT/cron/"
+    echo "[dev]   局域网访问请将 localhost 换成局域网 IP（如 192.168.x.x）"
+    echo "[dev]   内部端口 5273/5274/5275 仅本机网关代理使用，勿直接访问"
+    echo "[dev] ==================================================="
     ;;
   api)
     launch @owl/api-service api 36
