@@ -33,6 +33,9 @@ jobs:
       - name: Database client
         run: pnpm -F @owl/database prisma:generate
 
+      - name: Build shared
+        run: pnpm -F @owl/shared build
+
       - name: Typecheck
         run: pnpm typecheck
 
@@ -70,6 +73,9 @@ jobs:
 
       - name: Database client
         run: pnpm -F @owl/database prisma:generate
+
+      - name: Build shared
+        run: pnpm -F @owl/shared build
 
       - name: Unit tests
         run: pnpm test
