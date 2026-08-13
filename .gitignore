@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# generated files (protected by arch check)
+packages/database/src/generated/
+
+# logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# temp (arch rule #8: only tmp/ allowed, always gitignored)
+tmp/
+*.tmp
+*.bak
+
+# prisma
+packages/database/prisma/*.db

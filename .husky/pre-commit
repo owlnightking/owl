@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -n "$STAGED" ]; then
+  echo "$STAGED" | grep -q '\.\(ts\|tsx\|js\|jsx\|json\|md\|css\|yml\|yaml\)$' && \
+    npx prettier --check $STAGED
+  bash scripts/scan-ai-residue.sh --staged
+fi

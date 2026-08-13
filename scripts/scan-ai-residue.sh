@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+# scan-ai-residue.sh — AI 残渣扫描（9 类）
+# 用法: bash scripts/scan-ai-residue.sh [--staged]
+# 存在 ERROR 时 exit 1
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+MODE="${1:-all}"
+ERROR_COUNT=0
+WARN_COUNT=0
+
+error() { printf "[ERROR] %s - %s\n" "$1" "$2"; ERROR_COUNT=$((ERROR_COUNT + 1)); }
+warn() { printf "[WARN] %s - %s\n" "$1" "$2"; WARN_COUNT=$((WARN_COUNT + 1)); }
+
+if [ "$MODE" = "--staged" ]; then
+  TS_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.ts' '*.tsx')"
+else
+  TS_FILES="$(git ls-files -cmo --exclude-standard '*.ts' '*.tsx' 2>/dev/null || find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v generated)"
+fi
+
+if [ -z "$TS_FILES" ]; then
+  echo "scan-ai-residue.sh: no TS files to check"
+  exit 0
+fi
+
+# 1. 无类型 any 泄漏
+check_any() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE ': *any\b|\bas any\b|<any>'; then
+        error "$file" "any 泄漏: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      fi
+    done < <(grep -nE ': *any\b|\bas any\b|<any>' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_any
+
+# 2. 魔法数字（非 0/1/2 且非常量上下文；跳过 tsx 样式类与端口声明）
+check_magic_numbers() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    case "$file" in *.tsx) continue ;; esac
+    if grep -qE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null; then
+      while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        # 跳过常量定义、注释、版本号、端口/日期、枚举成员
+        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status\s*(>=|<=|<|>|=)\s*[0-9]{3})' ||
+          echo "$line" | grep -qE '^[0-9]+:\s+[A-Z][A-Z0-9_]*:'; then
+          continue
+        fi
+        warn "$file" "疑似魔法数字: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      done < <(grep -nE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null | head -20)
+    fi
+  done <<< "$TS_FILES"
+}
+check_magic_numbers
+
+# 3. 注释只写"做了什么"（以设置/调用/赋值/打印开头且未解释为什么）
+check_comment_quality() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s'; then
+        warn "$file" "注释只写做了什么未解释为什么: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      fi
+    done < <(grep -nE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_comment_quality
+
+# 4. 无意义命名（仅占位符 a/b/tmp/xxx/yyy，data/res 为通用合法名）
+check_naming() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]'; then
+        error "$file" "无意义命名: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      fi
+    done < <(grep -nE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_naming
+
+# 5. TODO/FIXME 无责任人
+check_todo() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE 'TODO|FIXME' && ! echo "$line" | grep -qE '@[A-Za-z0-9_]+'; then
+        warn "$file" "TODO/FIXME 无 @责任人: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      fi
+    done < <(grep -nE 'TODO|FIXME' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_todo
+
+# 6. 重复代码块（同文件 ≥3 处相似行块）
+check_duplicate_blocks() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    dupes=$(awk 'length($0)>0 { gsub(/[[:space:]]+/, " ", $0); lines[NR]=$0 } END {
+      for (i=1; i<=NR; i++) { count[lines[i]]++ }
+      for (k in count) if (count[k] >= 3 && length(k) >= 40) print k " (x" count[k] ")"
+    }' "$file" 2>/dev/null | head -3)
+    if [ -n "$dupes" ]; then
+      warn "$file" "疑似重复代码块: $dupes"
+    fi
+  done <<< "$TS_FILES"
+}
+check_duplicate_blocks
+
+# 7. console.log 残留（非入口文件）
+check_console_log() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    if [[ "$file" != */main.ts && "$file" != */prisma/seed.ts ]]; then
+      while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        error "$file" "console.log 残留: $(echo "$line" | sed 's/^[0-9]*: *//')"
+      done < <(grep -nE 'console\.log' "$file" 2>/dev/null)
+    fi
+  done <<< "$TS_FILES"
+}
+check_console_log
+
+# 8. 空 catch 吞异常
+check_empty_catch() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE 'catch\s*(\([^)]*\))?\s*\{\s*\}'; then
+        error "$file" "空 catch 吞异常"
+      fi
+    done < <(grep -nE 'catch\s*(\([^)]*\))?\s*\{\s*\}' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_empty_catch
+
+# 9. 未校验外部输入（直接使用 req.body/query/params 未过 DTO）
+check_unvalidated_input() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    if [[ "$file" == */presentation/* || "$file" == */controllers/* ]]; then
+      while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        if echo "$line" | grep -qE '@Body\(\)\s*(body|dto|[a-z]+)\s*:?\s*(any|unknown)?\s*$' && ! echo "$line" | grep -qE 'Dto|DTO'; then
+          warn "$file" "外部输入未过 DTO 校验: $(echo "$line" | sed 's/^[0-9]*: *//')"
+        fi
+      done < <(grep -nE '@Body\(\)' "$file" 2>/dev/null)
+    fi
+  done <<< "$TS_FILES"
+}
+check_unvalidated_input
+
+echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
+if [ "$ERROR_COUNT" -gt 0 ]; then
+  exit 1
+fi
+exit 0

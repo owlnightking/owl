@@ -1,0 +1,237 @@
+// Owl 基础数据模型（底座）
+// 命名规范：下划线分隔，无 deprecated/backup 前后缀，表名复数语义
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  unionId      String    @unique @map("union_id")
+  openId       String    @map("open_id")
+  name         String
+  avatarUrl    String?   @map("avatar_url")
+  email        String?
+  status       String    @default("active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  roles        UserRole[]
+  sessions     AuthSession[]
+  auditLogs    AuditLog[]
+  notifications Notification[]
+  files        File[]
+  mcpSessions  McpSession[]
+  mcpToolLogs  McpToolLog[]
+
+  @@map("user")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("role")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  roles       RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_role")
+}
+
+model AuthSession {
+  id         String    @id @default(uuid())
+  jti        String    @unique
+  userId     String    @map("user_id")
+  clientName String    @map("client_name")
+  status     String    @default("active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime  @map("expires_at")
+  lastUsedAt DateTime  @default(now()) @map("last_used_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("auth_session")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  unionId    String?
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  detail     Json?
+  ip         String?
+  requestId  String?  @map("request_id")
+  result     String   @default("success")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("audit_log")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String?   @map("user_id")
+  title     String
+  content   String
+  type      String    @default("system")
+  channel   String    @default("webhook")
+  status    String    @default("unread")
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("notification")
+}
+
+model File {
+  id         String   @id @default(uuid())
+  name       String
+  mimeType   String   @map("mime_type")
+  size       Int
+  bucket     String
+  objectKey  String   @map("object_key")
+  url        String?
+  uploadedBy String   @map("uploaded_by")
+  user       User     @relation(fields: [uploadedBy], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([bucket, objectKey])
+  @@map("file")
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by")
+
+  @@map("system_config")
+}
+
+model McpTool {
+  id                String   @id @default(uuid())
+  name              String   @unique
+  description       String
+  inputSchema       Json     @map("input_schema")
+  bundle            String
+  targetDomain      String   @map("target_domain")
+  enabled           Boolean  @default(true)
+  requirePermission Boolean  @default(true) @map("require_permission")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("mcp_tool")
+}
+
+model McpSession {
+  id         String    @id @default(uuid())
+  sessionId  String    @unique @map("session_id")
+  userId     String    @map("user_id")
+  clientName String    @map("client_name")
+  status     String    @default("active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime  @map("expires_at")
+  lastUsedAt DateTime  @default(now()) @map("last_used_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, clientName, status])
+  @@map("mcp_session")
+}
+
+model McpToolLog {
+  id         String   @id @default(uuid())
+  toolName   String   @map("tool_name")
+  userId     String   @map("user_id")
+  unionId    String?
+  arguments  Json?
+  durationMs Int?     @map("duration_ms")
+  resultCode String   @map("result_code")
+  requestId  String?  @map("request_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([toolName, createdAt])
+  @@map("mcp_tool_log")
+}
+
+model SchedulerConfig {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  cron        String
+  queue       String
+  handler     String
+  retryPolicy Json     @map("retry_policy")
+  timeoutMs   Int      @map("timeout_ms")
+  enabled     Boolean  @default(true)
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  runs        SchedulerRun[]
+
+  @@map("scheduler_config")
+}
+
+model SchedulerRun {
+  id          String    @id @default(uuid())
+  taskRunId   String    @unique @map("task_run_id")
+  configId    String    @map("config_id")
+  scheduledAt DateTime  @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  status      String    @default("PENDING")
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+  businessKey String?   @map("business_key")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  config      SchedulerConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([configId, status, scheduledAt])
+  @@map("scheduler_run")
+}

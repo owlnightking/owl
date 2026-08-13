@@ -1,0 +1,43 @@
+{
+  "name": "owl",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Owl - 跨境电商内网管理系统（monorepo）",
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "verify:quick": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm arch:check",
+    "verify:full": "pnpm verify:quick && pnpm smoke",
+    "feature:check": "bash scripts/check-feature-rules.sh",
+    "typecheck": "bash scripts/check-typecheck.sh",
+    "lint": "bash scripts/check-lint.sh",
+    "format:check": "prettier --check .",
+    "arch:check": "bash scripts/check-architecture.sh",
+    "test": "pnpm -r test",
+    "smoke": "bash scripts/smoke.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "husky": "^9.1.7",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.16.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma"
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  detect-changes:
+    name: detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      cron: ${{ steps.filter.outputs.cron }}
+      owl-web: ${{ steps.filter.outputs.owl_web }}
+      admin-web: ${{ steps.filter.outputs.admin_web }}
+      cron-web: ${{ steps.filter.outputs.cron_web }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api: ["apps/api-service/**", "packages/shared/**", "packages/database/**"]
+            cron: ["apps/cron-service/**", "packages/shared/**", "packages/database/**"]
+            owl_web: ["apps/owl-web/**", "packages/shared/**"]
+            admin_web: ["apps/admin-web/**", "packages/shared/**"]
+            cron_web: ["apps/cron-web/**", "packages/shared/**"]
+            shared: ["packages/shared/**", "packages/database/**"]
+
+  # 每个服务一个 build+push 的 job，只有变化时运行。
+  # 生产镜像推送与 K3s 清单更新在后续阶段接入。
+  build:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.api == 'true' }}
+    name: build api-service image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api-service/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/api-service:${{ github.sha }}
