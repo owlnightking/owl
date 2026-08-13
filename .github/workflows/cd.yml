@@ -1,68 +1,210 @@
-name: CD
+name: CD (Local)
 
 on:
   push:
     branches: [main]
-    tags: ["v*"]
 
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: localhost:5001
+  NAMESPACE: owl
 
 jobs:
-  detect-changes:
-    name: detect changed services
-    runs-on: ubuntu-latest
+  # 1. 版本检查
+  check-version:
+    name: 检查版本变更
+    runs-on: self-hosted
     outputs:
-      api: ${{ steps.filter.outputs.api }}
-      cron: ${{ steps.filter.outputs.cron }}
-      owl-web: ${{ steps.filter.outputs.owl_web }}
-      admin-web: ${{ steps.filter.outputs.admin_web }}
-      cron-web: ${{ steps.filter.outputs.cron_web }}
-      shared: ${{ steps.filter.outputs.shared }}
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            api: ["apps/api-service/**", "packages/shared/**", "packages/database/**"]
-            cron: ["apps/cron-service/**", "packages/shared/**", "packages/database/**"]
-            owl_web: ["apps/owl-web/**", "packages/shared/**"]
-            admin_web: ["apps/admin-web/**", "packages/shared/**"]
-            cron_web: ["apps/cron-web/**", "packages/shared/**"]
-            shared: ["packages/shared/**", "packages/database/**"]
+      - id: check
+        run: |
+          CURRENT=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          PREVIOUS=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "v0.0.0")
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
 
-  # 每个服务一个 build+push 的 job，只有变化时运行。
-  # 生产镜像推送与 K3s 清单更新在后续阶段接入。
-  build:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.api == 'true' }}
-    name: build api-service image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  # 2. Lint 检查
+  lint:
+    name: 代码质量检查
+    runs-on: self-hosted
+    needs: check-version
+    if: needs.check-version.outputs.should_deploy == 'true'
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify:quick
+
+  # 3. 后端构建（并列）
+  build-api-service:
+    name: 构建 api-service
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api-service/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/api-service:${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/api-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-cron-service:
+    name: 构建 cron-service
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/cron-service/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/cron-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 4. 前端构建（并列）
+  build-admin-web:
+    name: 构建 admin-web
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/admin-web/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/admin-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-owl-web:
+    name: 构建 owl-web
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/owl-web/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/owl-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-cron-web:
+    name: 构建 cron-web
+    runs-on: self-hosted
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/cron-web/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/cron-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 5. 部署到 K3s
+  deploy:
+    name: 部署到 K3s
+    runs-on: self-hosted
+    needs:
+      - build-api-service
+      - build-cron-service
+      - build-admin-web
+      - build-owl-web
+      - build-cron-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.K3S_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+      - name: Update image tags
+        run: |
+          cd k8s/base
+          for app in api-service admin-web owl-web cron-web cron-service; do
+            sed -i "s|image:.*|image: ${{ env.REGISTRY }}/${app}:${{ github.sha }}|g" ${app}.yaml
+          done
+      - name: Deploy
+        run: |
+          kubectl apply -k k8s/base/
+          kubectl rollout status deployment/api-service -n owl --timeout=300s
+          kubectl rollout status deployment/admin-web -n owl --timeout=300s
+          kubectl rollout status deployment/owl-web -n owl --timeout=300s
+          kubectl rollout status deployment/cron-web -n owl --timeout=300s
+          kubectl rollout status deployment/cron-service -n owl --timeout=300s
+      - name: Verify
+        run: |
+          kubectl get pods -n owl
+          kubectl get services -n owl
+
+  # 6. 飞书通知
+  notify:
+    name: 飞书通知
+    runs-on: self-hosted
+    needs: deploy
+    if: always()
+    steps:
+      - name: 发送通知
+        env:
+          FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/d1555289-d3fa-4a54-995e-0dc088b7202c
+          FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
+        run: |
+          STATUS=${{ needs.deploy.result }}
+          TIMESTAMP=$(date +%s)
+          STRING_TO_SIGN="${TIMESTAMP}\n${FEISHU_SECRET}"
+          SIGN=$(printf "${STRING_TO_SIGN}" | openssl dgst -sha256 -hmac "" -binary | base64)
+
+          if [ "$STATUS" = "success" ]; then
+            TITLE="✅ 部署成功"
+            CONTENT="版本: ${{ github.sha }}\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          else
+            TITLE="❌ 部署失败"
+            CONTENT="版本: ${{ github.sha }}\n时间: $(date '+%Y-%m-%d %H:%M:%S')\n请检查日志"
+          fi
+
+          curl -X POST "${FEISHU_WEBHOOK}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"timestamp\": \"${TIMESTAMP}\",
+              \"sign\": \"${SIGN}\",
+              \"msg_type\": \"interactive\",
+              \"card\": {
+                \"header\": {
+                  \"title\": {\"tag\": \"plain_text\", \"content\": \"${TITLE}\"},
+                  \"template\": \"$([ \"$STATUS\" = 'success' ] && echo 'green' || echo 'red')\"
+                },
+                \"elements\": [{
+                  \"tag\": \"markdown\",
+                  \"content\": \"${CONTENT}\"
+                }]
+              }
+            }"

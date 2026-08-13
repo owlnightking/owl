@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: owl-web
+  namespace: owl
+  labels:
+    app: owl-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: owl-web
+  template:
+    metadata:
+      labels:
+        app: owl-web
+    spec:
+      containers:
+        - name: owl-web
+          image: host.docker.internal:5001/owl-web:latest
+          ports:
+            - containerPort: 5273
+          env:
+            - name: NODE_ENV
+              value: production
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5273
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5273
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: owl-web
+  namespace: owl
+spec:
+  selector:
+    app: owl-web
+  ports:
+    - port: 5273
+      targetPort: 5273
+  type: ClusterIP

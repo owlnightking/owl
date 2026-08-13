@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-web
+  namespace: owl
+  labels:
+    app: admin-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: admin-web
+  template:
+    metadata:
+      labels:
+        app: admin-web
+    spec:
+      containers:
+        - name: admin-web
+          image: host.docker.internal:5001/admin-web:latest
+          ports:
+            - containerPort: 5274
+          env:
+            - name: NODE_ENV
+              value: production
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5274
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5274
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-web
+  namespace: owl
+spec:
+  selector:
+    app: admin-web
+  ports:
+    - port: 5274
+      targetPort: 5274
+  type: ClusterIP

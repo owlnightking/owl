@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron-web
+  namespace: owl
+  labels:
+    app: cron-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cron-web
+  template:
+    metadata:
+      labels:
+        app: cron-web
+    spec:
+      containers:
+        - name: cron-web
+          image: host.docker.internal:5001/cron-web:latest
+          ports:
+            - containerPort: 5275
+          env:
+            - name: NODE_ENV
+              value: production
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5275
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5275
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cron-web
+  namespace: owl
+spec:
+  selector:
+    app: cron-web
+  ports:
+    - port: 5275
+      targetPort: 5275
+  type: ClusterIP

@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  github-runner:
+    build: .
+    image: owl/github-runner:latest
+    container_name: github-runner
+    restart: unless-stopped
+    environment:
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      RUNNER_NAME: owl-runner
+      RUNNER_LABELS: self-hosted,linux,x64,owl,docker
+      ORG_NAME: ${ORG_NAME}
+      REPO_NAME: ${REPO_NAME}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner-work:/home/runner/_work
+      - runner-config:/home/runner/.runner
+      - ~/.docker/daemon.json:/home/runner/.docker/daemon.json:ro
+
+volumes:
+  runner-work:
+  runner-config:

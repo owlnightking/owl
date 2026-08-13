@@ -1,0 +1,107 @@
+name: Deploy to K3s
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "k8s/**"
+
+env:
+  REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  NAMESPACE: owl
+  IMAGE_PREFIX: owl
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - name: api-service
+            port: 3000
+          - name: admin-web
+            port: 5274
+          - name: owl-web
+            port: 5273
+          - name: cron-web
+            port: 5275
+          - name: cron-service
+            port: 3001
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ALIYUN_CR_USERNAME }}
+          password: ${{ secrets.ALIYUN_CR_PASSWORD }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.app.name }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app.name }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.K3S_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Update image tags in manifests
+        run: |
+          cd k8s/base
+          for app in api-service admin-web owl-web cron-web cron-service; do
+            sed -i "s|image:.*|image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ app }}:${{ github.sha }}|g" ${app}.yaml
+          done
+
+      - name: Deploy to K3s
+        run: |
+          kubectl apply -k k8s/base/
+          kubectl rollout status deployment/api-service -n owl --timeout=300s
+          kubectl rollout status deployment/admin-web -n owl --timeout=300s
+          kubectl rollout status deployment/owl-web -n owl --timeout=300s
+          kubectl rollout status deployment/cron-web -n owl --timeout=300s
+          kubectl rollout status deployment/cron-service -n owl --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n owl
+          kubectl get services -n owl

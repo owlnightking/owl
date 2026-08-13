@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron-service
+  namespace: owl
+  labels:
+    app: cron-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cron-service
+  template:
+    metadata:
+      labels:
+        app: cron-service
+    spec:
+      containers:
+        - name: cron-service
+          image: host.docker.internal:5001/cron-service:latest
+          ports:
+            - containerPort: 3001
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: CRON_PORT
+              value: "3001"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cron-service
+  namespace: owl
+spec:
+  selector:
+    app: cron-service
+  ports:
+    - port: 3001
+      targetPort: 3001
+  type: ClusterIP
