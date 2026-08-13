@@ -6,7 +6,7 @@
 import readline from "node:readline";
 
 const [label = "", color = "36"] = process.argv.slice(2);
-const prefix = `\x1b[90m[${label}]\x1b[0m `;
+const prefix = `\x1b[${color}[${label}]\x1b[0m `;
 
 const strip = (chunk) =>
   chunk.replace(/\x1b\[\d*;?\d*[HJ]|\x1b\[2J|\x1b\[3J|\x1b\[[0-9;]*H|\x1b\[\d+A|\x1b\[\d+B|\x1b\[\d+C|\x1b\[\d+D/g, "");

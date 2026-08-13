@@ -31,7 +31,7 @@ OWL_WEB_PORT="$(read_env_port OWL_WEB_PORT 5173)"
 launch() {
   local pkg="$1" label="$2" color="$3"
   echo "[dev] starting $pkg ..."
-  pnpm -F "$pkg" dev 2>&1 | node scripts/prefix.mjs "$label" "$color" &
+  FORCE_COLOR=1 pnpm -F "$pkg" dev 2>&1 | node scripts/prefix.mjs "$label" "$color" &
 }
 
 wait_backend() {
