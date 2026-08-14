@@ -42,13 +42,10 @@ jobs:
     if: needs.check-version.outputs.should_deploy == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+      - run: npm install -g pnpm@9
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify:quick
 
