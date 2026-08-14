@@ -234,7 +234,8 @@ jobs:
           RELEASE_TYPE="${{ needs.detect-release.outputs.release_type }}"
           VERSIONS="${{ needs.detect-release.outputs.app_versions }}"
           TIMESTAMP=$(date +%s)
-          SIGN=$(printf "${TIMESTAMP}\n${FEISHU_SECRET}" | openssl dgst -sha256 -hmac "${FEISHU_SECRET}" -binary | base64)
+          STRING_TO_SIGN=$(printf "%s\n%s" "${TIMESTAMP}" "${FEISHU_SECRET}")
+          SIGN=$(printf "" | openssl dgst -sha256 -hmac "${STRING_TO_SIGN}" -binary | base64)
 
           if [ "$STATUS" = "success" ]; then
             TITLE="Deploy Success"
