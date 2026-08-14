@@ -24,7 +24,7 @@ owl/
 │   ├── shared/                 # @owl/shared — 类型/常量/错误码/纯函数
 │   └── database/               # @owl/database — Prisma schema + migrations + seeds
 ├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟/发版）
-├── .github/workflows/          # CI/CD（cd.yml / docs.yml）
+├── .github/workflows/          # CI/CD（cd.yml）
 ├── docker-compose.yml          # 仅编排应用服务（中间件复用本机 docker）
 └── AGENTS.md                   # 开发规范 SSOT（改动代码前必读）
 ```
@@ -132,10 +132,9 @@ pnpm verify:full    # 以上 + 冒烟（build 后 /health 心跳断言）
 
 GitHub Actions 工作流见 `.github/workflows/`：
 
-| 工作流     | 触发                           | 作用                                                                     |
-| ---------- | ------------------------------ | ------------------------------------------------------------------------ |
-| `cd.yml`   | push main 且 package.json 变化 | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
-| `docs.yml` | push main 且 docs/ 变更        | 构建静态站并部署 GitHub Pages                                             |
+| 工作流   | 触发                           | 作用                                                                     |
+| -------- | ------------------------------ | ------------------------------------------------------------------------ |
+| `cd.yml` | push main 且 package.json 变化 | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
 
 ### 发版流程
 
