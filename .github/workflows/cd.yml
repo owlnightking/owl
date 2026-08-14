@@ -14,7 +14,6 @@ jobs:
     runs-on: self-hosted
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
-      deploy_all: ${{ steps.check.outputs.deploy_all }}
       changed_apps: ${{ steps.check.outputs.changed_apps }}
       app_versions: ${{ steps.check.outputs.app_versions }}
     steps:
@@ -26,7 +25,6 @@ jobs:
           APPS="api-service cron-service admin-web owl-web cron-web"
           CHANGED=""
           VERSIONS=""
-          DEPLOY_ALL=false
 
           for app in $APPS; do
             CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
@@ -42,30 +40,11 @@ jobs:
             fi
           done
 
-          # If packages/ changed, deploy all
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
-          if echo "$CHANGED_FILES" | grep -q "^packages/"; then
-            DEPLOY_ALL=true
-            CHANGED=""
-            VERSIONS=""
-            for app in $APPS; do
-              VER=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
-              if [ -z "$CHANGED" ]; then
-                CHANGED="$app"
-                VERSIONS="${app}:${VER}"
-              else
-                CHANGED="$CHANGED,$app"
-                VERSIONS="${VERSIONS} ${app}:${VER}"
-              fi
-            done
-          fi
-
           if [ -z "$CHANGED" ]; then
             echo "should_deploy=false" >> $GITHUB_OUTPUT
             echo "No version changes detected, skipping deployment."
           else
             echo "should_deploy=true" >> $GITHUB_OUTPUT
-            echo "deploy_all=$DEPLOY_ALL" >> $GITHUB_OUTPUT
             echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
             echo "app_versions=$VERSIONS" >> $GITHUB_OUTPUT
             echo "Deploy apps: $CHANGED"
