@@ -13,23 +13,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check-version:
-    name: Check Version
+  detect-release:
+    name: Detect Release Type
     runs-on: self-hosted
     outputs:
-      should_deploy: ${{ steps.check.outputs.should_deploy }}
-      backend_apps: ${{ steps.check.outputs.backend_apps }}
-      frontend_apps: ${{ steps.check.outputs.frontend_apps }}
-      app_versions: ${{ steps.check.outputs.app_versions }}
+      should_deploy: ${{ steps.detect.outputs.should_deploy }}
+      release_type: ${{ steps.detect.outputs.release_type }}
+      backend_apps: ${{ steps.detect.outputs.backend_apps }}
+      frontend_apps: ${{ steps.detect.outputs.frontend_apps }}
+      app_versions: ${{ steps.detect.outputs.app_versions }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - id: check
+      - id: detect
         run: |
           BACKEND=""
-          BACKEND_VERSIONS=""
           FRONTEND=""
+          BACKEND_VERSIONS=""
           FRONTEND_VERSIONS=""
 
           for app in api-service cron-service; do
@@ -64,22 +65,31 @@ jobs:
 
           if [ -z "$BACKEND" ] && [ -z "$FRONTEND" ]; then
             echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "release_type=none" >> $GITHUB_OUTPUT
             echo "No version changes detected, skipping deployment."
           else
+            CHANGED_APPS="$(echo "${BACKEND}${FRONTEND:+,$FRONTEND}" | tr -d '\"')"
+            if [ "$CHANGED_APPS" = "api-service,cron-service,admin-web,owl-web,cron-web" ]; then
+              RELEASE_TYPE="all"
+            else
+              RELEASE_TYPE="single"
+            fi
             echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "release_type=${RELEASE_TYPE}" >> $GITHUB_OUTPUT
             echo "backend_apps=[${BACKEND}]" >> $GITHUB_OUTPUT
             echo "frontend_apps=[${FRONTEND}]" >> $GITHUB_OUTPUT
             echo "app_versions=${ALL_VERSIONS}" >> $GITHUB_OUTPUT
-            echo "Deploy backend: ${BACKEND:-none}"
-            echo "Deploy frontend: ${FRONTEND:-none}"
+            echo "Release type: ${RELEASE_TYPE}"
+            echo "Backend apps: ${BACKEND:-none}"
+            echo "Frontend apps: ${FRONTEND:-none}"
             echo "Versions: ${ALL_VERSIONS}"
           fi
 
-  lint:
-    name: Lint
+  verify:
+    name: Verify and Lint
     runs-on: self-hosted
-    needs: check-version
-    if: needs.check-version.outputs.should_deploy == 'true'
+    needs: detect-release
+    if: needs.detect-release.outputs.should_deploy == 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -90,13 +100,13 @@ jobs:
       - run: pnpm verify:quick
 
   build-backend:
-    name: Build ${{ matrix.app }}
+    name: Build Backend
     runs-on: self-hosted
-    needs: lint
-    if: needs.check-version.outputs.backend_apps != '[]'
+    needs: verify
+    if: needs.detect-release.outputs.backend_apps != '[]'
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.check-version.outputs.backend_apps) }}
+        app: ${{ fromJSON(needs.detect-release.outputs.backend_apps) }}
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -112,13 +122,13 @@ jobs:
             -f apps/${{ matrix.app }}/Dockerfile .
 
   build-frontend:
-    name: Build ${{ matrix.app }}
+    name: Build Frontend
     runs-on: self-hosted
-    needs: lint
-    if: needs.check-version.outputs.frontend_apps != '[]'
+    needs: verify
+    if: needs.detect-release.outputs.frontend_apps != '[]'
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.check-version.outputs.frontend_apps) }}
+        app: ${{ fromJSON(needs.detect-release.outputs.frontend_apps) }}
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -137,10 +147,10 @@ jobs:
     name: Deploy to K3s
     runs-on: self-hosted
     needs:
-      - check-version
+      - detect-release
       - build-backend
       - build-frontend
-    if: always() && needs.check-version.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
+    if: always() && needs.detect-release.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
       - name: Ensure namespace and deployments
@@ -152,9 +162,9 @@ jobs:
             docker exec k3s kubectl apply -k /tmp/k8s-base/
             docker exec k3s rm -rf /tmp/k8s-base
           fi
-      - name: Update images and rollout
+      - name: Update existing deployment images
         env:
-          APP_VERSIONS: ${{ needs.check-version.outputs.app_versions }}
+          APP_VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
         run: |
           for entry in $APP_VERSIONS; do
             app="${entry%%:*}"
@@ -180,7 +190,8 @@ jobs:
           FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
         run: |
           STATUS="${{ needs.deploy.result }}"
-          VERSIONS="${{ needs.check-version.outputs.app_versions }}"
+          RELEASE_TYPE="${{ needs.detect-release.outputs.release_type }}"
+          VERSIONS="${{ needs.detect-release.outputs.app_versions }}"
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN="${TIMESTAMP}\n${FEISHU_SECRET}"
           SIGN=$(printf "${STRING_TO_SIGN}" | openssl dgst -sha256 -hmac "" -binary | base64)
@@ -188,11 +199,11 @@ jobs:
           if [ "$STATUS" = "success" ]; then
             TITLE="Deploy Success"
             TEMPLATE="green"
-            CONTENT="Versions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
+            CONTENT="Release Type: ${RELEASE_TYPE}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
           else
             TITLE="Deploy Failed"
             TEMPLATE="red"
-            CONTENT="Versions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
+            CONTENT="Release Type: ${RELEASE_TYPE}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
           fi
 
           curl -X POST "${FEISHU_WEBHOOK}" \
