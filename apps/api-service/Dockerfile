@@ -14,7 +14,7 @@ RUN corepack enable && apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm --filter @owl/shared build
-RUN pnpm exec prisma generate --schema=packages/database/prisma/schema.prisma
+RUN pnpm --filter @owl/database exec prisma generate
 RUN pnpm --filter @owl/api-service build
 
 FROM node:22-alpine AS runtime
