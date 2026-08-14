@@ -23,8 +23,8 @@ owl/
 ├── packages/                   # 共享包（被一切依赖的最底层）
 │   ├── shared/                 # @owl/shared — 类型/常量/错误码/纯函数
 │   └── database/               # @owl/database — Prisma schema + migrations + seeds
-├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟）
-├── .github/workflows/          # CI/CD（ci.yml / cd.yml / cd-manual.yml / docs.yml）
+├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟/发版）
+├── .github/workflows/          # CI/CD（ci.yml / cd.yml / docs.yml）
 ├── docker-compose.yml          # 仅编排应用服务（中间件复用本机 docker）
 └── AGENTS.md                   # 开发规范 SSOT（改动代码前必读）
 ```
@@ -132,12 +132,33 @@ pnpm verify:full    # 以上 + 冒烟（build 后 /health 心跳断言）
 
 GitHub Actions 工作流见 `.github/workflows/`：
 
-| 工作流          | 触发                     | 作用                                                      |
-| --------------- | ------------------------ | --------------------------------------------------------- |
-| `ci.yml`        | PR、push main            | typecheck / lint / format / 架构校验 / AI 残渣扫描 / 单测 |
-| `cd.yml`        | push main、tag `v*`      | 变更检测（paths-filter）→ 只构建变更服务的镜像推送到 GHCR |
-| `cd-manual.yml` | 手动 `workflow_dispatch` | 手动选择服务或全部构建推送镜像                            |
-| `docs.yml`      | push main 且 docs/ 变更  | 构建静态站并部署 GitHub Pages                             |
+| 工作流     | 触发        | 作用                                                                     |
+| ---------- | ----------- | ------------------------------------------------------------------------ |
+| `ci.yml`   | PR / push main | typecheck / lint / format / 架构校验 / AI 残渣扫描 / 单测                 |
+| `cd.yml`   | push main   | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
+| `docs.yml` | push main 且 docs/ 变更 | 构建静态站并部署 GitHub Pages                                     |
+
+### 发版流程
+
+```bash
+# 1. 一键发版（verify:quick → version bump → commit，失败自动回滚）
+bash scripts/release.sh all patch          # 全部包 patch 升级
+bash scripts/release.sh all minor          # 全部包 minor 升级
+bash scripts/release.sh api-service patch  # 仅 api-service patch 升级
+bash scripts/release.sh cron-service minor # 仅 cron-service minor 升级
+
+# 2. 确认后手动 push
+git push
+```
+
+Push 到 main 后 `cd.yml` 自动触发：
+
+1. **Check Version** — 对比 HEAD 与 HEAD~1 的 package.json version，确定需要部署的包
+2. **Lint** — `pnpm verify:quick` 做最后兜底校验
+3. **Build Backend** — 并行构建 api-service / cron-service Docker 镜像（tag 为版本号）
+4. **Build Frontend** — 并行构建 admin-web / owl-web / cron-web Docker 镜像
+5. **Deploy** — 从 k3s 容器提取 kubeconfig，`kubectl set image` 滚动更新现有 Deployment
+6. **Notify** — 飞书群通知部署结果（绿/红卡片）
 
 ### 本地门禁（husky）
 
@@ -155,6 +176,7 @@ GitHub Actions 工作流见 `.github/workflows/`：
 | `scripts/check-architecture.sh`  | 架构依赖方向（跨层依赖 → ERROR 阻断）            |
 | `scripts/scan-ai-residue.sh`     | AI 残渣扫描（any/魔法数字/console/TODO 等 9 类） |
 | `scripts/check-feature-rules.sh` | 业务特征规则（success 不进 vo 判断等）           |
+| `scripts/release.sh`             | 版本发布（verify → bump → commit，失败回滚）     |
 | `scripts/verify.sh`              | 完整验证流水线聚合                               |
 
 完整开发规范见 **`AGENTS.md`**。

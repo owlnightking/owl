@@ -64,6 +64,7 @@ apps/ow/               → CLI / 脚本工具
 | scan-ai-residue.sh     | AI 残渣扫描（9 类规则，ERROR 阻断 / WARN 提示；`--staged` 用于 pre-commit 增量扫描） |
 | check-feature-rules.sh | 业务特征规则检查（success 不在 vo 判断、filter 不返回 entity、id 生成放 domain 等）  |
 | smoke.sh               | 冒烟验收（构建后启动心跳检查）                                                       |
+| release.sh             | 版本发布（verify:quick → version bump → commit，失败自动回滚）                       |
 | verify.sh              | 完整验证流水线聚合（typecheck → lint → format → arch → 残渣 → test）                 |
 
 新增扫描/校验脚本：必须加入 `package.json` 对应脚本、`verify:quick`、pre-commit/pre-push 与 CI 工作流，保持入口一致。
