@@ -12,3 +12,4 @@ RUN pnpm --filter @owl/cron-web build
 FROM nginx:1.27-alpine AS runtime
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/apps/cron-web/dist .
+COPY apps/cron-web/nginx.conf /etc/nginx/conf.d/default.conf

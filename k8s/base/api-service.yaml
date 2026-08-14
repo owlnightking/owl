@@ -18,6 +18,7 @@ spec:
       containers:
         - name: api-service
           image: owl/api-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:
@@ -27,13 +28,13 @@ spec:
               value: "3000"
           readinessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /api/health
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20

@@ -18,6 +18,7 @@ spec:
       containers:
         - name: cron-web
           image: owl/cron-web:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5275
           env:
