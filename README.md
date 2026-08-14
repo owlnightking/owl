@@ -132,11 +132,11 @@ pnpm verify:full    # 以上 + 冒烟（build 后 /health 心跳断言）
 
 GitHub Actions 工作流见 `.github/workflows/`：
 
-| 工作流     | 触发        | 作用                                                                     |
-| ---------- | ----------- | ------------------------------------------------------------------------ |
-| `ci.yml`   | PR / push main | typecheck / lint / format / 架构校验 / AI 残渣扫描 / 单测                 |
-| `cd.yml`   | push main   | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
-| `docs.yml` | push main 且 docs/ 变更 | 构建静态站并部署 GitHub Pages                                     |
+| 工作流     | 触发                    | 作用                                                                    |
+| ---------- | ----------------------- | ----------------------------------------------------------------------- |
+| `ci.yml`   | PR / push main          | typecheck / lint / format / 架构校验 / AI 残渣扫描 / 单测               |
+| `cd.yml`   | push main               | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
+| `docs.yml` | push main 且 docs/ 变更 | 构建静态站并部署 GitHub Pages                                           |
 
 ### 发版流程
 
