@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cron-web
-          image: cron-web:latest
+          image: owl/cron-web:latest
           ports:
             - containerPort: 5275
           env:

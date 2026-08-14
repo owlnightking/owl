@@ -16,39 +16,60 @@ jobs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
       deploy_all: ${{ steps.check.outputs.deploy_all }}
       changed_apps: ${{ steps.check.outputs.changed_apps }}
+      app_versions: ${{ steps.check.outputs.app_versions }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
       - id: check
         run: |
-          CURRENT=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          PREVIOUS=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "v0.0.0")
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
-            echo "should_deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_deploy=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          APPS="api-service cron-service admin-web owl-web cron-web"
+          CHANGED=""
+          VERSIONS=""
+          DEPLOY_ALL=false
 
-          CHANGED=$(git diff --name-only $PREVIOUS $CURRENT 2>/dev/null || git diff --name-only HEAD~1 HEAD)
-          APPS=""
-          for app in api-service cron-service admin-web owl-web cron-web; do
-            if echo "$CHANGED" | grep -q "apps/$app/"; then
-              if [ -z "$APPS" ]; then
-                APPS="$app"
+          for app in $APPS; do
+            CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            if [ "$CURRENT" != "$PREVIOUS" ]; then
+              if [ -z "$CHANGED" ]; then
+                CHANGED="$app"
+                VERSIONS="${app}:${CURRENT}"
               else
-                APPS="$APPS,$app"
+                CHANGED="$CHANGED,$app"
+                VERSIONS="${VERSIONS} ${app}:${CURRENT}"
               fi
             fi
           done
 
-          if [ -z "$APPS" ] || echo "$CHANGED" | grep -q "packages/"; then
-            echo "deploy_all=true" >> $GITHUB_OUTPUT
-            echo "changed_apps=api-service,cron-service,admin-web,owl-web,cron-web" >> $GITHUB_OUTPUT
+          # If packages/ changed, deploy all
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+          if echo "$CHANGED_FILES" | grep -q "^packages/"; then
+            DEPLOY_ALL=true
+            CHANGED=""
+            VERSIONS=""
+            for app in $APPS; do
+              VER=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
+              if [ -z "$CHANGED" ]; then
+                CHANGED="$app"
+                VERSIONS="${app}:${VER}"
+              else
+                CHANGED="$CHANGED,$app"
+                VERSIONS="${VERSIONS} ${app}:${VER}"
+              fi
+            done
+          fi
+
+          if [ -z "$CHANGED" ]; then
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "No version changes detected, skipping deployment."
           else
-            echo "deploy_all=false" >> $GITHUB_OUTPUT
-            echo "changed_apps=$APPS" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "deploy_all=$DEPLOY_ALL" >> $GITHUB_OUTPUT
+            echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
+            echo "app_versions=$VERSIONS" >> $GITHUB_OUTPUT
+            echo "Deploy apps: $CHANGED"
+            echo "Versions: $VERSIONS"
           fi
 
   lint:
@@ -61,7 +82,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g pnpm@9
+      - run: npm install -g pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify:quick
 
@@ -75,7 +96,17 @@ jobs:
         app: [api-service, cron-service]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t owl/${{ matrix.app }}:${{ github.sha }} -f apps/${{ matrix.app }}/Dockerfile .
+      - name: Get version
+        id: version
+        run: |
+          VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
+            -t owl/${{ matrix.app }}:latest \
+            -f apps/${{ matrix.app }}/Dockerfile .
 
   build-frontend:
     name: Build ${{ matrix.app }}
@@ -87,7 +118,17 @@ jobs:
         app: [admin-web, owl-web, cron-web]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t owl/${{ matrix.app }}:${{ github.sha }} -f apps/${{ matrix.app }}/Dockerfile .
+      - name: Get version
+        id: version
+        run: |
+          VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
+            -t owl/${{ matrix.app }}:latest \
+            -f apps/${{ matrix.app }}/Dockerfile .
 
   deploy:
     name: Deploy to K3s
@@ -99,23 +140,40 @@ jobs:
     if: always() && needs.check-version.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
-      - name: Configure Kubeconfig
+      - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
           docker exec k3s cat /etc/rancher/k3s/k3s.yaml > $HOME/.kube/config
           sed -i 's/127.0.0.1/localhost/g' $HOME/.kube/config
-      - name: Update and restart pods
+      - name: Ensure namespace exists
+        run: |
+          kubectl get namespace owl >/dev/null 2>&1 || kubectl create namespace owl
+      - name: Apply manifests if needed
+        run: |
+          # Check if deployments exist, apply if not
+          for app in api-service cron-service admin-web owl-web cron-web; do
+            if ! kubectl get deployment $app -n owl >/dev/null 2>&1; then
+              echo "Deployment $app not found, applying manifests..."
+              kubectl apply -k k8s/base/
+              break
+            fi
+          done
+      - name: Update images and rollout
         env:
           CHANGED_APPS: ${{ needs.check-version.outputs.changed_apps }}
+          APP_VERSIONS: ${{ needs.check-version.outputs.app_versions }}
         run: |
-          for app in $(echo $CHANGED_APPS | tr ',' ' '); do
-            echo "Deploying $app..."
-            kubectl set image deployment/$app $app=owl/$app:${{ github.sha }} -n owl
-            kubectl rollout status deployment/$app -n owl --timeout=300s
+          for entry in $APP_VERSIONS; do
+            app="${entry%%:*}"
+            ver="${entry##*:}"
+            echo "Deploying ${app} version ${ver}..."
+            kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl
+            kubectl rollout status deployment/${app} -n owl --timeout=300s
           done
-      - name: Verify
+      - name: Verify deployment
         run: |
           kubectl get pods -n owl
+          kubectl get services -n owl
 
   notify:
     name: Feishu Notify
@@ -123,23 +181,26 @@ jobs:
     needs: deploy
     if: always()
     steps:
-      - name: Send Notification
+      - name: Send notification
         env:
           FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/d1555289-d3fa-4a54-995e-0dc088b7202c
           FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
         run: |
-          STATUS=${{ needs.deploy.result }}
+          STATUS="${{ needs.deploy.result }}"
+          CHANGED="${{ needs.check-version.outputs.changed_apps }}"
+          VERSIONS="${{ needs.check-version.outputs.app_versions }}"
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN="${TIMESTAMP}\n${FEISHU_SECRET}"
           SIGN=$(printf "${STRING_TO_SIGN}" | openssl dgst -sha256 -hmac "" -binary | base64)
-          CHANGED="${{ needs.check-version.outputs.changed_apps }}"
 
           if [ "$STATUS" = "success" ]; then
             TITLE="Deploy Success"
-            CONTENT="Apps: ${CHANGED}\nVersion: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
+            TEMPLATE="green"
+            CONTENT="Apps: ${CHANGED}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
           else
             TITLE="Deploy Failed"
-            CONTENT="Apps: ${CHANGED}\nVersion: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check logs"
+            TEMPLATE="red"
+            CONTENT="Apps: ${CHANGED}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
           fi
 
           curl -X POST "${FEISHU_WEBHOOK}" \
@@ -151,7 +212,7 @@ jobs:
               \"card\": {
                 \"header\": {
                   \"title\": {\"tag\": \"plain_text\", \"content\": \"${TITLE}\"},
-                  \"template\": \"$([ \"$STATUS\" = 'success' ] && echo 'green' || echo 'red')\"
+                  \"template\": \"${TEMPLATE}\"
                 },
                 \"elements\": [{
                   \"tag\": \"markdown\",

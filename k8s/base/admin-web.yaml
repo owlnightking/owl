@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: admin-web
-          image: admin-web:latest
+          image: owl/admin-web:latest
           ports:
             - containerPort: 5274
           env:

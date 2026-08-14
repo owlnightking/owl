@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api-service
-          image: api-service:latest
+          image: owl/api-service:latest
           ports:
             - containerPort: 3000
           env:

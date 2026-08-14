@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: owl-web
-          image: owl-web:latest
+          image: owl/owl-web:latest
           ports:
             - containerPort: 5273
           env:

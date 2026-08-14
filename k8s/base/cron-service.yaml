@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cron-service
-          image: cron-service:latest
+          image: owl/cron-service:latest
           ports:
             - containerPort: 3001
           env:
