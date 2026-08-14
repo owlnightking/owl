@@ -53,9 +53,10 @@ echo ""
 echo "=== Step 2: version bump (${APP} ${BUMP}) ==="
 
 if [ "$APP" = "all" ]; then
-  pnpm "version:all:${BUMP}"
+  pnpm version "${BUMP}" --no-git-tag-version
+  pnpm -r exec pnpm version "${BUMP}" --no-git-tag-version
 else
-  pnpm "version:${APP}:${BUMP}"
+  pnpm --filter "@owl/${APP}" exec pnpm version "${BUMP}" --no-git-tag-version
 fi
 
 # ── Step 3: commit ────────────────────────────────────────
