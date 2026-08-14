@@ -104,7 +104,9 @@ jobs:
   build-backend:
     name: Build Backend
     runs-on: self-hosted
-    needs: verify
+    needs:
+      - detect-release
+      - verify
     strategy:
       matrix:
         app: [api-service, cron-service]
@@ -143,7 +145,9 @@ jobs:
   build-frontend:
     name: Build Frontend
     runs-on: self-hosted
-    needs: build-backend
+    needs:
+      - detect-release
+      - build-backend
     strategy:
       matrix:
         app: [admin-web, owl-web, cron-web]
