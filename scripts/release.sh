@@ -84,15 +84,16 @@ done
 # 获取新版本号
 if [ "$APP" = "all" ]; then
   NEW_VERSION=$(node -p "require('./package.json').version")
-  COMMIT_MSG="chore: bump version to ${NEW_VERSION}"
+  COMMIT_MSG="chore: bump all version"
 else
   NEW_VERSION=$(node -p "require('./apps/${APP}/package.json').version")
-  COMMIT_MSG="chore(${APP}): bump version to ${NEW_VERSION}"
+  COMMIT_MSG="chore: bump ${APP} version"
 fi
 
 git commit -m "$COMMIT_MSG"
 
 echo ""
 echo "=== Release prepared: ${APP} → ${NEW_VERSION} ==="
+echo "Commit: ${COMMIT_MSG}"
 echo "Review with: git log -1"
 echo "Push when ready: git push origin main"
