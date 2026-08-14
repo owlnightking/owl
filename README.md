@@ -142,10 +142,10 @@ GitHub Actions 工作流见 `.github/workflows/`：
 
 ```bash
 # 1. 一键发版（verify:quick → version bump → commit，失败自动回滚）
-bash scripts/release.sh all patch          # 全部包 patch 升级
-bash scripts/release.sh all minor          # 全部包 minor 升级
-bash scripts/release.sh api-service patch  # 仅 api-service patch 升级
-bash scripts/release.sh cron-service minor # 仅 cron-service minor 升级
+pnpm version:all:patch          # 全部包 patch 升级
+pnpm version:all:minor          # 全部包 minor 升级
+pnpm version:api-service:patch  # 仅 api-service patch 升级
+pnpm version:cron-service:minor # 仅 cron-service minor 升级
 
 # 2. 确认后手动 push
 git push

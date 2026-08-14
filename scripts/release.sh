@@ -66,12 +66,11 @@ echo "=== Step 3: commit ==="
 CHANGED_FILES=()
 if [ "$APP" = "all" ]; then
   CHANGED_FILES+=(package.json)
-  for pkg in apps/*/package.json; do
+  for pkg in apps/*/package.json packages/*/package.json; do
     CHANGED_FILES+=("$pkg")
   done
 else
   CHANGED_FILES+=("apps/${APP}/package.json")
-  # all 模式下 root 也会变，单包模式只变对应包
 fi
 
 # 只 add 被修改的 package.json
