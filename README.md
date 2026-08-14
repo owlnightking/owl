@@ -147,8 +147,8 @@ pnpm version:all:minor          # 全部包 minor 升级
 pnpm version:api-service:patch  # 仅 api-service patch 升级
 pnpm version:cron-service:minor # 仅 cron-service minor 升级
 
-# 2. 确认后手动 push
-git push
+# 2. 确认后推送至 main
+git push origin main
 ```
 
 Push 到 main 后 `cd.yml` 自动触发：
