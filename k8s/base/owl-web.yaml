@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: owl-web
-          image: host.docker.internal:5001/owl-web:latest
+          image: owl-web:latest
           ports:
             - containerPort: 5273
           env:

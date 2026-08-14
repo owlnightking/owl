@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: cron-web
-          image: host.docker.internal:5001/cron-web:latest
+          image: cron-web:latest
           ports:
             - containerPort: 5275
           env:

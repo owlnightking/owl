@@ -9,10 +9,6 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
-env:
-  REGISTRY: localhost:5001
-  NAMESPACE: owl
-
 jobs:
   check-version:
     name: Check Version
@@ -55,14 +51,7 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/api-service/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/api-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - run: docker build -t owl/api-service:${{ github.sha }} -f apps/api-service/Dockerfile .
 
   build-cron-service:
     name: Build Cron Service
@@ -70,14 +59,7 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/cron-service/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/cron-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - run: docker build -t owl/cron-service:${{ github.sha }} -f apps/cron-service/Dockerfile .
 
   build-admin-web:
     name: Build Admin Web
@@ -85,14 +67,7 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/admin-web/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/admin-web:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - run: docker build -t owl/admin-web:${{ github.sha }} -f apps/admin-web/Dockerfile .
 
   build-owl-web:
     name: Build Owl Web
@@ -100,14 +75,7 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/owl-web/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/owl-web:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - run: docker build -t owl/owl-web:${{ github.sha }} -f apps/owl-web/Dockerfile .
 
   build-cron-web:
     name: Build Cron Web
@@ -115,14 +83,7 @@ jobs:
     needs: lint
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/cron-web/Dockerfile
-          push: true
-          tags: ${{ env.REGISTRY }}/cron-web:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - run: docker build -t owl/cron-web:${{ github.sha }} -f apps/cron-web/Dockerfile .
 
   deploy:
     name: Deploy to K3s
@@ -138,13 +99,13 @@ jobs:
       - name: Configure Kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          docker exec k3s cat /etc/rancher/k3s/k3s.yaml > $HOME/.kube/config
+          sed -i 's/127.0.0.1/localhost/g' $HOME/.kube/config
       - name: Update image tags
         run: |
           cd k8s/base
           for app in api-service admin-web owl-web cron-web cron-service; do
-            sed -i "s|image:.*|image: ${{ env.REGISTRY }}/${app}:${{ github.sha }}|g" ${app}.yaml
+            sed -i "s|image:.*|image: owl/${app}:${{ github.sha }}|g" ${app}.yaml
           done
       - name: Deploy
         run: |

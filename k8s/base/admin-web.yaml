@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: admin-web
-          image: host.docker.internal:5001/admin-web:latest
+          image: admin-web:latest
           ports:
             - containerPort: 5274
           env:
