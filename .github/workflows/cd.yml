@@ -123,40 +123,30 @@ jobs:
     if: always() && needs.check-version.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
     steps:
       - uses: actions/checkout@v4
-      - name: Configure kubeconfig
+      - name: Ensure namespace and deployments
         run: |
-          mkdir -p $HOME/.kube
-          docker exec k3s cat /etc/rancher/k3s/k3s.yaml > $HOME/.kube/config
-          sed -i 's/127.0.0.1/localhost/g' $HOME/.kube/config
-      - name: Ensure namespace exists
-        run: |
-          kubectl get namespace owl >/dev/null 2>&1 || kubectl create namespace owl
-      - name: Apply manifests if needed
-        run: |
-          # Check if deployments exist, apply if not
-          for app in api-service cron-service admin-web owl-web cron-web; do
-            if ! kubectl get deployment $app -n owl >/dev/null 2>&1; then
-              echo "Deployment $app not found, applying manifests..."
-              kubectl apply -k k8s/base/
-              break
-            fi
-          done
+          docker exec k3s kubectl get namespace owl >/dev/null 2>&1 || docker exec k3s kubectl create namespace owl
+          if ! docker exec k3s kubectl get deployment api-service -n owl >/dev/null 2>&1; then
+            echo "Deployments not found, applying manifests..."
+            docker cp k8s/base k3s:/tmp/k8s-base
+            docker exec k3s kubectl apply -k /tmp/k8s-base/
+            docker exec k3s rm -rf /tmp/k8s-base
+          fi
       - name: Update images and rollout
         env:
-          CHANGED_APPS: ${{ needs.check-version.outputs.changed_apps }}
           APP_VERSIONS: ${{ needs.check-version.outputs.app_versions }}
         run: |
           for entry in $APP_VERSIONS; do
             app="${entry%%:*}"
             ver="${entry##*:}"
             echo "Deploying ${app} version ${ver}..."
-            kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl
-            kubectl rollout status deployment/${app} -n owl --timeout=300s
+            docker exec k3s kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl
+            docker exec k3s kubectl rollout status deployment/${app} -n owl --timeout=300s
           done
       - name: Verify deployment
         run: |
-          kubectl get pods -n owl
-          kubectl get services -n owl
+          docker exec k3s kubectl get pods -n owl
+          docker exec k3s kubectl get services -n owl
 
   notify:
     name: Feishu Notify
