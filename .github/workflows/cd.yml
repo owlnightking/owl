@@ -105,18 +105,31 @@ jobs:
     name: Build Backend
     runs-on: self-hosted
     needs: verify
-    if: needs.detect-release.outputs.backend_apps != '[]'
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.detect-release.outputs.backend_apps) }}
+        app: [api-service, cron-service]
     steps:
       - uses: actions/checkout@v4
+      - name: Check if app needs build
+        id: check-app
+        env:
+          APP: ${{ matrix.app }}
+          BACKEND_APPS: ${{ needs.detect-release.outputs.backend_apps }}
+        run: |
+          if ! echo "$BACKEND_APPS" | grep -q "$APP"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping $APP, not in changed apps"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
       - name: Get version
         id: version
+        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
+        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
@@ -127,18 +140,31 @@ jobs:
     name: Build Frontend
     runs-on: self-hosted
     needs: verify
-    if: needs.detect-release.outputs.frontend_apps != '[]'
     strategy:
       matrix:
-        app: ${{ fromJSON(needs.detect-release.outputs.frontend_apps) }}
+        app: [admin-web, owl-web, cron-web]
     steps:
       - uses: actions/checkout@v4
+      - name: Check if app needs build
+        id: check-app
+        env:
+          APP: ${{ matrix.app }}
+          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
+        run: |
+          if ! echo "$FRONTEND_APPS" | grep -q "$APP"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping $APP, not in changed apps"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
       - name: Get version
         id: version
+        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
+        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
