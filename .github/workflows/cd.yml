@@ -18,7 +18,8 @@ jobs:
     runs-on: self-hosted
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
-      changed_apps: ${{ steps.check.outputs.changed_apps }}
+      backend_apps: ${{ steps.check.outputs.backend_apps }}
+      frontend_apps: ${{ steps.check.outputs.frontend_apps }}
       app_versions: ${{ steps.check.outputs.app_versions }}
     steps:
       - uses: actions/checkout@v4
@@ -26,33 +27,52 @@ jobs:
           fetch-depth: 2
       - id: check
         run: |
-          APPS="api-service cron-service admin-web owl-web cron-web"
-          CHANGED=""
-          VERSIONS=""
+          BACKEND=""
+          BACKEND_VERSIONS=""
+          FRONTEND=""
+          FRONTEND_VERSIONS=""
 
-          for app in $APPS; do
+          for app in api-service cron-service; do
             CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
             PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version)
             if [ "$CURRENT" != "$PREVIOUS" ]; then
-              if [ -z "$CHANGED" ]; then
-                CHANGED="$app"
-                VERSIONS="${app}:${CURRENT}"
+              if [ -z "$BACKEND" ]; then
+                BACKEND="\"${app}\""
+                BACKEND_VERSIONS="${app}:${CURRENT}"
               else
-                CHANGED="$CHANGED,$app"
-                VERSIONS="${VERSIONS} ${app}:${CURRENT}"
+                BACKEND="${BACKEND},\"${app}\""
+                BACKEND_VERSIONS="${BACKEND_VERSIONS} ${app}:${CURRENT}"
               fi
             fi
           done
 
-          if [ -z "$CHANGED" ]; then
+          for app in admin-web owl-web cron-web; do
+            CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            if [ "$CURRENT" != "$PREVIOUS" ]; then
+              if [ -z "$FRONTEND" ]; then
+                FRONTEND="\"${app}\""
+                FRONTEND_VERSIONS="${app}:${CURRENT}"
+              else
+                FRONTEND="${FRONTEND},\"${app}\""
+                FRONTEND_VERSIONS="${FRONTEND_VERSIONS} ${app}:${CURRENT}"
+              fi
+            fi
+          done
+
+          ALL_VERSIONS="${BACKEND_VERSIONS} ${FRONTEND_VERSIONS}"
+
+          if [ -z "$BACKEND" ] && [ -z "$FRONTEND" ]; then
             echo "should_deploy=false" >> $GITHUB_OUTPUT
             echo "No version changes detected, skipping deployment."
           else
             echo "should_deploy=true" >> $GITHUB_OUTPUT
-            echo "changed_apps=$CHANGED" >> $GITHUB_OUTPUT
-            echo "app_versions=$VERSIONS" >> $GITHUB_OUTPUT
-            echo "Deploy apps: $CHANGED"
-            echo "Versions: $VERSIONS"
+            echo "backend_apps=[${BACKEND}]" >> $GITHUB_OUTPUT
+            echo "frontend_apps=[${FRONTEND}]" >> $GITHUB_OUTPUT
+            echo "app_versions=${ALL_VERSIONS}" >> $GITHUB_OUTPUT
+            echo "Deploy backend: ${BACKEND:-none}"
+            echo "Deploy frontend: ${FRONTEND:-none}"
+            echo "Versions: ${ALL_VERSIONS}"
           fi
 
   lint:
@@ -73,10 +93,10 @@ jobs:
     name: Build ${{ matrix.app }}
     runs-on: self-hosted
     needs: lint
-    if: contains(needs.check-version.outputs.changed_apps, matrix.app)
+    if: needs.check-version.outputs.backend_apps != '[]'
     strategy:
       matrix:
-        app: [api-service, cron-service]
+        app: ${{ fromJSON(needs.check-version.outputs.backend_apps) }}
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -95,10 +115,10 @@ jobs:
     name: Build ${{ matrix.app }}
     runs-on: self-hosted
     needs: lint
-    if: contains(needs.check-version.outputs.changed_apps, matrix.app)
+    if: needs.check-version.outputs.frontend_apps != '[]'
     strategy:
       matrix:
-        app: [admin-web, owl-web, cron-web]
+        app: ${{ fromJSON(needs.check-version.outputs.frontend_apps) }}
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -160,7 +180,6 @@ jobs:
           FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
         run: |
           STATUS="${{ needs.deploy.result }}"
-          CHANGED="${{ needs.check-version.outputs.changed_apps }}"
           VERSIONS="${{ needs.check-version.outputs.app_versions }}"
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN="${TIMESTAMP}\n${FEISHU_SECRET}"
@@ -169,11 +188,11 @@ jobs:
           if [ "$STATUS" = "success" ]; then
             TITLE="Deploy Success"
             TEMPLATE="green"
-            CONTENT="Apps: ${CHANGED}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
+            CONTENT="Versions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
           else
             TITLE="Deploy Failed"
             TEMPLATE="red"
-            CONTENT="Apps: ${CHANGED}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
+            CONTENT="Versions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
           fi
 
           curl -X POST "${FEISHU_WEBHOOK}" \
