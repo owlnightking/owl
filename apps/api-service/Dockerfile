@@ -14,6 +14,7 @@ WORKDIR /app
 RUN corepack enable && apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
+COPY --from=deps /app/apps/api-service ./apps/api-service
 COPY . .
 RUN pnpm --filter @owl/shared build
 RUN pnpm --filter @owl/api-service build
