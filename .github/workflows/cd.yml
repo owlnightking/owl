@@ -202,6 +202,32 @@ jobs:
             docker exec k3s kubectl apply -k /tmp/k8s-base/
             docker exec k3s rm -rf /tmp/k8s-base
           fi
+      - name: Clean old docker images and build cache
+        env:
+          APP_VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
+        run: |
+          echo "Cleaning stale owl images from host docker (keeping current + latest)..."
+          KEEP_REFS=""
+          for entry in $APP_VERSIONS; do
+            KEEP_REFS="$KEEP_REFS owl/${entry%%:*}:${entry##*:}"
+          done
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            echo "$KEEP_REFS" | grep -Fq "$ref" && continue
+            docker rmi "$ref" >/dev/null 2>&1 && echo "removed $ref"
+          done
+          echo "Pruning docker build cache..."
+          docker builder prune -f
+          echo "Cleaning stale owl images from k3s containerd (keeping current)..."
+          CURRENT_IMAGES=""
+          for entry in $APP_VERSIONS; do
+            CURRENT_IMAGES="$CURRENT_IMAGES docker.io/owl/${entry%%:*}:${entry##*:}"
+          done
+          docker exec k3s ctr -n k8s.io images list -q 2>/dev/null | grep '^docker.io/owl/' | while read -r ref; do
+            echo " $CURRENT_IMAGES " | grep -Fq " $ref " && continue
+            docker exec k3s ctr -n k8s.io images rm "$ref" >/dev/null 2>&1 && echo "removed $ref"
+          done
       - name: Update existing deployment images
         env:
           APP_VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
