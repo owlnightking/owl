@@ -139,7 +139,7 @@ jobs:
   build-frontend:
     name: Build Frontend
     runs-on: self-hosted
-    needs: verify
+    needs: build-backend
     strategy:
       matrix:
         app: [admin-web, owl-web, cron-web]
