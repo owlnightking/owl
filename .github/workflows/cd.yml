@@ -97,6 +97,8 @@ jobs:
           node-version: 22
       - run: npm install -g pnpm@10.12.4
       - run: pnpm install --frozen-lockfile
+      - run: pnpm -F @owl/database prisma:generate
+      - run: pnpm -F @owl/shared build
       - run: pnpm verify:quick
 
   build-backend:
