@@ -1,4 +1,4 @@
-name: CD (Local)
+name: CD
 
 on:
   push:
@@ -13,9 +13,8 @@ env:
   NAMESPACE: owl
 
 jobs:
-  # 1. 版本检查
   check-version:
-    name: 检查版本变更
+    name: Check Version
     runs-on: self-hosted
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
@@ -35,9 +34,8 @@ jobs:
             echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
 
-  # 2. Lint 检查
   lint:
-    name: 代码质量检查
+    name: Lint
     runs-on: self-hosted
     needs: check-version
     if: needs.check-version.outputs.should_deploy == 'true'
@@ -53,9 +51,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify:quick
 
-  # 3. 后端构建（并列）
   build-api-service:
-    name: 构建 api-service
+    name: Build API Service
     runs-on: self-hosted
     needs: lint
     steps:
@@ -70,7 +67,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-cron-service:
-    name: 构建 cron-service
+    name: Build Cron Service
     runs-on: self-hosted
     needs: lint
     steps:
@@ -84,9 +81,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # 4. 前端构建（并列）
   build-admin-web:
-    name: 构建 admin-web
+    name: Build Admin Web
     runs-on: self-hosted
     needs: lint
     steps:
@@ -101,7 +97,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-owl-web:
-    name: 构建 owl-web
+    name: Build Owl Web
     runs-on: self-hosted
     needs: lint
     steps:
@@ -116,7 +112,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-cron-web:
-    name: 构建 cron-web
+    name: Build Cron Web
     runs-on: self-hosted
     needs: lint
     steps:
@@ -130,9 +126,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # 5. 部署到 K3s
   deploy:
-    name: 部署到 K3s
+    name: Deploy to K3s
     runs-on: self-hosted
     needs:
       - build-api-service
@@ -166,14 +161,13 @@ jobs:
           kubectl get pods -n owl
           kubectl get services -n owl
 
-  # 6. 飞书通知
   notify:
-    name: 飞书通知
+    name: Feishu Notify
     runs-on: self-hosted
     needs: deploy
     if: always()
     steps:
-      - name: 发送通知
+      - name: Send Notification
         env:
           FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/d1555289-d3fa-4a54-995e-0dc088b7202c
           FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
@@ -184,11 +178,11 @@ jobs:
           SIGN=$(printf "${STRING_TO_SIGN}" | openssl dgst -sha256 -hmac "" -binary | base64)
 
           if [ "$STATUS" = "success" ]; then
-            TITLE="✅ 部署成功"
-            CONTENT="版本: ${{ github.sha }}\n时间: $(date '+%Y-%m-%d %H:%M:%S')"
+            TITLE="Deploy Success"
+            CONTENT="Version: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
           else
-            TITLE="❌ 部署失败"
-            CONTENT="版本: ${{ github.sha }}\n时间: $(date '+%Y-%m-%d %H:%M:%S')\n请检查日志"
+            TITLE="Deploy Failed"
+            CONTENT="Version: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check logs"
           fi
 
           curl -X POST "${FEISHU_WEBHOOK}" \
