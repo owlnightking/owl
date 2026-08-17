@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-service-config
+  namespace: owl
+data:
+  NODE_ENV: production
+  API_PORT: "3000"
+  API_PREFIX: api
+  POSTGRES_HOST: 172.17.0.4
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: admin
+  POSTGRES_DB: owl
+  REDIS_HOST: 172.17.0.7
+  REDIS_PORT: "6379"
+  RABBITMQ_URL: amqp://admin:123456@172.17.0.5:5672
+  MINIO_ENDPOINT: 172.17.0.6
+  MINIO_PORT: "9000"
+  MINIO_ACCESS_KEY: admin
+  MINIO_BUCKET_CREATIVES: creatives
+  MINIO_BUCKET_IMAGES: images
+  MINIO_BUCKET_ATTACHMENTS: attachments
+  MINIO_BUCKET_EXPORTS: exports
+  FEISHU_APP_ID: cli_a976e72a8a3cdbd0
+  FEISHU_REDIRECT_URI: http://192.168.50.17:30273/api/auth/feishu/callback
+  JWT_ACCESS_TTL: 2h
+  JWT_REFRESH_TTL: 3d
+  OWL_WEB_PORT: "5273"
+  ADMIN_WEB_PORT: "5274"
+  CRON_WEB_PORT: "5275"
