@@ -108,31 +108,15 @@ jobs:
     needs:
       - detect-release
       - verify
+    if: contains(needs.detect-release.outputs.backend_apps, 'api-service')
     steps:
       - uses: actions/checkout@v4
-      - name: Check if app needs build
-        id: check-app
-        env:
-          BACKEND_APPS: ${{ needs.detect-release.outputs.backend_apps }}
-        run: |
-          case ",${BACKEND_APPS}," in
-            *,api-service,*)
-              echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building api-service"
-              ;;
-            *)
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping api-service, not in changed apps"
-              ;;
-          esac
       - name: Get version
         id: version
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/api-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/api-service:${{ steps.version.outputs.version }} \
@@ -145,31 +129,15 @@ jobs:
     needs:
       - detect-release
       - verify
+    if: contains(needs.detect-release.outputs.backend_apps, 'cron-service')
     steps:
       - uses: actions/checkout@v4
-      - name: Check if app needs build
-        id: check-app
-        env:
-          BACKEND_APPS: ${{ needs.detect-release.outputs.backend_apps }}
-        run: |
-          case ",${BACKEND_APPS}," in
-            *,cron-service,*)
-              echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building cron-service"
-              ;;
-            *)
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping cron-service, not in changed apps"
-              ;;
-          esac
       - name: Get version
         id: version
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/cron-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/cron-service:${{ steps.version.outputs.version }} \
@@ -183,31 +151,15 @@ jobs:
       - detect-release
       - build-api-service
       - build-cron-service
+    if: contains(needs.detect-release.outputs.frontend_apps, 'admin-web')
     steps:
       - uses: actions/checkout@v4
-      - name: Check if app needs build
-        id: check-app
-        env:
-          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
-        run: |
-          case ",${FRONTEND_APPS}," in
-            *,admin-web,*)
-              echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building admin-web"
-              ;;
-            *)
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping admin-web, not in changed apps"
-              ;;
-          esac
       - name: Get version
         id: version
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/admin-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/admin-web:${{ steps.version.outputs.version }} \
@@ -221,31 +173,15 @@ jobs:
       - detect-release
       - build-api-service
       - build-cron-service
+    if: contains(needs.detect-release.outputs.frontend_apps, 'owl-web')
     steps:
       - uses: actions/checkout@v4
-      - name: Check if app needs build
-        id: check-app
-        env:
-          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
-        run: |
-          case ",${FRONTEND_APPS}," in
-            *,owl-web,*)
-              echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building owl-web"
-              ;;
-            *)
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping owl-web, not in changed apps"
-              ;;
-          esac
       - name: Get version
         id: version
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/owl-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/owl-web:${{ steps.version.outputs.version }} \
@@ -259,31 +195,15 @@ jobs:
       - detect-release
       - build-api-service
       - build-cron-service
+    if: contains(needs.detect-release.outputs.frontend_apps, 'cron-web')
     steps:
       - uses: actions/checkout@v4
-      - name: Check if app needs build
-        id: check-app
-        env:
-          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
-        run: |
-          case ",${FRONTEND_APPS}," in
-            *,cron-web,*)
-              echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building cron-web"
-              ;;
-            *)
-              echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping cron-web, not in changed apps"
-              ;;
-          esac
       - name: Get version
         id: version
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           VER=$(jq -r .version apps/cron-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
             -t owl/cron-web:${{ steps.version.outputs.version }} \
@@ -386,12 +306,12 @@ jobs:
           DEPLOY_RESULTS: ${{ needs.deploy.outputs.deploy_results }}
           RELEASE_TYPE: ${{ needs.detect-release.outputs.release_type }}
           VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
+          ACTOR: ${{ github.event.head_commit.author.name }}
         run: |
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN=$(printf "%s\n%s" "${TIMESTAMP}" "${FEISHU_SECRET}")
           SIGN=$(printf "" | openssl dgst -sha256 -hmac "${STRING_TO_SIGN}" -binary | base64)
 
-          ACTOR="${{ github.actor }}"
           TIME_NOW=$(date '+%Y-%m-%d %H:%M:%S')
           SHA="${{ github.sha }}"
           SHORT_SHA="${SHA:0:7}"
