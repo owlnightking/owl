@@ -191,6 +191,8 @@ jobs:
       - build-backend
       - build-frontend
     if: always() && needs.detect-release.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
+    outputs:
+      deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:
       - uses: actions/checkout@v4
       - name: Ensure namespace and deployments
@@ -216,17 +218,29 @@ jobs:
             docker exec k3s ctr -n k8s.io images rm "$ref" >/dev/null 2>&1 && echo "removed $ref"
           done
       - name: Update existing deployment images
+        id: update-images
         env:
           APP_VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
         run: |
+          RESULTS=""
+          FAILED=0
           for entry in $APP_VERSIONS; do
             app="${entry%%:*}"
             ver="${entry##*:}"
             echo "Deploying ${app} version ${ver}..."
-            docker save owl/${app}:${ver} | docker exec -i k3s ctr -n k8s.io images import -
-            docker exec k3s kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl
-            docker exec k3s kubectl rollout status deployment/${app} -n owl --timeout=300s
+            if docker save owl/${app}:${ver} | docker exec -i k3s ctr -n k8s.io images import - \
+               && docker exec k3s kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl \
+               && docker exec k3s kubectl rollout status deployment/${app} -n owl --timeout=300s; then
+              RESULTS="${RESULTS} ${app}=success"
+              echo "OK ${app}"
+            else
+              RESULTS="${RESULTS} ${app}=failed"
+              FAILED=1
+              echo "FAILED ${app}"
+            fi
           done
+          echo "deploy_results=${RESULTS}" >> $GITHUB_OUTPUT
+          exit $FAILED
       - name: Verify deployment
         run: |
           docker exec k3s kubectl get pods -n owl
@@ -249,30 +263,64 @@ jobs:
   notify:
     name: Feishu Notify
     runs-on: self-hosted
-    needs: deploy
+    needs:
+      - deploy
+      - detect-release
     if: always()
     steps:
       - name: Send notification
         env:
           FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/d1555289-d3fa-4a54-995e-0dc088b7202c
           FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
+          DEPLOY_STATUS: ${{ needs.deploy.result }}
+          DEPLOY_RESULTS: ${{ needs.deploy.outputs.deploy_results }}
+          RELEASE_TYPE: ${{ needs.detect-release.outputs.release_type }}
+          VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
         run: |
-          STATUS="${{ needs.deploy.result }}"
-          RELEASE_TYPE="${{ needs.detect-release.outputs.release_type }}"
-          VERSIONS="${{ needs.detect-release.outputs.app_versions }}"
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN=$(printf "%s\n%s" "${TIMESTAMP}" "${FEISHU_SECRET}")
           SIGN=$(printf "" | openssl dgst -sha256 -hmac "${STRING_TO_SIGN}" -binary | base64)
 
-          if [ "$STATUS" = "success" ]; then
-            TITLE="Deploy Success"
-            TEMPLATE="green"
-            CONTENT="Release Type: ${RELEASE_TYPE}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')"
+          ACTOR="${{ github.actor }}"
+          TIME_NOW=$(date '+%Y-%m-%d %H:%M:%S')
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:7}"
+
+          if [ "$RELEASE_TYPE" = "all" ]; then
+            TYPE_CN="全量发版"
+          elif [ "$RELEASE_TYPE" = "single" ]; then
+            TYPE_CN="单应用发版"
           else
-            TITLE="Deploy Failed"
-            TEMPLATE="red"
-            CONTENT="Release Type: ${RELEASE_TYPE}\nVersions: ${VERSIONS}\nCommit: ${{ github.sha }}\nTime: $(date '+%Y-%m-%d %H:%M:%S')\nPlease check workflow logs"
+            TYPE_CN="无版本变更"
           fi
+
+          if [ "$DEPLOY_STATUS" = "success" ]; then
+            TITLE="发版成功"
+            TEMPLATE="green"
+            FINAL_CN="✅ 发版成功"
+          else
+            TITLE="发版失败"
+            TEMPLATE="red"
+            FINAL_CN="❌ 发版失败"
+          fi
+
+          SERVICES_LINES=""
+          for entry in $VERSIONS; do
+            app="${entry%%:*}"
+            ver="${entry##*:}"
+            mark="-"
+            if echo "$DEPLOY_RESULTS" | grep -qw "${app}=success"; then
+              mark="✅ 成功"
+            elif echo "$DEPLOY_RESULTS" | grep -qw "${app}=failed"; then
+              mark="❌ 失败"
+            fi
+            SERVICES_LINES="${SERVICES_LINES}\n- ${app} v${ver} ${mark}"
+          done
+          if [ -z "$SERVICES_LINES" ]; then
+            SERVICES_LINES="\n- 无"
+          fi
+
+          CONTENT="**发版人**：${ACTOR}\n**发版时间**：${TIME_NOW}\n**发版类型**：${TYPE_CN}\n**Commit**：${SHORT_SHA}\n\n**发版服务**：${SERVICES_LINES}\n\n**结果**：${FINAL_CN}"
 
           curl -X POST "${FEISHU_WEBHOOK}" \
             -H "Content-Type: application/json" \
