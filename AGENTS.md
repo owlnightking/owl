@@ -91,7 +91,7 @@ apps/ow/               → CLI / 脚本工具
 
 1. 修改前读本文件与目标文件上下文，遵守现有模式。
 2. 提交前：`pnpm verify:quick` 全绿。
-3. husky：pre-commit 跑 prettier --check 暂存文件 + AI 残渣增量扫描 + 文档新鲜度增量检查；pre-push 跑 `pnpm verify:quick`。
+3. husky：pre-commit 检测源码改动 → 自动重生成并暂存 `PROJECT_STATE.md` → prettier --check 暂存文件 → AI 残渣增量扫描 → 文档新鲜度增量检查；pre-push 跑 `pnpm verify:quick`。
 4. 提交信息遵循约定式提交 `feat/fix/refactor/chore/docs/test/...`。
 5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。
 6. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
@@ -100,7 +100,7 @@ apps/ow/               → CLI / 脚本工具
 
 **核心原则：文档分三层，各有防漂移机制；任何代码改动必须同 commit 更新状态文档。**
 
-1. **`docs/PROJECT_STATE.md` — 状态快照**：AI/人开工前先读这一个文件拿全局，避免重扫全仓。`### 自动 ###` 段由 `scripts/update-state.sh` 扫描源码生成（**禁止手改**），人工只维护"当前阶段 / 已知缺口 / 模块说明"三处。改代码后必须 `pnpm state:update` 重新生成并随改动提交。
+1. **`docs/PROJECT_STATE.md` — 状态快照**：AI/人开工前先读这一个文件拿全局，避免重扫全仓。`### 自动 ###` 段由 `scripts/update-state.sh` 扫描源码生成（**禁止手改**），人工只维护"当前阶段 / 已知缺口 / 模块说明"三处。**pre-commit 检测到源码改动会自动重生成并暂存该文档**；人工维护段（如已知缺口）需手动编辑，随改动提交。也可随时 `pnpm state:update` 手动刷新。
 2. **`docs/decisions/NNN-<slug>.md` — 决策日志（ADR-lite）**：只追加、永不修改；决策变化就新开一条更高编号记录变更。字段：日期 / 背景 / 决策 / 后果 / 关联。
 3. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则层**：低频更新，与状态文档解耦。
 

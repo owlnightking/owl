@@ -1,5 +1,10 @@
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$STAGED" ]; then
+  CODE_STAGED=$(echo "$STAGED" | grep -E '^(apps/[^/]+/src|packages/[^/]+/(src|prisma))/' || true)
+  if [ -n "$CODE_STAGED" ]; then
+    bash scripts/update-state.sh || { echo "pre-commit: update-state 失败，提交已阻断"; exit 1; }
+    git add docs/PROJECT_STATE.md
+  fi
   FORMATTABLE=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx|json|md|css|yml|yaml)$' || true)
   if [ -n "$FORMATTABLE" ]; then
     npx prettier --check $FORMATTABLE
