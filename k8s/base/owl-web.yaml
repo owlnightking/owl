@@ -55,5 +55,5 @@ spec:
   ports:
     - port: 5273
       targetPort: 5273
-      nodePort: 30273
+      nodePort: 9262
   type: NodePort

@@ -55,5 +55,4 @@ spec:
   ports:
     - port: 5275
       targetPort: 5275
-      nodePort: 30275
-  type: NodePort
+  type: ClusterIP
