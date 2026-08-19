@@ -133,29 +133,29 @@ pnpm verify:full    # 以上 + 冒烟（build 后 /health 心跳断言）
 
 GitHub Actions 工作流见 `.github/workflows/`：
 
-| 工作流   | 触发                           | 作用                                                                    |
-| -------- | ------------------------------ | ----------------------------------------------------------------------- |
-| `cd.yml` | push main 且 package.json 变化 | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
+| 工作流   | 触发                                             | 作用                                                                    |
+| -------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| `cd.yml` | push 版本 tag `v*`；`workflow_dispatch` 手动应急 | 版本变化检测 → lint 兜底 → 构建 Docker 镜像 → 部署到本地 k3s → 飞书通知 |
 
 ### 发版流程
 
 ```bash
-# 1. 一键发版（verify:quick → version bump → commit，失败自动回滚）
+# 1. 一键发版（verify:quick → version bump → commit → 打 tag，失败自动回滚）
 pnpm version:all:patch          # 全部包 patch 升级
 pnpm version:all:minor          # 全部包 minor 升级
 pnpm version:api-service:patch  # 仅 api-service patch 升级
 pnpm version:cron-service:minor # 仅 cron-service minor 升级
 
-# 2. 确认后推送至 main
-git push origin main
+# 2. 确认后推送 main 与版本 tag（tag 触发 cd.yml）
+git push origin main && git push origin v<new-version>
 ```
 
-Push 到 main 后 `cd.yml` 自动触发：
+Push 版本 tag 后 `cd.yml` 自动触发（tag 由 release.sh 自动打，格式 `v<app>-<version>` 或 `v<version>`（all））：
 
 1. **Check Version** — 对比 HEAD 与 HEAD~1 的 package.json version，确定需要部署的包
 2. **Lint** — `pnpm verify:quick` 做最后兜底校验
 3. **Build Backend** — 并行构建 api-service / cron-service Docker 镜像（tag 为版本号）
-4. **Build Frontend** — 并行构建 admin-web / owl-web / cron-web Docker 镜像
+4. **Build Frontend** — 并行构建 admin-web / owl-web / cron-web / mobile-web Docker 镜像
 5. **Deploy** — 从 k3s 容器提取 kubeconfig，`kubectl set image` 滚动更新现有 Deployment
 6. **Notify** — 飞书群通知部署结果（绿/红卡片）
 

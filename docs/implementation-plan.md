@@ -41,7 +41,7 @@
    - `docker/`：5 个 Dockerfile（api、cron-service、owl、admin、cron）
 4. **CI/CD**
    - `.github/workflows/ci.yml`（PR：lint/typecheck/arch/单测）
-   - `.github/workflows/cd.yml`（push main 版本变更检测，只部署变更服务）
+   - `.github/workflows/cd.yml`（push 版本 tag `v*` 触发，只部署变更服务）
    - `.github/workflows/cd-manual.yml`（workflow_dispatch 手动选择）
 5. **3 前端骨架**
    - owl-web / admin-web / cron-web 各自 Vite 项目起得来，指向同一 auth 底座
@@ -177,7 +177,7 @@
    - ConfigMap/Secret：DB、Redis、RabbitMQ、MinIO、飞书、JWT 密钥
    - Ingress / 端口转发：`owl/`、`admin/`、`cron/` 路由前缀
 2. **CI/CD 打通**
-   - push main → 构建变更服务镜像 → 推到镜像仓库 → 更新 K3s 清单
+   - push 版本 tag → 构建变更服务镜像 → 推到镜像仓库 → 更新 K3s 清单
 3. **端到端验证**
    - `verify:full`（typecheck→lint→format→arch→smoke 冒烟）在 CI 全绿
    - 一条机会对象在 K3s 环境走完全生命周期
@@ -189,7 +189,7 @@
 
 - [ ] 5 个服务在 K3s 全部 Running；健康检查通过
 - [ ] 3 前端通过统一入口（路由前缀）可访问，登录态在 K8s 环境正常
-- [ ] push main 自动部署变更服务，未变更服务不重建
+- [ ] push 版本 tag 自动部署变更服务，未变更服务不重建
 - [ ] 冒烟脚本（`scripts/smoke.sh`：/health + 核心 API 断言 200 与数据形状）全绿
 - [ ] 生产环境走通一条完整机会（创建→13 阶段→利润核算）
 - [ ] 数据库迁移在空库上可重放；备份/恢复脚本存在

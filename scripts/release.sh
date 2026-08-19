@@ -92,8 +92,26 @@ fi
 
 git commit -m "$COMMIT_MSG"
 
+# ── Step 4: tag（CD 仅监听 v* tag push）──────────────────
+echo ""
+echo "=== Step 4: tag ==="
+
+if [ "$APP" = "all" ]; then
+  TAG="v${NEW_VERSION}"
+else
+  TAG="v${APP}-${NEW_VERSION}"
+fi
+
+if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null 2>&1; then
+  echo "warning: tag ${TAG} already exists, skipping (如需重发先删除旧 tag)。"
+else
+  git tag -a "${TAG}" -m "${COMMIT_MSG}"
+  echo "Created tag: ${TAG}"
+fi
+
 echo ""
 echo "=== Release prepared: ${APP} → ${NEW_VERSION} ==="
 echo "Commit: ${COMMIT_MSG}"
-echo "Review with: git log -1"
-echo "Push when ready: git push origin main"
+echo "Tag:    ${TAG}"
+echo "Review with: git log -1 && git show ${TAG}"
+echo "Push when ready: git push origin main && git push origin ${TAG}"

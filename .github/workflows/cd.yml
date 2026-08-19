@@ -2,12 +2,9 @@ name: CD
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "package.json"
-      - "apps/*/package.json"
-      - "packages/*/package.json"
-      - ".github/workflows/*"
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -334,7 +331,7 @@ jobs:
           DEPLOY_RESULTS: ${{ needs.deploy.outputs.deploy_results }}
           RELEASE_TYPE: ${{ needs.detect-release.outputs.release_type }}
           VERSIONS: ${{ needs.detect-release.outputs.app_versions }}
-          ACTOR: ${{ github.event.head_commit.author.name }}
+          ACTOR: ${{ github.actor }}
         run: |
           TIMESTAMP=$(date +%s)
           STRING_TO_SIGN=$(printf "%s\n%s" "${TIMESTAMP}" "${FEISHU_SECRET}")
