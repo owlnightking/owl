@@ -174,7 +174,7 @@ check_frontend_boundary() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
     case "$file" in
-      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*)
+      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*)
         while IFS= read -r path; do
           [ -z "$path" ] && continue
           if echo "$path" | grep -qE "^(\.\./)+apps/"; then
@@ -192,7 +192,7 @@ check_frontend_code_standards() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
     case "$file" in
-      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*)
+      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*)
         if grep -qE ': *any\b|\bas any\b|<any>' "$file" 2>/dev/null; then
           error "$file" "前端禁止 any"
         fi

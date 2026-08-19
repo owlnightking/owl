@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  background: #f5f6f7;
+}
+
+#root {
+  min-height: 100dvh;
+  max-width: 540px;
+  margin: 0 auto;
+}

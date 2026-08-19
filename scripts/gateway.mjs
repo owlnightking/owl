@@ -21,12 +21,14 @@ const GATEWAY_PORT = readEnvPort("GATEWAY_PORT", 5173);
 const OWL_WEB_PORT = readEnvPort("OWL_WEB_PORT", 5273);
 const ADMIN_WEB_PORT = readEnvPort("ADMIN_WEB_PORT", 5274);
 const CRON_WEB_PORT = readEnvPort("CRON_WEB_PORT", 5275);
+const MOBILE_WEB_PORT = readEnvPort("MOBILE_WEB_PORT", 5276);
 const API_PORT = readEnvPort("API_PORT", 5100);
 
 const ROUTES = [
   { prefix: "/owl", port: OWL_WEB_PORT },
   { prefix: "/admin", port: ADMIN_WEB_PORT },
   { prefix: "/cron", port: CRON_WEB_PORT },
+  { prefix: "/m", port: MOBILE_WEB_PORT },
 ];
 
 const findTarget = (url) => {
@@ -36,6 +38,7 @@ const findTarget = (url) => {
   }
   if (pathname === "/admin") return { redirect: "/admin/" };
   if (pathname === "/cron") return { redirect: "/cron/" };
+  if (pathname === "/m") return { redirect: "/m/" };
   for (const r of ROUTES) {
     if (pathname === r.prefix || pathname.startsWith(`${r.prefix}/`)) {
       return { port: r.port, prefix: r.prefix };
@@ -130,5 +133,7 @@ server.on("upgrade", (req, socket, head) => {
 
 server.listen(GATEWAY_PORT, "0.0.0.0", () => {
   console.log(`[gateway] listening on http://localhost:${GATEWAY_PORT}`);
-  console.log(`[gateway]   / -> /owl/  /admin/ -> :${ADMIN_WEB_PORT}  /cron/ -> :${CRON_WEB_PORT}`);
+  console.log(
+    `[gateway]   / -> /owl/  /admin/ -> :${ADMIN_WEB_PORT}  /cron/ -> :${CRON_WEB_PORT}  /m/ -> :${MOBILE_WEB_PORT}`
+  );
 });

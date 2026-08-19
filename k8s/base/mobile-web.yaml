@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mobile-web
+  namespace: owl
+  labels:
+    app: mobile-web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mobile-web
+  template:
+    metadata:
+      labels:
+        app: mobile-web
+    spec:
+      containers:
+        - name: mobile-web
+          image: owl/mobile-web:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5276
+          env:
+            - name: NODE_ENV
+              value: production
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5276
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5276
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mobile-web
+  namespace: owl
+spec:
+  selector:
+    app: mobile-web
+  ports:
+    - port: 5276
+      targetPort: 5276
+      nodePort: 9263
+  type: NodePort

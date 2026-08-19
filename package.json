@@ -38,7 +38,10 @@
     "version:owl-web:major": "bash scripts/release.sh owl-web major",
     "version:cron-web:patch": "bash scripts/release.sh cron-web patch",
     "version:cron-web:minor": "bash scripts/release.sh cron-web minor",
-    "version:cron-web:major": "bash scripts/release.sh cron-web major"
+    "version:cron-web:major": "bash scripts/release.sh cron-web major",
+    "version:mobile-web:patch": "bash scripts/release.sh mobile-web patch",
+    "version:mobile-web:minor": "bash scripts/release.sh mobile-web minor",
+    "version:mobile-web:major": "bash scripts/release.sh mobile-web major"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

@@ -235,6 +235,58 @@ importers:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)
 
+  apps/mobile-web:
+    dependencies:
+      '@arco-design/mobile-react':
+        specifier: ^2.39.1
+        version: 2.39.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react-transition-group@4.4.12(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-transition-group@4.4.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      '@owl/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      axios:
+        specifier: ^1.7.7
+        version: 1.19.0
+      react:
+        specifier: ^19.0.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.8(react@19.2.8)
+      react-router-dom:
+        specifier: ^6.28.0
+        version: 6.30.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-transition-group:
+        specifier: ^4.4.5
+        version: 4.4.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zustand:
+        specifier: ^5.0.0
+        version: 5.0.14(@types/react@19.2.18)(react@19.2.8)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.4(@types/react@19.2.18)
+      '@types/react-transition-group':
+        specifier: ^4.4.11
+        version: 4.4.12(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.3
+        version: 4.7.0(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12))
+      autoprefixer:
+        specifier: ^10.5.4
+        version: 10.5.4(postcss@8.5.26)
+      tailwindcss:
+        specifier: ^3.4.15
+        version: 3.4.19(tsx@4.23.12)
+      typescript:
+        specifier: ^5.6.2
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)
+
   apps/owl-web:
     dependencies:
       '@arco-design/web-react':
@@ -326,6 +378,29 @@ packages:
 
   '@arco-design/color@0.4.0':
     resolution: {integrity: sha512-s7p9MSwJgHeL8DwcATaXvWT3m2SigKpxx4JA1BGPHL4gfvaQsmQfrLBDpjOJFJuJ2jG2dMt3R3P8Pm9E65q18g==}
+
+  '@arco-design/mobile-react@2.39.1':
+    resolution: {integrity: sha512-reyjzw0f1WUxe/Z7W1qb7LoXZDts8pWLFK9fW4bdCqHomVT2g8WbsqXzw/NdncuP8m0nFQy2qHPPY/txCKTYGw==}
+    peerDependencies:
+      '@types/react': '>=16.9.0'
+      '@types/react-dom': '>=16.9.0'
+      '@types/react-transition-group': '>=4.3.0'
+      react: '>=16.9.0'
+      react-dom: '>=16.9.0'
+      react-transition-group: '>=4.3.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      '@types/react-dom':
+        optional: true
+      '@types/react-transition-group':
+        optional: true
+
+  '@arco-design/mobile-utils@2.23.6':
+    resolution: {integrity: sha512-0eNF1L9ul2wE8HBLE3xcupMqc6v9phAn87Drv8yNLakg0N7xyvI4dcdqQcqryxm8Zg6VqPcGo2y1JlESYXaEmA==}
+
+  '@arco-design/transformable@1.0.2':
+    resolution: {integrity: sha512-Wq3zOf7RAKxwRWaQ2t0u8QoLSWlPG7pJV6GdUyPQ++QiD9n0zXycmwRiNVzSep8GY9Ur5PCLBiCs7B92CaUwcA==}
 
   '@arco-design/web-react@2.66.16':
     resolution: {integrity: sha512-Ke6Do2GWPqWfbB7eounEdIjxocCSxxZT/TplQPtEZeeuavFWjdPDNyvHeBX6OGb7ZgZPl7NlcJbrTyTlhl56qQ==}
@@ -1174,6 +1249,11 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
+  '@types/react-transition-group@4.4.12':
+    resolution: {integrity: sha512-8TV6R3h2j7a91c+1DXdJi3Syo69zzIZbz7Lg5tORM5LEJG7X/E6a1V3drRyBRZq7/utz7A+c4OgYLiLcYGHG6w==}
+    peerDependencies:
+      '@types/react': '*'
+
   '@types/react@19.2.18':
     resolution: {integrity: sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==}
 
@@ -1868,6 +1948,9 @@ packages:
     resolution: {integrity: sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==}
     engines: {node: '>= 0.4'}
 
+  es6-promise@4.2.8:
+    resolution: {integrity: sha512-HJDGx5daxeIvxdBxvG2cb9g4tEvwIk3i8+nhX0yGrYmZUzbkdg8QbDevheDB8gd0//uPj4c1EQua8Q+MViT0/w==}
+
   esbuild@0.25.12:
     resolution: {integrity: sha512-bbPBYYrtZbkt6Os6FiTLCTFxvq4tt3JKall1vRwshA3fdVztsLAatFaZobhkBC8/BrPetoa0oksYoKXoG4ryJg==}
     engines: {node: '>=18'}
@@ -2392,6 +2475,9 @@ packages:
 
   lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
+
+  lodash.throttle@4.1.1:
+    resolution: {integrity: sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==}
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
@@ -3528,6 +3614,27 @@ snapshots:
     dependencies:
       color: 3.2.1
 
+  '@arco-design/mobile-react@2.39.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react-transition-group@4.4.12(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-transition-group@4.4.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@arco-design/mobile-utils': 2.23.6
+      '@arco-design/transformable': 1.0.2
+      '@babel/runtime': 7.29.7
+      lodash.throttle: 4.1.1
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      react-transition-group: 4.4.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      resize-observer-polyfill: 1.5.1
+    optionalDependencies:
+      '@types/react': 19.2.18
+      '@types/react-dom': 19.2.4(@types/react@19.2.18)
+      '@types/react-transition-group': 4.4.12(@types/react@19.2.18)
+
+  '@arco-design/mobile-utils@2.23.6':
+    dependencies:
+      es6-promise: 4.2.8
+
+  '@arco-design/transformable@1.0.2': {}
+
   '@arco-design/web-react@2.66.16(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@arco-design/color': 0.4.0
@@ -4277,6 +4384,10 @@ snapshots:
   '@types/range-parser@1.2.7': {}
 
   '@types/react-dom@19.2.4(@types/react@19.2.18)':
+    dependencies:
+      '@types/react': 19.2.18
+
+  '@types/react-transition-group@4.4.12(@types/react@19.2.18)':
     dependencies:
       '@types/react': 19.2.18
 
@@ -5044,6 +5155,8 @@ snapshots:
       has-tostringtag: 1.0.2
       hasown: 2.0.4
 
+  es6-promise@4.2.8: {}
+
   esbuild@0.25.12:
     optionalDependencies:
       '@esbuild/aix-ppc64': 0.25.12
@@ -5676,6 +5789,8 @@ snapshots:
   lodash.merge@4.6.2: {}
 
   lodash.once@4.1.1: {}
+
+  lodash.throttle@4.1.1: {}
 
   lodash@4.17.21: {}
 
