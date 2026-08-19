@@ -108,7 +108,7 @@ jobs:
     needs:
       - detect-release
       - verify
-    if: contains(needs.detect-release.outputs.backend_apps, 'api-service')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'api-service')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -129,7 +129,7 @@ jobs:
     needs:
       - detect-release
       - verify
-    if: contains(needs.detect-release.outputs.backend_apps, 'cron-service')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'cron-service')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -149,9 +149,10 @@ jobs:
     runs-on: self-hosted
     needs:
       - detect-release
+      - verify
       - build-api-service
       - build-cron-service
-    if: contains(needs.detect-release.outputs.frontend_apps, 'admin-web')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'admin-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -171,9 +172,10 @@ jobs:
     runs-on: self-hosted
     needs:
       - detect-release
+      - verify
       - build-api-service
       - build-cron-service
-    if: contains(needs.detect-release.outputs.frontend_apps, 'owl-web')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'owl-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -193,9 +195,10 @@ jobs:
     runs-on: self-hosted
     needs:
       - detect-release
+      - verify
       - build-api-service
       - build-cron-service
-    if: contains(needs.detect-release.outputs.frontend_apps, 'cron-web')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'cron-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -215,6 +218,7 @@ jobs:
     runs-on: self-hosted
     needs:
       - detect-release
+      - verify
       - build-api-service
       - build-cron-service
       - build-admin-web
