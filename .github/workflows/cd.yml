@@ -101,96 +101,205 @@ jobs:
       - run: pnpm -F @owl/shared build
       - run: pnpm verify:quick
 
-  build-backend:
-    name: Build Backend
+  build-api-service:
+    name: Build Backend (api-service)
     runs-on: self-hosted
     needs:
       - detect-release
       - verify
-    strategy:
-      matrix:
-        app: [api-service, cron-service]
     steps:
       - uses: actions/checkout@v4
       - name: Check if app needs build
         id: check-app
         env:
-          APP: ${{ matrix.app }}
           BACKEND_APPS: ${{ needs.detect-release.outputs.backend_apps }}
         run: |
           case ",${BACKEND_APPS}," in
-            *,${APP},*)
+            *,api-service,*)
               echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building ${APP}"
+              echo "Building api-service"
               ;;
             *)
               echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping ${APP}, not in changed apps"
+              echo "Skipping api-service, not in changed apps"
               ;;
           esac
       - name: Get version
         id: version
         if: steps.check-app.outputs.skip == 'false'
         run: |
-          VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
+          VER=$(jq -r .version apps/api-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
         if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
-            -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
-            -t owl/${{ matrix.app }}:latest \
-            -f apps/${{ matrix.app }}/Dockerfile .
+            -t owl/api-service:${{ steps.version.outputs.version }} \
+            -t owl/api-service:latest \
+            -f apps/api-service/Dockerfile .
 
-  build-frontend:
-    name: Build Frontend
+  build-cron-service:
+    name: Build Backend (cron-service)
     runs-on: self-hosted
     needs:
       - detect-release
-      - build-backend
-    strategy:
-      matrix:
-        app: [admin-web, owl-web, cron-web]
+      - verify
     steps:
       - uses: actions/checkout@v4
       - name: Check if app needs build
         id: check-app
         env:
-          APP: ${{ matrix.app }}
-          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
+          BACKEND_APPS: ${{ needs.detect-release.outputs.backend_apps }}
         run: |
-          case ",${FRONTEND_APPS}," in
-            *,${APP},*)
+          case ",${BACKEND_APPS}," in
+            *,cron-service,*)
               echo "skip=false" >> $GITHUB_OUTPUT
-              echo "Building ${APP}"
+              echo "Building cron-service"
               ;;
             *)
               echo "skip=true" >> $GITHUB_OUTPUT
-              echo "Skipping ${APP}, not in changed apps"
+              echo "Skipping cron-service, not in changed apps"
               ;;
           esac
       - name: Get version
         id: version
         if: steps.check-app.outputs.skip == 'false'
         run: |
-          VER=$(jq -r .version apps/${{ matrix.app }}/package.json)
+          VER=$(jq -r .version apps/cron-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
       - name: Build Docker image
         if: steps.check-app.outputs.skip == 'false'
         run: |
           docker build \
-            -t owl/${{ matrix.app }}:${{ steps.version.outputs.version }} \
-            -t owl/${{ matrix.app }}:latest \
-            -f apps/${{ matrix.app }}/Dockerfile .
+            -t owl/cron-service:${{ steps.version.outputs.version }} \
+            -t owl/cron-service:latest \
+            -f apps/cron-service/Dockerfile .
+
+  build-admin-web:
+    name: Build Frontend (admin-web)
+    runs-on: self-hosted
+    needs:
+      - detect-release
+      - build-api-service
+      - build-cron-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if app needs build
+        id: check-app
+        env:
+          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
+        run: |
+          case ",${FRONTEND_APPS}," in
+            *,admin-web,*)
+              echo "skip=false" >> $GITHUB_OUTPUT
+              echo "Building admin-web"
+              ;;
+            *)
+              echo "skip=true" >> $GITHUB_OUTPUT
+              echo "Skipping admin-web, not in changed apps"
+              ;;
+          esac
+      - name: Get version
+        id: version
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          VER=$(jq -r .version apps/admin-web/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          docker build \
+            -t owl/admin-web:${{ steps.version.outputs.version }} \
+            -t owl/admin-web:latest \
+            -f apps/admin-web/Dockerfile .
+
+  build-owl-web:
+    name: Build Frontend (owl-web)
+    runs-on: self-hosted
+    needs:
+      - detect-release
+      - build-api-service
+      - build-cron-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if app needs build
+        id: check-app
+        env:
+          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
+        run: |
+          case ",${FRONTEND_APPS}," in
+            *,owl-web,*)
+              echo "skip=false" >> $GITHUB_OUTPUT
+              echo "Building owl-web"
+              ;;
+            *)
+              echo "skip=true" >> $GITHUB_OUTPUT
+              echo "Skipping owl-web, not in changed apps"
+              ;;
+          esac
+      - name: Get version
+        id: version
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          VER=$(jq -r .version apps/owl-web/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          docker build \
+            -t owl/owl-web:${{ steps.version.outputs.version }} \
+            -t owl/owl-web:latest \
+            -f apps/owl-web/Dockerfile .
+
+  build-cron-web:
+    name: Build Frontend (cron-web)
+    runs-on: self-hosted
+    needs:
+      - detect-release
+      - build-api-service
+      - build-cron-service
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check if app needs build
+        id: check-app
+        env:
+          FRONTEND_APPS: ${{ needs.detect-release.outputs.frontend_apps }}
+        run: |
+          case ",${FRONTEND_APPS}," in
+            *,cron-web,*)
+              echo "skip=false" >> $GITHUB_OUTPUT
+              echo "Building cron-web"
+              ;;
+            *)
+              echo "skip=true" >> $GITHUB_OUTPUT
+              echo "Skipping cron-web, not in changed apps"
+              ;;
+          esac
+      - name: Get version
+        id: version
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          VER=$(jq -r .version apps/cron-web/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        if: steps.check-app.outputs.skip == 'false'
+        run: |
+          docker build \
+            -t owl/cron-web:${{ steps.version.outputs.version }} \
+            -t owl/cron-web:latest \
+            -f apps/cron-web/Dockerfile .
 
   deploy:
     name: Deploy to K3s
     runs-on: self-hosted
     needs:
       - detect-release
-      - build-backend
-      - build-frontend
-    if: always() && needs.detect-release.result == 'success' && (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
+      - build-api-service
+      - build-cron-service
+      - build-admin-web
+      - build-owl-web
+      - build-cron-web
+    if: always() && needs.detect-release.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-api-service.result == 'skipped') && (needs.build-cron-service.result == 'success' || needs.build-cron-service.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped')
     outputs:
       deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:
