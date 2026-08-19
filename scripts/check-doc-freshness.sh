@@ -15,14 +15,19 @@ cd "$ROOT"
 DOC="docs/PROJECT_STATE.md"
 [ -f "$DOC" ] || { echo "[ERROR] $DOC 缺失，请先运行 bash scripts/update-state.sh 生成"; exit 1; }
 
-# 版本 bump 只动 package.json，不算"代码"
-CODE_PATHSPEC='apps/*/src packages/*/src packages/*/prisma'
+# 版本 bump 只动 package.json，不算"代码"。
+# 注意：git log 的 pathspec 不做 glob 展开，必须先展开成具体目录。
+CODE_DIRS=""
+for p in apps/*/src packages/*/src packages/*/prisma; do
+  if [ -d "$p" ]; then CODE_DIRS="$CODE_DIRS $p"; fi
+done
+[ -n "$CODE_DIRS" ] || CODE_DIRS="."
 
 MODE="${1:-all}"
 ERROR_COUNT=0
 
 if [ "$MODE" = "--staged" ]; then
-  CODE_STAGED="$(git diff --cached --name-only --diff-filter=ACM -- $CODE_PATHSPEC 2>/dev/null)"
+  CODE_STAGED="$(git diff --cached --name-only --diff-filter=ACM -- $CODE_DIRS 2>/dev/null)"
   DOC_STAGED="$(git diff --cached --name-only --diff-filter=ACM -- "$DOC" 2>/dev/null)"
   if [ -n "$CODE_STAGED" ] && [ -z "$DOC_STAGED" ]; then
     echo "[ERROR] 源码有改动但未同步 ${DOC}（版本 bump 除外）"
@@ -30,7 +35,7 @@ if [ "$MODE" = "--staged" ]; then
     ERROR_COUNT=$((ERROR_COUNT + 1))
   fi
 else
-  LAST_CODE="$(git log -1 --format=%ct -- $CODE_PATHSPEC 2>/dev/null || echo 0)"
+  LAST_CODE="$(git log -1 --format=%ct -- $CODE_DIRS 2>/dev/null || echo 0)"
   LAST_DOC="$(git log -1 --format=%ct -- "$DOC" 2>/dev/null || echo 0)"
   if [ "${LAST_CODE:-0}" -gt "${LAST_DOC:-0}" ]; then
     echo "[ERROR] $DOC 落后于源码，运行 bash scripts/update-state.sh 并随改动一起提交"
