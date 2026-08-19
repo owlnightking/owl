@@ -23,7 +23,8 @@ owl/
 ├── packages/                   # 共享包（被一切依赖的最底层）
 │   ├── shared/                 # @owl/shared — 类型/常量/错误码/纯函数
 │   └── database/               # @owl/database — Prisma schema + migrations + seeds
-├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟/发版）
+├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟/发版/状态文档）
+├── docs/                       # PROJECT_STATE.md 状态快照 + decisions/ 决策日志（见 AGENTS.md 第八节）
 ├── .github/workflows/          # CI/CD（cd.yml）
 ├── docker-compose.yml          # 仅编排应用服务（中间件复用本机 docker）
 └── AGENTS.md                   # 开发规范 SSOT（改动代码前必读）
