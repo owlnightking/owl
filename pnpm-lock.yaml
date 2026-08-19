@@ -246,6 +246,9 @@ importers:
       axios:
         specifier: ^1.7.7
         version: 1.19.0
+      lodash:
+        specifier: ^4.17.21
+        version: 4.18.1
       react:
         specifier: ^19.0.0
         version: 19.2.8
