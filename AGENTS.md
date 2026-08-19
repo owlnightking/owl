@@ -89,4 +89,5 @@ apps/ow/               → CLI / 脚本工具
 2. 提交前：`pnpm verify:quick` 全绿。
 3. husky：pre-commit 跑 prettier --check 暂存文件 + AI 残渣增量扫描；pre-push 跑 `pnpm verify:quick`。
 4. 提交信息遵循约定式提交 `feat/fix/refactor/chore/docs/test/...`。
-5. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
+5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。
+6. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
