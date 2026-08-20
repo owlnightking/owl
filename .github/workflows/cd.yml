@@ -402,6 +402,7 @@ jobs:
     needs:
       - detect-release
       - deploy
+      - notify
     if: always()
     steps:
       - name: Write summary
