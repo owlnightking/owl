@@ -1,6 +1,6 @@
 {
   "name": "@owl/cron-service",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "private": true,
   "scripts": {
     "build": "nest build",
