@@ -11,6 +11,7 @@
 - Phase 3 (M4) 底座补全 + Cron：未开始
 - Phase 4 (M5) 部署交付：K3s 已部署，文档验收未走完
 - 范围扩张：mobile-web（飞书 OAuth，k8s NodePort 9263）已上线
+- CI/CD：CD 已改为 main push 触发（paths 命中 package.json + 版本门禁），`v*` tag 仅作版本标记
 
 ## 已知缺口（开工前确认，做完一项划一项）
 
