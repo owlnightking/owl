@@ -9,7 +9,6 @@
   },
   "scripts": {
     "prepare": "husky",
-    "cd:trigger:test": "echo cd-trigger-test",
     "build": "pnpm -r build",
     "dev": "bash scripts/dev.sh",
     "stop": "bash scripts/stop.sh",
