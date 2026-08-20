@@ -2,8 +2,11 @@ name: CD
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
+    paths:
+      - "package.json"
+      - "apps/*/package.json"
+      - "packages/*/package.json"
   workflow_dispatch:
 
 concurrency:
@@ -33,7 +36,7 @@ jobs:
 
           for app in api-service cron-service; do
             CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
-            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version || echo "0.0.0")
             if [ "$CURRENT" != "$PREVIOUS" ]; then
               if [ -z "$BACKEND" ]; then
                 BACKEND="${app}"
@@ -47,7 +50,7 @@ jobs:
 
           for app in admin-web owl-web cron-web mobile-web; do
             CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
-            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version)
+            PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version || echo "0.0.0")
             if [ "$CURRENT" != "$PREVIOUS" ]; then
               if [ -z "$FRONTEND" ]; then
                 FRONTEND="${app}"
@@ -321,7 +324,7 @@ jobs:
     needs:
       - deploy
       - detect-release
-    if: always()
+    if: needs.detect-release.outputs.should_deploy == 'true'
     steps:
       - name: Send notification
         env:
@@ -392,3 +395,23 @@ jobs:
                 }]
               }
             }"
+
+  release-summary:
+    name: Release Summary
+    runs-on: self-hosted
+    needs:
+      - detect-release
+      - deploy
+    if: always()
+    steps:
+      - name: Write summary
+        env:
+          SHOULD_DEPLOY: ${{ needs.detect-release.outputs.should_deploy }}
+          RELEASE_TYPE: ${{ needs.detect-release.outputs.release_type }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+        run: |
+          if [ "$SHOULD_DEPLOY" = "true" ]; then
+            echo "🚀 发布已执行（$RELEASE_TYPE），部署结果：$DEPLOY_RESULT（详见飞书通知）" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ 版本未变化，跳过发布（本次 push 命中 package.json 但版本号未变，未创建任何构建）" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -93,7 +93,7 @@ apps/ow/               → CLI / 脚本工具
 2. 提交前：`pnpm verify:quick` 全绿。
 3. husky：pre-commit 检测源码改动 → 自动重生成并暂存 `PROJECT_STATE.md` → prettier --check 暂存文件 → AI 残渣增量扫描 → 文档新鲜度增量检查；pre-push 跑 `pnpm verify:quick`。
 4. 提交信息遵循约定式提交 `feat/fix/refactor/chore/docs/test/...`。
-5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。`release.sh` 会在 bump commit 后自动打版本 tag（`v<app>-<version>` 单 app / `v<version>` all）；**CD 仅监听 `v*` tag push 触发，push main 不触发**。
+5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。`release.sh` 会在 bump commit 后自动打版本 tag（`v<app>-<version>` 单 app / `v<version>` all）仅作版本标记；**CD 监听 main push 的 `package.json` 变化，由 `detect-release` 版本门禁决定是否部署（非版本变化自动跳过）**。
 6. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
 
 ## 八、文档新鲜度（Documentation Harness）

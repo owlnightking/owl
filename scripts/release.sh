@@ -112,6 +112,6 @@ fi
 echo ""
 echo "=== Release prepared: ${APP} → ${NEW_VERSION} ==="
 echo "Commit: ${COMMIT_MSG}"
-echo "Tag:    ${TAG}"
+echo "Tag:    ${TAG}（仅版本标记，可选推送）"
 echo "Review with: git log -1 && git show ${TAG}"
-echo "Push when ready: git push origin main && git push origin ${TAG}"
+echo "Push when ready: git push origin main"
