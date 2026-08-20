@@ -324,7 +324,7 @@ jobs:
     needs:
       - deploy
       - detect-release
-    if: needs.detect-release.outputs.should_deploy == 'true'
+    if: always() && needs.detect-release.outputs.should_deploy == 'true'
     steps:
       - name: Send notification
         env:
