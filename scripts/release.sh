@@ -14,7 +14,7 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="${1:-}"
 BUMP="${2:-}"
 
-VALID_APPS=(all api-service cron-service admin-web owl-web cron-web mobile-web)
+VALID_APPS=(all api-service cron-service admin-web owl-web cron-web mobile-web portal)
 VALID_BUMPS=(patch minor major)
 
 usage() {

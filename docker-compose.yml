@@ -26,3 +26,58 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+
+  portal:
+    build:
+      context: .
+      dockerfile: apps/portal/Dockerfile
+    container_name: owl-portal
+    ports:
+      - "5270:5270"
+    depends_on:
+      api-service:
+        condition: service_healthy
+
+  admin-web:
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+    container_name: owl-admin
+    ports:
+      - "5274:5274"
+    depends_on:
+      api-service:
+        condition: service_healthy
+
+  owl-web:
+    build:
+      context: .
+      dockerfile: apps/owl-web/Dockerfile
+    container_name: owl-web
+    ports:
+      - "5273:5273"
+    depends_on:
+      api-service:
+        condition: service_healthy
+
+  cron-web:
+    build:
+      context: .
+      dockerfile: apps/cron-web/Dockerfile
+    container_name: owl-cron-web
+    ports:
+      - "5275:5275"
+    depends_on:
+      api-service:
+        condition: service_healthy
+
+  mobile-web:
+    build:
+      context: .
+      dockerfile: apps/mobile-web/Dockerfile
+    container_name: owl-mobile
+    ports:
+      - "5276:5276"
+    depends_on:
+      api-service:
+        condition: service_healthy

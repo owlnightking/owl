@@ -174,7 +174,7 @@ check_frontend_boundary() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
     case "$file" in
-      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*)
+      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*|apps/portal/*)
         while IFS= read -r path; do
           [ -z "$path" ] && continue
           if echo "$path" | grep -qE "^(\.\./)+apps/"; then
