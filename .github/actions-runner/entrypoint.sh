@@ -16,6 +16,7 @@ REG_TOKEN=$(curl -s -X POST \
   --name "${RUNNER_NAME:-docker-runner}" \
   --labels "${RUNNER_LABELS:-self-hosted,linux,x64,docker}" \
   --work "_work" \
+  --replace \
   --unattended
 
 # 启动 Runner
