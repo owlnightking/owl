@@ -25,15 +25,15 @@
 
 <!-- AUTO-APPS-BEGIN -->
 
-| app          | 类型 | 版本   | 描述 |
-| ------------ | ---- | ------ | ---- |
-| admin-web    | 前端 | 0.1.32 |      |
-| api-service  | 后端 | 0.1.33 |      |
-| cron-service | 后端 | 0.1.27 |      |
-| cron-web     | 前端 | 0.1.32 |      |
-| mobile-web   | 前端 | 0.1.3  |      |
-| owl-web      | 前端 | 0.1.37 |      |
-| portal       | 前端 | 0.1.0  |      |
+| app          | 类型 | 版本  | 描述 |
+| ------------ | ---- | ----- | ---- |
+| admin-web    | 前端 | 0.2.1 |      |
+| api-service  | 后端 | 0.2.1 |      |
+| cron-service | 后端 | 0.2.1 |      |
+| cron-web     | 前端 | 0.2.1 |      |
+| mobile-web   | 前端 | 0.2.1 |      |
+| owl-web      | 前端 | 0.2.1 |      |
+| portal       | 前端 | 0.2.1 |      |
 
 <!-- AUTO-APPS-END -->
 
