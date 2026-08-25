@@ -14,9 +14,11 @@
     "@arco-design/web-react": "^2.66.0",
     "@owl/shared": "workspace:*",
     "axios": "^1.7.7",
+    "qiankun": "^2.10.16",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.28.0",
+    "vite-plugin-qiankun": "^1.0.15",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

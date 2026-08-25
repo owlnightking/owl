@@ -1,6 +1,7 @@
 import { Button, Layout as ArcoLayout, Menu, Message } from "@arco-design/web-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PROJECT_NAME } from "@owl/shared";
+import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { useAuthStore } from "../store/auth";
 
 const { Sider, Header, Content } = ArcoLayout;
@@ -9,6 +10,7 @@ const MENU_ITEMS = [
   { key: "/home", label: "概览" },
   { key: "/users", label: "用户管理" },
   { key: "/roles", label: "角色与权限" },
+  { key: "/permissions", label: "权限配置" },
   { key: "/audit-logs", label: "操作审计" },
 ];
 
@@ -17,6 +19,7 @@ export function Layout() {
   const location = useLocation();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const isQiankun = qiankunWindow.__POWERED_BY_QIANKUN__;
 
   const selectedKey = MENU_ITEMS.find((item) => location.pathname.startsWith(item.key))?.key ?? "/home";
 
@@ -24,6 +27,10 @@ export function Layout() {
     await logout();
     Message.success("已退出登录");
     window.location.href = "/api/auth/feishu/login?redirect=%2Fhome";
+  };
+
+  const handleBack = () => {
+    navigate("/portal/home", { replace: true });
   };
 
   return (
@@ -45,10 +52,19 @@ export function Layout() {
       </Sider>
       <ArcoLayout>
         <Header className="flex items-center justify-between border-b border-gray-100 bg-white px-6">
-          <div className="text-sm text-gray-500">欢迎，{user?.name ?? "用户"}</div>
-          <Button size="small" onClick={handleLogout}>
-            退出登录
-          </Button>
+          <div className="flex items-center gap-4">
+            {isQiankun && (
+              <Button size="small" onClick={handleBack}>
+                返回主页
+              </Button>
+            )}
+            <span className="text-sm text-gray-500">欢迎，{user?.name ?? "用户"}</span>
+          </div>
+          {!isQiankun && (
+            <Button size="small" onClick={handleLogout}>
+              退出登录
+            </Button>
+          )}
         </Header>
         <Content className="overflow-auto bg-gray-50 p-6">
           <Outlet />

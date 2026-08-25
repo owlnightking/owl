@@ -22,23 +22,26 @@ const OWL_WEB_PORT = readEnvPort("OWL_WEB_PORT", 5273);
 const ADMIN_WEB_PORT = readEnvPort("ADMIN_WEB_PORT", 5274);
 const CRON_WEB_PORT = readEnvPort("CRON_WEB_PORT", 5275);
 const MOBILE_WEB_PORT = readEnvPort("MOBILE_WEB_PORT", 5276);
+const PORTAL_WEB_PORT = readEnvPort("PORTAL_WEB_PORT", 5270);
 const API_PORT = readEnvPort("API_PORT", 5100);
 
 const ROUTES = [
+  { prefix: "/portal", port: PORTAL_WEB_PORT },
   { prefix: "/owl", port: OWL_WEB_PORT },
   { prefix: "/admin", port: ADMIN_WEB_PORT },
   { prefix: "/cron", port: CRON_WEB_PORT },
-  { prefix: "/m", port: MOBILE_WEB_PORT },
+  { prefix: "/mobile", port: MOBILE_WEB_PORT },
 ];
 
 const findTarget = (url) => {
   const pathname = url.split("?")[0];
-  if (pathname === "/" || pathname === "/owl") {
+  if (pathname === "/owl") {
     return { redirect: "/owl/" };
   }
   if (pathname === "/admin") return { redirect: "/admin/" };
   if (pathname === "/cron") return { redirect: "/cron/" };
-  if (pathname === "/m") return { redirect: "/m/" };
+  if (pathname === "/mobile") return { redirect: "/mobile/" };
+  if (pathname === "/portal") return { redirect: "/portal/" };
   for (const r of ROUTES) {
     if (pathname === r.prefix || pathname.startsWith(`${r.prefix}/`)) {
       return { port: r.port, prefix: r.prefix };
@@ -47,7 +50,8 @@ const findTarget = (url) => {
   if (pathname.startsWith("/api")) {
     return { port: API_PORT, prefix: "/api" };
   }
-  return { port: OWL_WEB_PORT, prefix: "/owl" };
+  // 根路径直接代理到 portal
+  return { port: PORTAL_WEB_PORT, prefix: "/" };
 };
 
 const HOP_BY_HOP = new Set([
@@ -74,12 +78,14 @@ const server = http.createServer((req, res) => {
     res.end();
     return;
   }
+  // 根路径代理到 portal 时，保持原路径
+  const proxyPath = req.url;
   const proxy = http.request(
     {
       host: "127.0.0.1",
       port: target.port,
       method: req.method,
-      path: req.url,
+      path: proxyPath,
       headers: cleanHeaders(req.headers),
     },
     (pres) => {
@@ -133,7 +139,9 @@ server.on("upgrade", (req, socket, head) => {
 
 server.listen(GATEWAY_PORT, "0.0.0.0", () => {
   console.log(`[gateway] listening on http://localhost:${GATEWAY_PORT}`);
-  console.log(
-    `[gateway]   / -> /owl/  /admin/ -> :${ADMIN_WEB_PORT}  /cron/ -> :${CRON_WEB_PORT}  /m/ -> :${MOBILE_WEB_PORT}`
-  );
+  console.log(`[gateway]   / -> portal (工作台)`);
+  console.log(`[gateway]   /admin/ -> :${ADMIN_WEB_PORT}`);
+  console.log(`[gateway]   /owl/ -> :${OWL_WEB_PORT}`);
+  console.log(`[gateway]   /cron/ -> :${CRON_WEB_PORT}`);
+  console.log(`[gateway]   /mobile/ -> :${MOBILE_WEB_PORT}`);
 });

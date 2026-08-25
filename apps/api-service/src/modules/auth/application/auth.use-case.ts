@@ -23,7 +23,7 @@ interface LoginContext {
   clientName: string;
 }
 
-const ALLOWED_REDIRECT_PREFIXES = ["/owl/", "/admin/", "/cron/", "/m/"];
+const ALLOWED_REDIRECT_PREFIXES = ["/owl/", "/admin/", "/cron/", "/mobile/"];
 
 @Injectable()
 export class AuthUseCase implements AuthService {

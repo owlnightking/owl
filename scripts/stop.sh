@@ -13,8 +13,9 @@ GATEWAY_PORT="$(grep -E '^GATEWAY_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d 
 OWL_WEB_PORT="$(grep -E '^OWL_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 ADMIN_WEB_PORT="$(grep -E '^ADMIN_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 CRON_WEB_PORT="$(grep -E '^CRON_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
+PORTAL_WEB_PORT="$(grep -E '^PORTAL_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 
-PORTS=("${GATEWAY_PORT:-5173}" "${API_PORT:-3000}" "${CRON_PORT:-3001}" "${OWL_WEB_PORT:-5273}" "${ADMIN_WEB_PORT:-5274}" "${CRON_WEB_PORT:-5275}")
+PORTS=("${GATEWAY_PORT:-5173}" "${API_PORT:-3000}" "${CRON_PORT:-3001}" "${OWL_WEB_PORT:-5273}" "${ADMIN_WEB_PORT:-5274}" "${CRON_WEB_PORT:-5275}" "${PORTAL_WEB_PORT:-5270}")
 
 STOPPED=0
 

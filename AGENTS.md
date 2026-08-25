@@ -28,6 +28,7 @@ pnpm test             # 单元测试
 - **TODO/FIXME 必须带 @责任人**（如 `// TODO(@zhangsan): trailingItem 去重`）。禁止裸 TODO。
 - **空 catch 禁止**：异常必须记录或重新抛出。
 - **外部输入校验**：Controller 层入参必须经过 DTO + class-validator；禁止直接 `@Body() body: any`。
+- **禁止颜文字/emoji**：源码中禁止直接使用 Unicode emoji 字符（如 📢✅❤️🚀⚙️ 等）。所有图标统一使用 UI 库的 Icon 组件（`@arco-design/web-react/icon` 或 `@arco-design/mobile-react/icon`）。
 
 以上规则由 `scripts/scan-ai-residue.sh` 扫描兜底（`--staged` 用于 pre-commit 增量扫描）。
 

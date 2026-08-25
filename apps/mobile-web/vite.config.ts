@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const rootEnv = loadEnv(mode, resolve(__dirname, "../.."), "");
   const apiPort = rootEnv.API_PORT ?? "3000";
   return {
-    base: "/m/",
+    base: "/mobile/",
     plugins: [react()],
     server: {
       host: "127.0.0.1",

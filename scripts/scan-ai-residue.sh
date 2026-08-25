@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scan-ai-residue.sh — AI 残渣扫描（9 类）
+# scan-ai-residue.sh — AI 残渣扫描（10 类）
 # 用法: bash scripts/scan-ai-residue.sh [--staged]
 # 存在 ERROR 时 exit 1
 
@@ -160,6 +160,18 @@ check_unvalidated_input() {
   done <<< "$TS_FILES"
 }
 check_unvalidated_input
+
+# 10. 禁止颜文字/emoji（图标应使用 UI 库 Icon 组件）
+check_emoji() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      error "$file" "禁止使用颜文字/emoji，应使用 UI 库 Icon 组件: $(echo "$line" | sed 's/^[0-9]*: *//')"
+    done < <(grep -Pn '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}]' "$file" 2>/dev/null)
+  done <<< "$TS_FILES"
+}
+check_emoji
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ]; then

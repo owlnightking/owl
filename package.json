@@ -43,7 +43,10 @@
     "version:cron-web:major": "bash scripts/release.sh cron-web major",
     "version:mobile-web:patch": "bash scripts/release.sh mobile-web patch",
     "version:mobile-web:minor": "bash scripts/release.sh mobile-web minor",
-    "version:mobile-web:major": "bash scripts/release.sh mobile-web major"
+    "version:mobile-web:major": "bash scripts/release.sh mobile-web major",
+    "version:portal:patch": "bash scripts/release.sh portal patch",
+    "version:portal:minor": "bash scripts/release.sh portal minor",
+    "version:portal:major": "bash scripts/release.sh portal major"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

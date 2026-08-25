@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { PROJECT_NAME } from "@owl/shared";
+import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { AuthGuard } from "./components/AuthGuard";
 
 function HomePage() {
@@ -13,14 +14,24 @@ function HomePage() {
   );
 }
 
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
+  if (qiankunWindow.__POWERED_BY_QIANKUN__) {
+    return <AppRoutes />;
+  }
+
   return (
     <AuthGuard>
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
+      <AppRoutes />
     </AuthGuard>
   );
 }

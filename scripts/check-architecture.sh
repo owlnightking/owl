@@ -192,9 +192,12 @@ check_frontend_code_standards() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
     case "$file" in
-      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*)
+      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*|apps/portal/*)
         if grep -qE ': *any\b|\bas any\b|<any>' "$file" 2>/dev/null; then
           error "$file" "前端禁止 any"
+        fi
+        if grep -Pq '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}]' "$file" 2>/dev/null; then
+          error "$file" "前端禁止使用颜文字/emoji，应使用 UI 库 Icon 组件"
         fi
         ;;
     esac

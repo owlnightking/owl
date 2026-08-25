@@ -1,0 +1,33 @@
+{
+  "name": "@owl/portal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"portal: no tests yet\""
+  },
+  "dependencies": {
+    "@arco-design/web-react": "^2.66.0",
+    "@owl/permission": "workspace:*",
+    "@owl/shared": "workspace:*",
+    "axios": "^1.7.7",
+    "qiankun": "^2.10.16",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^6.28.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.5.4",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.2",
+    "vite": "^6.0.0"
+  }
+}
