@@ -1,13 +1,21 @@
 import { Controller, Get, HttpStatus, Inject, Post, Query, Req, Res, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Request, Response } from "express";
-import { IsString } from "class-validator";
+import { IsOptional, IsString } from "class-validator";
 import { ok } from "../../../common/response/api-response";
 import { AUTH_SERVICE, type AuthService } from "../domain/auth.ports";
 
 export class FeishuLoginQueryDto {
   @IsString()
   redirect!: string;
+
+  @IsString()
+  @IsOptional()
+  lang?: string;
+
+  @IsString()
+  @IsOptional()
+  open_in_browser?: string;
 }
 
 export class FeishuCallbackQueryDto {
