@@ -291,7 +291,7 @@ jobs:
       - build-owl-web
       - build-cron-web
       - build-mobile-web
-    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-cron-service.result == 'success' || needs.build-portal.result == 'success' || needs.build-admin-web.result == 'success' || needs.build-owl-web.result == 'success' || needs.build-cron-web.result == 'success' || needs.build-mobile-web.result == 'success')
+    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-api-service.result == 'skipped') && (needs.build-cron-service.result == 'success' || needs.build-cron-service.result == 'skipped') && (needs.build-portal.result == 'success' || needs.build-portal.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped') && (needs.build-mobile-web.result == 'success' || needs.build-mobile-web.result == 'skipped')
     outputs:
       deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:
