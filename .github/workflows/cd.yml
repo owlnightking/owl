@@ -124,6 +124,7 @@ jobs:
   build-api-service:
     name: Build Backend (api-service)
     runs-on: self-hosted
+    timeout-minutes: 15
     needs:
       - detect-release
       - verify
@@ -144,6 +145,7 @@ jobs:
 
   build-cron-service:
     name: Build Backend (cron-service)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
@@ -165,6 +167,7 @@ jobs:
 
   build-admin-web:
     name: Build Frontend (admin-web)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
@@ -188,6 +191,7 @@ jobs:
 
   build-owl-web:
     name: Build Frontend (owl-web)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
@@ -211,6 +215,7 @@ jobs:
 
   build-cron-web:
     name: Build Frontend (cron-web)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
@@ -234,6 +239,7 @@ jobs:
 
   build-portal:
     name: Build Frontend (portal)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
@@ -257,6 +263,7 @@ jobs:
 
   build-mobile-web:
     name: Build Frontend (mobile-web)
+    timeout-minutes: 15
     runs-on: self-hosted
     needs:
       - detect-release
