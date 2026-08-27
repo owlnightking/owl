@@ -1,12 +1,6 @@
 name: CD
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "package.json"
-      - "apps/*/package.json"
-      - "packages/*/package.json"
   workflow_dispatch:
 
 concurrency:
@@ -48,7 +42,7 @@ jobs:
             fi
           done
 
-          for app in admin-web owl-web cron-web mobile-web; do
+          for app in portal admin-web owl-web cron-web mobile-web; do
             CURRENT=$(git show HEAD:apps/${app}/package.json 2>/dev/null | jq -r .version)
             PREVIOUS=$(git show HEAD~1:apps/${app}/package.json 2>/dev/null | jq -r .version || echo "0.0.0")
             if [ "$CURRENT" != "$PREVIOUS" ]; then
@@ -70,7 +64,7 @@ jobs:
             echo "No version changes detected, skipping deployment."
           else
             CHANGED_APPS="${BACKEND}${FRONTEND:+,$FRONTEND}"
-            if [ "$CHANGED_APPS" = "api-service,cron-service,admin-web,owl-web,cron-web,mobile-web" ]; then
+            if [ "$CHANGED_APPS" = "api-service,cron-service,portal,admin-web,owl-web,cron-web,mobile-web" ]; then
               RELEASE_TYPE="all"
             else
               RELEASE_TYPE="single"
@@ -213,6 +207,29 @@ jobs:
             -t owl/cron-web:latest \
             -f apps/cron-web/Dockerfile .
 
+  build-portal:
+    name: Build Frontend (portal)
+    runs-on: self-hosted
+    needs:
+      - detect-release
+      - verify
+      - build-api-service
+      - build-cron-service
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'portal')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get version
+        id: version
+        run: |
+          VER=$(jq -r .version apps/portal/package.json)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t owl/portal:${{ steps.version.outputs.version }} \
+            -t owl/portal:latest \
+            -f apps/portal/Dockerfile .
+
   build-mobile-web:
     name: Build Frontend (mobile-web)
     runs-on: self-hosted
@@ -244,11 +261,12 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
+      - build-portal
       - build-admin-web
       - build-owl-web
       - build-cron-web
       - build-mobile-web
-    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-api-service.result == 'skipped') && (needs.build-cron-service.result == 'success' || needs.build-cron-service.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped') && (needs.build-mobile-web.result == 'success' || needs.build-mobile-web.result == 'skipped')
+    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-api-service.result == 'skipped') && (needs.build-cron-service.result == 'success' || needs.build-cron-service.result == 'skipped') && (needs.build-portal.result == 'success' || needs.build-portal.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped') && (needs.build-mobile-web.result == 'success' || needs.build-mobile-web.result == 'skipped')
     outputs:
       deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:

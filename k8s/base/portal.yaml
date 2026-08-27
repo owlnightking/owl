@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal
+  namespace: owl
+  labels:
+    app: portal
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: portal
+  template:
+    metadata:
+      labels:
+        app: portal
+    spec:
+      containers:
+        - name: portal
+          image: owl/portal:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5270
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5270
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5270
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portal
+  namespace: owl
+spec:
+  selector:
+    app: portal
+  ports:
+    - port: 5270
+      targetPort: 5270
+  type: ClusterIP

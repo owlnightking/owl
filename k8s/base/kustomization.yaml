@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - api-service.yaml
   - api-service-config.yaml
+  - portal.yaml
   - admin-web.yaml
   - owl-web.yaml
   - cron-web.yaml
