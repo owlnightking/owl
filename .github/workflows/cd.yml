@@ -1,7 +1,12 @@
 name: CD
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "apps/*/package.json"
+      - "packages/*/package.json"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
