@@ -142,6 +142,9 @@ jobs:
             -t owl/api-service:${{ steps.version.outputs.version }} \
             -t owl/api-service:latest \
             -f apps/api-service/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-cron-service:
     name: Build Backend (cron-service)
@@ -164,6 +167,9 @@ jobs:
             -t owl/cron-service:${{ steps.version.outputs.version }} \
             -t owl/cron-service:latest \
             -f apps/cron-service/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-admin-web:
     name: Build Frontend (admin-web)
@@ -188,6 +194,9 @@ jobs:
             -t owl/admin-web:${{ steps.version.outputs.version }} \
             -t owl/admin-web:latest \
             -f apps/admin-web/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-owl-web:
     name: Build Frontend (owl-web)
@@ -212,6 +221,9 @@ jobs:
             -t owl/owl-web:${{ steps.version.outputs.version }} \
             -t owl/owl-web:latest \
             -f apps/owl-web/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-cron-web:
     name: Build Frontend (cron-web)
@@ -236,6 +248,9 @@ jobs:
             -t owl/cron-web:${{ steps.version.outputs.version }} \
             -t owl/cron-web:latest \
             -f apps/cron-web/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-portal:
     name: Build Frontend (portal)
@@ -260,6 +275,9 @@ jobs:
             -t owl/portal:${{ steps.version.outputs.version }} \
             -t owl/portal:latest \
             -f apps/portal/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   build-mobile-web:
     name: Build Frontend (mobile-web)
@@ -284,6 +302,9 @@ jobs:
             -t owl/mobile-web:${{ steps.version.outputs.version }} \
             -t owl/mobile-web:latest \
             -f apps/mobile-web/Dockerfile .
+      - name: Clean build cache
+        if: always()
+        run: docker builder prune -f
 
   deploy:
     name: Deploy to K3s
