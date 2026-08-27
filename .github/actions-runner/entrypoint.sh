@@ -3,6 +3,17 @@ set -e
 
 cd /home/runner
 
+# 修复 Docker socket 权限（每次启动都执行）
+sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+
+# 创建 wrapper 脚本确保每个 job 都有正确权限
+sudo tee /usr/local/bin/docker-wrapper > /dev/null <<'EOF'
+#!/bin/bash
+sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+exec /usr/bin/docker "$@"
+EOF
+sudo chmod +x /usr/local/bin/docker-wrapper
+
 # 如果 runner 已配置（.runner 文件存在），直接启动
 if [ -f .runner ]; then
   echo "Runner already configured, starting directly..."

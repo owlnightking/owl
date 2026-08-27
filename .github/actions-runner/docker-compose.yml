@@ -4,7 +4,8 @@ services:
     image: owl/github-runner:latest
     container_name: github-runner
     restart: unless-stopped
-    user: root
+    group_add:
+      - docker
     environment:
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       ORG_NAME: owlnightking
