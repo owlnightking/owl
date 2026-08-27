@@ -3,6 +3,13 @@ set -e
 
 cd /home/runner
 
+# 如果 runner 已配置（.runner 文件存在），直接启动
+if [ -f .runner ]; then
+  echo "Runner already configured, starting directly..."
+  ./run.sh
+  exit $?
+fi
+
 # 获取注册 Token
 REG_TOKEN=$(curl -s -X POST \
   -H "Authorization: token ${GITHUB_TOKEN}" \
