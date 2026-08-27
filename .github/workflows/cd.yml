@@ -64,7 +64,26 @@ jobs:
 
           ALL_VERSIONS="${BACKEND_VERSIONS} ${FRONTEND_VERSIONS}"
 
-          if [ -z "$BACKEND" ] && [ -z "$FRONTEND" ]; then
+          # workflow_dispatch 总是触发部署
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "release_type=manual" >> $GITHUB_OUTPUT
+            echo "backend_apps=api-service,cron-service" >> $GITHUB_OUTPUT
+            echo "frontend_apps=portal,admin-web,owl-web,cron-web,mobile-web" >> $GITHUB_OUTPUT
+            # 获取当前所有版本
+            BACKEND_VERSIONS=""
+            FRONTEND_VERSIONS=""
+            for app in api-service cron-service; do
+              VER=$(jq -r .version apps/${app}/package.json 2>/dev/null || echo "0.0.0")
+              BACKEND_VERSIONS="${BACKEND_VERSIONS:+$BACKEND_VERSIONS }${app}:${VER}"
+            done
+            for app in portal admin-web owl-web cron-web mobile-web; do
+              VER=$(jq -r .version apps/${app}/package.json 2>/dev/null || echo "0.0.0")
+              FRONTEND_VERSIONS="${FRONTEND_VERSIONS:+$FRONTEND_VERSIONS }${app}:${VER}"
+            done
+            echo "app_versions=${BACKEND_VERSIONS} ${FRONTEND_VERSIONS}" >> $GITHUB_OUTPUT
+            echo "Manual deployment triggered"
+          elif [ -z "$BACKEND" ] && [ -z "$FRONTEND" ]; then
             echo "should_deploy=false" >> $GITHUB_OUTPUT
             echo "release_type=none" >> $GITHUB_OUTPUT
             echo "No version changes detected, skipping deployment."
