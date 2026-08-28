@@ -464,17 +464,22 @@ jobs:
           else
             echo "✅ 版本未变化，跳过发布（本次 push 命中 package.json 但版本号未变，未创建任何构建）" >> "$GITHUB_STEP_SUMMARY"
           fi
-
-  cleanup:
-    name: Cleanup
-    runs-on: self-hosted
-    needs:
-      - notify
-    if: always()
-    steps:
-      - name: Clean docker build cache
+      - name: Clean runner workspace
+        run: |
+          echo "Cleaning runner workspace..."
+          rm -rf "${{ github.workspace }}/*"
+          find /runner/_work -maxdepth 1 -type d -name "*" -mtime +7 -exec rm -rf {} \; 2>/dev/null || true
+          echo "Runner workspace cleaned"
+      - name: Clean Docker build cache
         run: |
           echo "Pruning docker build cache..."
           docker builder prune -f
-          echo "Pruning unused images..."
+      - name: Clean old Docker images
+        run: |
+          echo "Cleaning old owl images from host docker (keeping only latest)..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            docker rmi "$ref" >/dev/null 2>&1 && echo "removed $ref"
+          done
           docker image prune -f
