@@ -74,12 +74,17 @@ else
   CHANGED_FILES+=("apps/${APP}/package.json")
 fi
 
-# 只 add 被修改的 package.json
+# 更新 PROJECT_STATE.md，使其与最新版本一致
+echo "更新 docs/PROJECT_STATE.md ..."
+bash scripts/update-state.sh || { echo "warning: update-state.sh 失败，跳过状态文档更新"; }
+
+# add 被修改的 package.json 和 PROJECT_STATE.md
 for f in "${CHANGED_FILES[@]}"; do
   if [ -f "$f" ]; then
     git add "$f"
   fi
 done
+git add docs/PROJECT_STATE.md
 
 # 获取新版本号
 if [ "$APP" = "all" ]; then
