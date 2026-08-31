@@ -2,7 +2,7 @@ import { registerMicroApps, start, prefetchApps } from "qiankun";
 
 const isDev = import.meta.env.DEV;
 
-function getEntry(name: string, devPort: number, prodPath: string): string {
+function getEntry(_name: string, devPort: number, prodPath: string): string {
   if (isDev) {
     return `http://${window.location.hostname}:${devPort}${prodPath}`;
   }

@@ -62,7 +62,7 @@ check_filter_entity
 check_id_generation
 
 echo "check-feature-rules.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
-if [ "$ERROR_COUNT" -gt 0 ]; then
+if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
   exit 1
 fi
 exit 0

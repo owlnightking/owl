@@ -12,4 +12,5 @@ if [ -n "$STAGED" ]; then
   bash scripts/check-staged-typecheck.sh
   bash scripts/scan-ai-residue.sh --staged
   bash scripts/check-doc-freshness.sh --staged
+  bash scripts/check-staged-feature-rules.sh
 fi

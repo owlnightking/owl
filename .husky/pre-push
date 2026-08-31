@@ -1,1 +1,1 @@
-pnpm verify:quick && pnpm feature:check
+pnpm verify:quick

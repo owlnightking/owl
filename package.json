@@ -12,7 +12,7 @@
     "build": "pnpm -r build",
     "dev": "bash scripts/dev.sh",
     "stop": "bash scripts/stop.sh",
-    "verify:quick": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm arch:check && pnpm doc:check && bash scripts/scan-ai-residue.sh",
+    "verify:quick": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm arch:check && pnpm doc:check && bash scripts/scan-ai-residue.sh && bash scripts/check-feature-rules.sh",
     "verify:full": "pnpm verify:quick && pnpm smoke",
     "state:update": "bash scripts/update-state.sh",
     "doc:check": "bash scripts/check-doc-freshness.sh",
