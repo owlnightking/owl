@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-RUN corepack enable
+RUN npm install -g pnpm@10.12.4
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/package.json
 COPY apps/admin-web/package.json apps/admin-web/package.json

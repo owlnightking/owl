@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-RUN corepack enable
+RUN npm install -g pnpm@10.12.4
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/database/package.json packages/database/package.json
@@ -12,7 +12,7 @@ RUN pnpm --filter @owl/cron-service build
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
-RUN corepack enable && apk add --no-cache openssl
+RUN npm install -g pnpm@10.12.4 && apk add --no-cache openssl
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages ./packages
