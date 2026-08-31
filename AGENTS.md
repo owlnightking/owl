@@ -11,7 +11,7 @@ pnpm format:check     # Prettier 格式校验
 pnpm arch:check       # 架构依赖方向校验
 pnpm doc:check        # 文档新鲜度（PROJECT_STATE.md 是否落后于源码）
 pnpm state:update     # 重新生成 PROJECT_STATE.md 自动段（改代码后必须跑）
-pnpm verify:quick     # = 以上五项组合，CI 与 pre-push 使用
+pnpm verify:quick     # = 以上五项 + 残渣扫描，CI / pre-commit / pre-push 使用
 pnpm verify:full      # = verify:quick + smoke
 pnpm test             # 单元测试
 ```

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scan-ai-residue.sh — AI 残渣扫描（10 类）
 # 用法: bash scripts/scan-ai-residue.sh [--staged]
-# 存在 ERROR 时 exit 1
+# 存在 ERROR 或 WARN 时 exit 1
 
 set -uo pipefail
 
@@ -174,7 +174,7 @@ check_emoji() {
 check_emoji
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
-if [ "$ERROR_COUNT" -gt 0 ]; then
+if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
   exit 1
 fi
 exit 0

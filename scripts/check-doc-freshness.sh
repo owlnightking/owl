@@ -2,7 +2,7 @@
 # check-doc-freshness.sh — 代码更新但 docs/PROJECT_STATE.md 未同步则 ERROR
 # 用法: bash scripts/check-doc-freshness.sh [--staged]
 # 原理：基于 git 提交历史比较时间（不依赖文件系统 mtime，避免 checkout 误报）。
-#   --staged（pre-commit）: 暂存区有源码改动但未同时暂存状态文档 → ERROR
+#   --staged（pre-commit）: 暂存区有源码改动但文档落后于源码最新提交 → ERROR
 #   all（verify:quick/CI）: 源码最近提交晚于状态文档最近提交 → ERROR
 # 代码路径仅统计 src 与 prisma，排除 package.json 版本 bump。
 
@@ -30,9 +30,13 @@ if [ "$MODE" = "--staged" ]; then
   CODE_STAGED="$(git diff --cached --name-only --diff-filter=ACM -- $CODE_DIRS 2>/dev/null)"
   DOC_STAGED="$(git diff --cached --name-only --diff-filter=ACM -- "$DOC" 2>/dev/null)"
   if [ -n "$CODE_STAGED" ] && [ -z "$DOC_STAGED" ]; then
-    echo "[ERROR] 源码有改动但未同步 ${DOC}（版本 bump 除外）"
-    echo "        运行: bash scripts/update-state.sh && git add ${DOC}"
-    ERROR_COUNT=$((ERROR_COUNT + 1))
+    LAST_CODE="$(git log -1 --format=%ct -- $CODE_DIRS 2>/dev/null || echo 0)"
+    LAST_DOC="$(git log -1 --format=%ct -- "$DOC" 2>/dev/null || echo 0)"
+    if [ "${LAST_CODE:-0}" -gt "${LAST_DOC:-0}" ]; then
+      echo "[ERROR] 源码有改动但未同步 ${DOC}（版本 bump 除外）"
+      echo "        运行: bash scripts/update-state.sh && git add ${DOC}"
+      ERROR_COUNT=$((ERROR_COUNT + 1))
+    fi
   fi
 else
   LAST_CODE="$(git log -1 --format=%ct -- $CODE_DIRS 2>/dev/null || echo 0)"

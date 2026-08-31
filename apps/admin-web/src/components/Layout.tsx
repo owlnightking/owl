@@ -1,7 +1,6 @@
 import { Button, Layout as ArcoLayout, Menu, Message } from "@arco-design/web-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PROJECT_NAME } from "@owl/shared";
-import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { useAuthStore } from "../store/auth";
 
 const { Sider, Header, Content } = ArcoLayout;
@@ -19,7 +18,6 @@ export function Layout() {
   const location = useLocation();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const isQiankun = qiankunWindow.__POWERED_BY_QIANKUN__;
 
   const selectedKey = MENU_ITEMS.find((item) => location.pathname.startsWith(item.key))?.key ?? "/home";
 

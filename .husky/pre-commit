@@ -9,6 +9,7 @@ if [ -n "$STAGED" ]; then
   if [ -n "$FORMATTABLE" ]; then
     npx prettier --check $FORMATTABLE
   fi
+  bash scripts/check-staged-typecheck.sh
   bash scripts/scan-ai-residue.sh --staged
   bash scripts/check-doc-freshness.sh --staged
 fi
