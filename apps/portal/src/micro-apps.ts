@@ -6,7 +6,7 @@ function getEntry(_name: string, devPort: number, prodPath: string): string {
   if (isDev) {
     return `http://${window.location.hostname}:${devPort}${prodPath}`;
   }
-  return `${window.location.protocol}//${window.location.host}${prodPath}`;
+  return prodPath;
 }
 
 const MICRO_APPS = [
