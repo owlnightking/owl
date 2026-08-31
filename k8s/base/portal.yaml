@@ -52,4 +52,5 @@ spec:
   ports:
     - port: 5270
       targetPort: 5270
-  type: ClusterIP
+      nodePort: 9262
+  type: NodePort
