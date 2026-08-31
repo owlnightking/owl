@@ -33,17 +33,27 @@ if [ "$MODE" = "--staged" ]; then
     LAST_CODE="$(git log -1 --format=%ct -- $CODE_DIRS 2>/dev/null || echo 0)"
     LAST_DOC="$(git log -1 --format=%ct -- "$DOC" 2>/dev/null || echo 0)"
     if [ "${LAST_CODE:-0}" -gt "${LAST_DOC:-0}" ]; then
-      echo "[ERROR] 源码有改动但未同步 ${DOC}（版本 bump 除外）"
-      echo "        运行: bash scripts/update-state.sh && git add ${DOC}"
-      ERROR_COUNT=$((ERROR_COUNT + 1))
+      TMP_DOC="$(mktemp)"
+      bash scripts/update-state.sh >/dev/null 2>&1
+      DIFF=$(diff <(git show HEAD:"$DOC" 2>/dev/null || true) "$DOC" 2>/dev/null || true)
+      rm -f "$TMP_DOC"
+      if [ -n "$DIFF" ]; then
+        echo "[ERROR] 源码有改动但未同步 ${DOC}（版本 bump 除外）"
+        echo "        运行: bash scripts/update-state.sh && git add ${DOC}"
+        ERROR_COUNT=$((ERROR_COUNT + 1))
+      fi
     fi
   fi
 else
   LAST_CODE="$(git log -1 --format=%ct -- $CODE_DIRS 2>/dev/null || echo 0)"
   LAST_DOC="$(git log -1 --format=%ct -- "$DOC" 2>/dev/null || echo 0)"
   if [ "${LAST_CODE:-0}" -gt "${LAST_DOC:-0}" ]; then
-    echo "[ERROR] $DOC 落后于源码，运行 bash scripts/update-state.sh 并随改动一起提交"
-    ERROR_COUNT=$((ERROR_COUNT + 1))
+    bash scripts/update-state.sh >/dev/null 2>&1
+    DIFF=$(diff <(git show HEAD:"$DOC" 2>/dev/null || true) "$DOC" 2>/dev/null || true)
+    if [ -n "$DIFF" ]; then
+      echo "[ERROR] $DOC 落后于源码，运行 bash scripts/update-state.sh 并随改动一起提交"
+      ERROR_COUNT=$((ERROR_COUNT + 1))
+    fi
   fi
 fi
 

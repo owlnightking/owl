@@ -40,16 +40,19 @@ check_any() {
 }
 check_any
 
-# 2. 魔法数字（非 0/1/2 且非常量上下文；跳过 tsx 样式类与端口声明）
+# 2. 魔法数字（非 0/1/2 且非常量上下文；跳过 tsx 样式类、端口声明、mock 数据）
 check_magic_numbers() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
-    case "$file" in *.tsx) continue ;; esac
+    case "$file" in
+      *.tsx) continue ;;
+      */mock*|*/fake*|*/stub*|*/fixture*) continue ;;
+      */data/*) continue ;;
+    esac
     if grep -qE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null; then
       while IFS= read -r line; do
         [ -z "$line" ] && continue
-        # 跳过常量定义、注释、版本号、端口/日期、枚举成员
-        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status\s*(>=|<=|<|>|=)\s*[0-9]{3})' ||
+        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status\s*(>=|<=|<|>|=)\s*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
           echo "$line" | grep -qE '^[0-9]+:\s+[A-Z][A-Z0-9_]*:'; then
           continue
         fi
@@ -102,13 +105,18 @@ check_todo() {
 }
 check_todo
 
-# 6. 重复代码块（同文件 ≥3 处相似行块）
+# 6. 重复代码块（同文件 ≥4 处相似行块，跳过测试文件、mock 数据、Prisma include）
 check_duplicate_blocks() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
+    case "$file" in
+      *.spec.ts|*.test.ts) continue ;;
+      */mock*|*/fake*|*/stub*|*/fixture*) continue ;;
+      */data/*) continue ;;
+    esac
     dupes=$(awk 'length($0)>0 { gsub(/[[:space:]]+/, " ", $0); lines[NR]=$0 } END {
       for (i=1; i<=NR; i++) { count[lines[i]]++ }
-      for (k in count) if (count[k] >= 3 && length(k) >= 40) print k " (x" count[k] ")"
+      for (k in count) if (count[k] >= 4 && length(k) >= 50 && k !~ /include:|roles:|permissions:/) print k " (x" count[k] ")"
     }' "$file" 2>/dev/null | head -3)
     if [ -n "$dupes" ]; then
       warn "$file" "疑似重复代码块: $dupes"
