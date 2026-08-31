@@ -23,7 +23,7 @@ interface LoginContext {
   clientName: string;
 }
 
-const ALLOWED_REDIRECT_PREFIXES = ["/owl/", "/admin/", "/cron/", "/mobile/"];
+const ALLOWED_REDIRECT_PREFIXES = ["/", "/owl/", "/admin/", "/cron/", "/mobile/", "/portal/"];
 
 @Injectable()
 export class AuthUseCase implements AuthService {
@@ -35,11 +35,11 @@ export class AuthUseCase implements AuthService {
     @Inject(OAUTH_STATE_STORE_PORT) private readonly oauthStateStore: OAuthStateStorePort
   ) {}
 
-  async buildAuthorizeUrl(redirectPath: string): Promise<string> {
+  async buildAuthorizeUrl(redirectPath: string, redirectUri: string): Promise<string> {
     const safePath = this.normalizeRedirectPath(redirectPath);
     const state = randomBytes(24).toString("hex");
-    await this.oauthStateStore.save({ state, redirectPath: safePath, createdAt: Date.now() });
-    return this.feishu.buildAuthorizeUrl(state);
+    await this.oauthStateStore.save({ state, redirectPath: safePath, redirectUri, createdAt: Date.now() });
+    return this.feishu.buildAuthorizeUrl(state, redirectUri);
   }
 
   async handleCallback(code: string, state: string): Promise<{ tokens: AuthTokens; redirectPath: string }> {
@@ -47,7 +47,7 @@ export class AuthUseCase implements AuthService {
     if (!oauthState) {
       throw new UnauthorizedException("invalid oauth state");
     }
-    const user = await this.feishu.exchangeCodeForUser(code);
+    const user = await this.feishu.exchangeCodeForUser(code, oauthState.redirectUri);
     const stored = await this.users.upsertFromFeishu(user);
     await this.users.updateLoginTime(stored.id);
     const tokens = await this.issueTokens(stored.id, stored.unionId, "owl-web");

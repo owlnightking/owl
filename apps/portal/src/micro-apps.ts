@@ -1,21 +1,30 @@
 import { registerMicroApps, start, prefetchApps } from "qiankun";
 
+const isDev = import.meta.env.DEV;
+
+function getEntry(name: string, devPort: number, prodPath: string): string {
+  if (isDev) {
+    return `http://${window.location.hostname}:${devPort}${prodPath}`;
+  }
+  return `${window.location.protocol}//${window.location.hostname}${prodPath}`;
+}
+
 const MICRO_APPS = [
   {
     name: "admin",
-    entry: "//localhost:5274",
+    entry: getEntry("admin", 5274, "/admin/"),
     container: "#subapp-container",
     activeRule: "/admin",
   },
   {
     name: "owl",
-    entry: "//localhost:5273",
+    entry: getEntry("owl", 5273, "/owl/"),
     container: "#subapp-container",
     activeRule: "/owl",
   },
   {
     name: "cron",
-    entry: "//localhost:5275",
+    entry: getEntry("cron", 5275, "/cron/"),
     container: "#subapp-container",
     activeRule: "/cron",
   },

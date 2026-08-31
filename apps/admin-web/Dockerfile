@@ -10,6 +10,6 @@ RUN pnpm --filter @owl/shared build
 RUN pnpm --filter @owl/admin-web build
 
 FROM nginx:1.27-alpine AS runtime
-WORKDIR /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html/admin
 COPY --from=build /app/apps/admin-web/dist .
 COPY apps/admin-web/nginx.conf /etc/nginx/conf.d/default.conf

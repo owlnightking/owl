@@ -24,10 +24,10 @@ export class FeishuAuthClient implements AuthPort {
     }
   }
 
-  buildAuthorizeUrl(state: string): string {
+  buildAuthorizeUrl(state: string, redirectUri: string): string {
     const params = new URLSearchParams({
       app_id: this.appId,
-      redirect_uri: this.redirectUri,
+      redirect_uri: redirectUri,
       response_type: "code",
       state,
       scope: FEISHU_SCOPE,
@@ -35,7 +35,7 @@ export class FeishuAuthClient implements AuthPort {
     return `${FEISHU_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  async exchangeCodeForUser(code: string): Promise<FeishuUserInfo> {
+  async exchangeCodeForUser(code: string, redirectUri: string): Promise<FeishuUserInfo> {
     const tokenRes = await axios.post(
       FEISHU_TOKEN_URL,
       {
@@ -43,7 +43,7 @@ export class FeishuAuthClient implements AuthPort {
         code,
         client_id: this.appId,
         client_secret: this.appSecret,
-        redirect_uri: this.redirectUri,
+        redirect_uri: redirectUri,
       },
       { headers: { "Content-Type": "application/json" }, timeout: 10000 }
     );

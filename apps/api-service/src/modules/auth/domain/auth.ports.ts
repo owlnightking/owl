@@ -52,13 +52,14 @@ export const USER_REPOSITORY_PORT = Symbol("USER_REPOSITORY_PORT");
 export const OAUTH_STATE_STORE_PORT = Symbol("OAUTH_STATE_STORE_PORT");
 
 export interface AuthPort {
-  buildAuthorizeUrl(state: string): string;
-  exchangeCodeForUser(code: string): Promise<FeishuUserInfo>;
+  buildAuthorizeUrl(state: string, redirectUri: string): string;
+  exchangeCodeForUser(code: string, redirectUri: string): Promise<FeishuUserInfo>;
 }
 
 export interface OAuthState {
   state: string;
   redirectPath: string;
+  redirectUri: string;
   createdAt: number;
 }
 
@@ -83,7 +84,7 @@ export interface TokenPort {
 }
 
 export interface AuthService {
-  buildAuthorizeUrl(redirectPath: string): Promise<string>;
+  buildAuthorizeUrl(redirectPath: string, redirectUri: string): Promise<string>;
   handleCallback(code: string, state: string): Promise<{ tokens: AuthTokens; redirectPath: string }>;
   refreshSession(refreshToken: string): Promise<AuthTokens>;
   logout(accessToken: string, refreshToken: string): Promise<void>;

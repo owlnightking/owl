@@ -26,11 +26,12 @@ export function Layout() {
   const handleLogout = async () => {
     await logout();
     Message.success("已退出登录");
-    window.location.href = "/api/auth/feishu/login?redirect=%2Fhome";
+    window.location.href = "/api/auth/feishu/login?redirect=%2F";
   };
 
   const handleBack = () => {
-    navigate("/portal/home", { replace: true });
+    window.parent.postMessage({ type: "qiankun:navigate", path: "/" }, "*");
+    window.location.href = "/";
   };
 
   return (
@@ -53,18 +54,14 @@ export function Layout() {
       <ArcoLayout>
         <Header className="flex items-center justify-between border-b border-gray-100 bg-white px-6">
           <div className="flex items-center gap-4">
-            {isQiankun && (
-              <Button size="small" onClick={handleBack}>
-                返回主页
-              </Button>
-            )}
+            <Button size="small" onClick={handleBack}>
+              返回主页
+            </Button>
             <span className="text-sm text-gray-500">欢迎，{user?.name ?? "用户"}</span>
           </div>
-          {!isQiankun && (
-            <Button size="small" onClick={handleLogout}>
-              退出登录
-            </Button>
-          )}
+          <Button size="small" onClick={handleLogout}>
+            退出登录
+          </Button>
         </Header>
         <Content className="overflow-auto bg-gray-50 p-6">
           <Outlet />

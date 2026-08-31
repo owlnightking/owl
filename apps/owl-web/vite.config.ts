@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     server: {
-      host: "127.0.0.1",
+      host: "0.0.0.0",
       port: Number(rootEnv.OWL_WEB_PORT ?? 5273),
       cors: true,
       headers: {

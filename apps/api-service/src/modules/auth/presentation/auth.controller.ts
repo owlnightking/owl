@@ -43,8 +43,11 @@ export class AuthController {
   }
 
   @Get("feishu/login")
-  async feishuLogin(@Query() query: FeishuLoginQueryDto, @Res() res: Response) {
-    const url = await this.authService.buildAuthorizeUrl(query.redirect);
+  async feishuLogin(@Query() query: FeishuLoginQueryDto, @Req() req: Request, @Res() res: Response) {
+    const protocol = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = (req.headers["x-forwarded-host"] as string) || req.headers.host;
+    const redirectUri = `${protocol}://${host}/api/auth/feishu/callback`;
+    const url = await this.authService.buildAuthorizeUrl(query.redirect, redirectUri);
     return res.redirect(url);
   }
 

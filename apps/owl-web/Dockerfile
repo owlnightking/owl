@@ -10,6 +10,6 @@ RUN pnpm --filter @owl/shared build
 RUN pnpm --filter @owl/owl-web build
 
 FROM nginx:1.27-alpine AS runtime
-WORKDIR /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html/owl
 COPY --from=build /app/apps/owl-web/dist .
 COPY apps/owl-web/nginx.conf /etc/nginx/conf.d/default.conf

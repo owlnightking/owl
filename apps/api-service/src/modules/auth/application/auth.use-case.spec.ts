@@ -55,7 +55,12 @@ function buildMocks() {
   };
   const oauthStateStore: OAuthStateStorePort = {
     save: vi.fn(async () => {}),
-    findAndConsume: vi.fn(async () => ({ state: "state-1", redirectPath: "/owl/", createdAt: Date.now() })),
+    findAndConsume: vi.fn(async () => ({
+      state: "state-1",
+      redirectPath: "/owl/",
+      redirectUri: "http://localhost:3000/api/auth/feishu/callback",
+      createdAt: Date.now(),
+    })),
   };
   const useCase = new AuthUseCase(feishu, sessionStore, tokenService, users, oauthStateStore);
   return { feishu, sessionStore, tokenService, users, oauthStateStore, useCase };
@@ -65,7 +70,7 @@ describe("AuthUseCase", () => {
   describe("buildAuthorizeUrl", () => {
     it("保存 oauth state 并返回带 state 的授权地址", async () => {
       const { oauthStateStore, feishu, useCase } = buildMocks();
-      const url = await useCase.buildAuthorizeUrl("/owl/");
+      const url = await useCase.buildAuthorizeUrl("/owl/", "http://localhost:3000/api/auth/feishu/callback");
       expect(url).toContain("state=");
       expect(oauthStateStore.save).toHaveBeenCalledWith(expect.objectContaining({ redirectPath: "/owl/" }));
       expect(feishu.buildAuthorizeUrl).toHaveBeenCalledOnce();
@@ -73,13 +78,13 @@ describe("AuthUseCase", () => {
 
     it("将外部 URL 重定向路径回退到默认 /owl/", async () => {
       const { oauthStateStore, useCase } = buildMocks();
-      await useCase.buildAuthorizeUrl("https://evil.com/phish");
+      await useCase.buildAuthorizeUrl("https://evil.com/phish", "http://localhost:3000/api/auth/feishu/callback");
       expect(oauthStateStore.save).toHaveBeenCalledWith(expect.objectContaining({ redirectPath: "/owl/" }));
     });
 
     it("将不在白名单的前缀回退到默认 /owl/", async () => {
       const { oauthStateStore, useCase } = buildMocks();
-      await useCase.buildAuthorizeUrl("/other/");
+      await useCase.buildAuthorizeUrl("/other/", "http://localhost:3000/api/auth/feishu/callback");
       expect(oauthStateStore.save).toHaveBeenCalledWith(expect.objectContaining({ redirectPath: "/owl/" }));
     });
   });
@@ -89,7 +94,10 @@ describe("AuthUseCase", () => {
       const { oauthStateStore, feishu, sessionStore, tokenService, users, useCase } = buildMocks();
       const result = await useCase.handleCallback("code-1", "state-1");
       expect(oauthStateStore.findAndConsume).toHaveBeenCalledWith("state-1");
-      expect(feishu.exchangeCodeForUser).toHaveBeenCalledWith("code-1");
+      expect(feishu.exchangeCodeForUser).toHaveBeenCalledWith(
+        "code-1",
+        "http://localhost:3000/api/auth/feishu/callback"
+      );
       expect(users.upsertFromFeishu).toHaveBeenCalled();
       expect(users.updateLoginTime).toHaveBeenCalledWith("u1");
       expect(sessionStore.save).toHaveBeenCalled();

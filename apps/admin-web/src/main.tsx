@@ -19,7 +19,7 @@ function render(props: QiankunProps) {
   root = ReactDOM.createRoot(dom);
   root.render(
     <React.StrictMode>
-      <BrowserRouter basename={qiankunWindow.__POWERED_BY_QIANKUN__ ? "/admin" : "/"}>
+      <BrowserRouter basename="/admin">
         <App />
       </BrowserRouter>
     </React.StrictMode>
