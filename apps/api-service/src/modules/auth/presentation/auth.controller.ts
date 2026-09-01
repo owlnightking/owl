@@ -33,7 +33,6 @@ const REFRESH_COOKIE = "owl_refresh";
 export class AuthController {
   private readonly cookieDomain?: string;
   private readonly secure: boolean;
-  private readonly redirectUri: string;
 
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: AuthService,
@@ -41,18 +40,13 @@ export class AuthController {
   ) {
     this.cookieDomain = config.get<string>("COOKIE_DOMAIN") ?? undefined;
     this.secure = (config.get<string>("COOKIE_SECURE") ?? "false") === "true";
-    this.redirectUri = config.get<string>("FEISHU_REDIRECT_URI") ?? "";
   }
 
   @Get("feishu/login")
   async feishuLogin(@Query() query: FeishuLoginQueryDto, @Req() req: Request, @Res() res: Response) {
-    const redirectUri =
-      this.redirectUri ||
-      (() => {
-        const protocol = (req.headers["x-forwarded-proto"] as string) || req.protocol;
-        const host = (req.headers["x-forwarded-host"] as string) || req.headers.host;
-        return `${protocol}://${host}/api/auth/feishu/callback`;
-      })();
+    const protocol = (req.headers["x-forwarded-proto"] as string) || req.protocol;
+    const host = (req.headers["x-forwarded-host"] as string) || req.headers.host;
+    const redirectUri = `${protocol}://${host}/api/auth/feishu/callback`;
     const url = await this.authService.buildAuthorizeUrl(query.redirect, redirectUri);
     return res.redirect(url);
   }
