@@ -46,3 +46,11 @@ export function getRouteName(app: string, path: string): string | undefined {
   const appConfig = APP_ROUTES.find((a) => a.app === app);
   return appConfig?.routes.find((r) => r.path === path)?.name;
 }
+
+export function getAppConfig(app: string): AppRoutesConfig | undefined {
+  return APP_ROUTES.find((a) => a.app === app);
+}
+
+export function getAppName(app: string): string {
+  return getAppConfig(app)?.name ?? app;
+}

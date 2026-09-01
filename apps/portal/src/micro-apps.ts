@@ -1,4 +1,4 @@
-import { registerMicroApps, start, prefetchApps } from "qiankun";
+import { registerMicroApps, start } from "qiankun";
 
 const isDev = import.meta.env.DEV;
 
@@ -50,15 +50,8 @@ export function registerAllMicroApps() {
     }
   );
 
-  prefetchApps(
-    MICRO_APPS.map((app) => ({
-      name: app.name,
-      entry: app.entry,
-    }))
-  );
-
   start({
-    prefetch: true,
+    prefetch: false,
     sandbox: {
       experimentalStyleIsolation: true,
     },

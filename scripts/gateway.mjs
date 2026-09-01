@@ -27,9 +27,9 @@ const API_PORT = readEnvPort("API_PORT", 5100);
 
 const ROUTES = [
   { prefix: "/portal", port: PORTAL_WEB_PORT },
-  { prefix: "/owl", port: OWL_WEB_PORT },
-  { prefix: "/admin", port: ADMIN_WEB_PORT },
-  { prefix: "/cron", port: CRON_WEB_PORT },
+  { prefix: "/owl", port: PORTAL_WEB_PORT },
+  { prefix: "/admin", port: PORTAL_WEB_PORT },
+  { prefix: "/cron", port: PORTAL_WEB_PORT },
   { prefix: "/mobile", port: MOBILE_WEB_PORT },
 ];
 
@@ -140,8 +140,8 @@ server.on("upgrade", (req, socket, head) => {
 server.listen(GATEWAY_PORT, "0.0.0.0", () => {
   console.log(`[gateway] listening on http://localhost:${GATEWAY_PORT}`);
   console.log(`[gateway]   / -> portal (工作台)`);
-  console.log(`[gateway]   /admin/ -> :${ADMIN_WEB_PORT}`);
-  console.log(`[gateway]   /owl/ -> :${OWL_WEB_PORT}`);
-  console.log(`[gateway]   /cron/ -> :${CRON_WEB_PORT}`);
+  console.log(`[gateway]   /admin/ -> portal:${PORTAL_WEB_PORT} (qiankun)`);
+  console.log(`[gateway]   /owl/ -> portal:${PORTAL_WEB_PORT} (qiankun)`);
+  console.log(`[gateway]   /cron/ -> portal:${PORTAL_WEB_PORT} (qiankun)`);
   console.log(`[gateway]   /mobile/ -> :${MOBILE_WEB_PORT}`);
 });

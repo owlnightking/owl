@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { PROJECT_NAME } from "@owl/shared";
 import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { AuthGuard } from "./components/AuthGuard";
-import { Layout } from "./components/Layout";
+import { Layout, ADMIN_SIDER_ITEMS } from "./components/Layout";
 import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
@@ -23,7 +23,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route element={<Layout />}>
+      <Route element={<Layout siderItems={ADMIN_SIDER_ITEMS} />}>
         <Route path="/home" element={<HomePage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/roles" element={<RolesPage />} />
