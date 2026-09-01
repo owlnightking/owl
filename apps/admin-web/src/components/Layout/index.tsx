@@ -64,13 +64,7 @@ export function Layout({ siderItems }: LayoutProps) {
 
   return (
     <ArcoLayout style={{ height: "calc(100vh - 66px)" }}>
-      <Sider
-        width={200}
-        theme="light"
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        collapsible
-      >
+      <Sider width={200} theme="light" collapsed={collapsed} onCollapse={setCollapsed} collapsible>
         <Menu
           theme="light"
           selectedKeys={[selectedKey]}

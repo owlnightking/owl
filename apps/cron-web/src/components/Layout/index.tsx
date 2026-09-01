@@ -1,10 +1,5 @@
 import { Layout as ArcoLayout, Menu } from "@arco-design/web-react";
-import {
-  IconHome,
-  IconFile,
-  IconTool,
-  IconCalendar,
-} from "@arco-design/web-react/icon";
+import { IconHome, IconFile, IconTool, IconCalendar } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -44,13 +39,7 @@ export function Layout({ siderItems }: LayoutProps) {
 
   return (
     <ArcoLayout style={{ height: "calc(100vh - 66px)" }}>
-      <Sider
-        width={200}
-        theme="light"
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        collapsible
-      >
+      <Sider width={200} theme="light" collapsed={collapsed} onCollapse={setCollapsed} collapsible>
         <Menu
           theme="light"
           selectedKeys={[selectedKey]}

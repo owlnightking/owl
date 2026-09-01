@@ -10,9 +10,7 @@ let root: ReactDOM.Root | null = null;
 
 function render(props: QiankunProps) {
   const { container } = props;
-  const dom = container
-    ? (container.querySelector("#root") || container)
-    : document.getElementById("root");
+  const dom = container ? container.querySelector("#root") || container : document.getElementById("root");
 
   if (!dom) {
     return;

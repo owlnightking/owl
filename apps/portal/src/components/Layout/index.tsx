@@ -35,7 +35,7 @@ export function Layout() {
   const [messageDrawerVisible, setMessageDrawerVisible] = useState(false);
 
   useEffect(() => {
-    (window as any).__OWL_PORTAL__ = true;
+    window.__OWL_PORTAL__ = true;
   }, []);
 
   const currentApp = location.pathname.split("/")[1];
@@ -58,10 +58,7 @@ export function Layout() {
         style={{ height: 66, borderBottom: "1px solid #e5e7eb" }}
       >
         {/* 左侧 Logo */}
-        <button
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 hover:opacity-80"
-        >
+        <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80">
           <IconSettings style={{ fontSize: 30, color: "#9ca3af" }} />
           <span className="text-lg font-semibold text-gray-800">Owl</span>
         </button>
@@ -74,9 +71,7 @@ export function Layout() {
                 key={app.key}
                 onClick={() => handleSwitchApp(app.path)}
                 className={`flex items-center gap-1 px-5 text-sm transition-colors ${
-                  currentApp === app.key
-                    ? "bg-blue-500 text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                  currentApp === app.key ? "bg-blue-500 text-white" : "text-gray-600 hover:bg-gray-50"
                 }`}
                 style={{ height: 66 }}
               >
@@ -90,11 +85,7 @@ export function Layout() {
         {/* 右侧消息和用户信息 */}
         <div className="flex items-center gap-4">
           <Badge count={0} dot>
-            <Button
-              type="text"
-              shape="circle"
-              onClick={() => setMessageDrawerVisible(true)}
-            >
+            <Button type="text" shape="circle" onClick={() => setMessageDrawerVisible(true)}>
               <IconNotification style={{ fontSize: 18, color: "#9ca3af" }} />
             </Button>
           </Badge>
