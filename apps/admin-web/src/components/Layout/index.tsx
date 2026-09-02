@@ -9,6 +9,8 @@ import {
   IconList,
   IconTool,
   IconCalendar,
+  IconMenuFold,
+  IconMenuUnfold,
 } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -62,9 +64,15 @@ export function Layout({ siderItems }: LayoutProps) {
 
   const selectedKey = siderItems.find((item) => location.pathname.startsWith(item.key))?.key ?? "/home";
 
+  const trigger = (
+    <div className="flex h-12 cursor-pointer items-center justify-center border-t border-gray-100 hover:bg-gray-50">
+      {collapsed ? <IconMenuUnfold /> : <IconMenuFold />}
+    </div>
+  );
+
   return (
     <ArcoLayout style={{ height: "calc(100vh - 66px)" }}>
-      <Sider width={200} theme="light" collapsed={collapsed} onCollapse={setCollapsed} collapsible>
+      <Sider width={200} theme="light" collapsed={collapsed} onCollapse={setCollapsed} trigger={trigger} collapsible>
         <Menu
           theme="light"
           selectedKeys={[selectedKey]}
