@@ -1,6 +1,6 @@
 {
   "name": "@owl/database",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "private": true,
   "main": "src/generated/index.js",
   "types": "src/generated/index.d.ts",
