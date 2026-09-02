@@ -1,6 +1,6 @@
 {
   "name": "@owl/permission",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
