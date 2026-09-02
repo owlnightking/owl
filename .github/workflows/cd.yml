@@ -27,6 +27,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Prune Docker build cache
+        run: docker builder prune -f
       - id: detect
         run: |
           BACKEND=""
