@@ -45,6 +45,7 @@
 | ------------- | --- | --- | ----- | ---- | ------- |
 | audit-log     | 1   | 1   | 1     | 1    | ✅ 完整 |
 | auth          | 3   | 1   | 5     | 2    | ✅ 完整 |
+| field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
 | file          | 0   | 0   | 0     | 0    | ❌ 空壳 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
 | notification  | 0   | 0   | 0     | 0    | ❌ 空壳 |
@@ -74,6 +75,8 @@
 | 模型            | 说明 |
 | --------------- | ---- |
 | User            |      |
+| Department      |      |
+| SyncLog         |      |
 | Role            |      |
 | Permission      |      |
 | RolePermission  |      |
@@ -83,6 +86,7 @@
 | Notification    |      |
 | File            |      |
 | SystemConfig    |      |
+| FieldConfig     |      |
 | McpTool         |      |
 | McpSession      |      |
 | McpToolLog      |      |
@@ -95,9 +99,14 @@
 
 <!-- AUTO-MIGRATIONS-BEGIN -->
 
-| 迁移                | 说明 |
-| ------------------- | ---- |
-| 20260813021549_init |      |
+| 迁移                                               | 说明 |
+| -------------------------------------------------- | ---- |
+| 20260813021549_init                                |      |
+| 20260902075136_add_department_sync_log             |      |
+| 20260902085837_add_tags_module_to_scheduler        |      |
+| 20260902094247_add_field_config                    |      |
+| 20260902100000_remove_field_type_from_field_config |      |
+| 20260903085852_fix_department_relation             |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -116,23 +125,27 @@
 
 <!-- AUTO-API-BEGIN -->
 
-| 模块      | 方法   | 路径                      |
-| --------- | ------ | ------------------------- |
-| role      | Delete | /api/roles/:id            |
-| audit-log | Get    | /api/audit-logs           |
-| auth      | Get    | /api/auth/feishu/callback |
-| auth      | Get    | /api/auth/feishu/login    |
-| auth      | Get    | /api/auth/me              |
-| role      | Get    | /api/roles                |
-| role      | Get    | /api/roles/permissions    |
-| user      | Get    | /api/users                |
-| user      | Get    | /api/users/:id/roles      |
-| user      | Get    | /api/users/roles          |
-| auth      | Post   | /api/auth/logout          |
-| auth      | Post   | /api/auth/refresh         |
-| role      | Post   | /api/roles                |
-| role      | Put    | /api/roles/:id            |
-| user      | Put    | /api/users/:id/roles      |
-| user      | Put    | /api/users/:id/status     |
+| 模块         | 方法   | 路径                                |
+| ------------ | ------ | ----------------------------------- |
+| field-config | Delete | /api/field-config/:category/:module |
+| role         | Delete | /api/roles/:id                      |
+| audit-log    | Get    | /api/audit-logs                     |
+| auth         | Get    | /api/auth/feishu/callback           |
+| auth         | Get    | /api/auth/feishu/login              |
+| auth         | Get    | /api/auth/me                        |
+| field-config | Get    | /api/field-config/:category         |
+| field-config | Get    | /api/field-config/:category/:module |
+| role         | Get    | /api/roles                          |
+| role         | Get    | /api/roles/permissions              |
+| user         | Get    | /api/users                          |
+| user         | Get    | /api/users/:id/roles                |
+| user         | Get    | /api/users/roles                    |
+| auth         | Post   | /api/auth/logout                    |
+| auth         | Post   | /api/auth/refresh                   |
+| role         | Post   | /api/roles                          |
+| field-config | Put    | /api/field-config/:category/:module |
+| role         | Put    | /api/roles/:id                      |
+| user         | Put    | /api/users/:id/roles                |
+| user         | Put    | /api/users/:id/status               |
 
 <!-- AUTO-API-END -->

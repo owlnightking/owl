@@ -1,4 +1,3 @@
-import { NavBar } from "@arco-design/mobile-react";
 import { mockUser } from "../data/mock";
 
 export function ProfilePage() {
@@ -6,8 +5,7 @@ export function ProfilePage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
-      <NavBar title="我的" />
-      <div className="px-4 pt-14 pb-20">
+      <div className="px-4 pt-4 pb-20">
         <div className="rounded-xl bg-white p-4 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">

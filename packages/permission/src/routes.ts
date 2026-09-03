@@ -14,7 +14,7 @@ export interface AppRoutesConfig {
 export const APP_ROUTES: AppRoutesConfig[] = [
   {
     app: "admin",
-    name: "管理台",
+    name: "管理后台",
     icon: "IconSettings",
     routes: [
       { path: "/home", name: "概览", permission: "admin:home:view" },
@@ -26,7 +26,7 @@ export const APP_ROUTES: AppRoutesConfig[] = [
   },
   {
     app: "owl",
-    name: "业务工作台",
+    name: "业务前台",
     icon: "IconHome",
     routes: [{ path: "/home", name: "工作台首页", permission: "owl:home:view" }],
   },

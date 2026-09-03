@@ -141,7 +141,7 @@ export function PermissionsPage() {
           <p>
             <strong>示例：</strong>
             <code className="mx-1 rounded bg-gray-100 px-2 py-0.5">admin:users:view</code>
-            表示管理台-用户管理-查看权限
+            表示管理后台-用户管理-查看权限
           </p>
           <p>
             <strong>使用方式：</strong>在角色管理页面为角色分配权限，子应用中通过权限编码控制按钮/页面的显示

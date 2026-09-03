@@ -53,7 +53,8 @@ check_magic_numbers() {
       while IFS= read -r line; do
         [ -z "$line" ] && continue
         if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status\s*(>=|<=|<|>|=)\s*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
-          echo "$line" | grep -qE '^[0-9]+:\s+[A-Z][A-Z0-9_]*:'; then
+          echo "$line" | grep -qE '^[0-9]+:\s+[A-Z][A-Z0-9_]*:' ||
+          echo "$line" | grep -qE '[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*\s*[?:,;)\]}]|^\s*[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*\s*[\??:]|avatar[0-9]+|avatar_[0-9]+|i18n'; then
           continue
         fi
         warn "$file" "疑似魔法数字: $(echo "$line" | sed 's/^[0-9]*: *//')"

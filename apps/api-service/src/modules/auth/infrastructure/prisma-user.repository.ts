@@ -15,7 +15,7 @@ export class PrismaUserRepository implements UserRepository {
     unionId: string;
     openId: string;
     name: string;
-    avatarUrl: string | null;
+    avatar640: string | null;
     email: string | null;
     status: string;
     roles: { role: { code: string } }[];
@@ -25,7 +25,7 @@ export class PrismaUserRepository implements UserRepository {
       unionId: raw.unionId,
       openId: raw.openId,
       name: raw.name,
-      avatarUrl: raw.avatarUrl,
+      avatarUrl: raw.avatar640,
       email: raw.email,
       status: raw.status,
       roleCodes: raw.roles.map((r) => r.role.code),
@@ -56,7 +56,7 @@ export class PrismaUserRepository implements UserRepository {
         data: {
           openId: info.openId,
           name: info.name,
-          avatarUrl: info.avatarUrl,
+          avatar640: info.avatarUrl,
           email: info.email ?? null,
         },
         include: { roles: { include: { role: true } } },
@@ -69,7 +69,7 @@ export class PrismaUserRepository implements UserRepository {
         unionId: info.unionId,
         openId: info.openId,
         name: info.name,
-        avatarUrl: info.avatarUrl,
+        avatar640: info.avatarUrl,
         email: info.email ?? null,
         roles: role ? { create: [{ roleId: role.id }] } : undefined,
       },

@@ -1,4 +1,4 @@
-import { NavBar, Toast } from "@arco-design/mobile-react";
+import { Toast } from "@arco-design/mobile-react";
 import { mockProducts, mockUser } from "../data/mock";
 
 function ProductCard({ product, onExchange }: { product: (typeof mockProducts)[0]; onExchange: (id: string) => void }) {
@@ -34,8 +34,7 @@ export function MallPage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
-      <NavBar title="兑换商城" />
-      <div className="px-3 pt-14 pb-20">
+      <div className="px-3 pt-4 pb-20">
         <div className="mb-3 rounded-xl bg-white p-3 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-600">我的认可币</span>

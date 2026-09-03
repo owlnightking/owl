@@ -11,7 +11,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
     unionId: string;
     openId: string;
     name: string;
-    avatarUrl: string | null;
+    avatar640: string | null;
     email: string | null;
     status: string;
     lastLoginAt: Date | null;
@@ -23,7 +23,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
       unionId: raw.unionId,
       openId: raw.openId,
       name: raw.name,
-      avatarUrl: raw.avatarUrl,
+      avatarUrl: raw.avatar640,
       email: raw.email,
       status: raw.status,
       lastLoginAt: raw.lastLoginAt,

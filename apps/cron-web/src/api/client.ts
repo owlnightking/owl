@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { type AxiosResponse, type AxiosError } from "axios";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -6,34 +6,40 @@ export interface ApiResponse<T = unknown> {
   message: string;
 }
 
-const baseURL = "/api";
-
 export const http = axios.create({
-  baseURL,
+  baseURL: "/api",
   withCredentials: true,
   timeout: 15000,
 });
 
-http.interceptors.response.use(
-  (response) => {
-    const body = response.data as ApiResponse;
-    if (body && typeof body.code === "number" && body.code !== 0) {
-      return Promise.reject(new Error(body.message ?? "request failed"));
-    }
-    return response;
-  },
-  (error) => {
-    const status = error.response?.status;
-    const url: string = error.config?.url ?? "";
-    const isMeRequest = url.endsWith("/auth/me") || url.includes("/auth/refresh");
-    if (status === 401 && !isMeRequest) {
-      const redirect = encodeURIComponent(window.location.pathname);
-      window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
-    }
-    const message = error.response?.data?.message ?? error.message ?? "network error";
-    return Promise.reject(new Error(message));
+export const cronHttp = axios.create({
+  baseURL: "/cron",
+  withCredentials: true,
+  timeout: 15000,
+});
+
+const responseInterceptor = (response: AxiosResponse<ApiResponse>) => {
+  const body = response.data;
+  if (body && typeof body.code === "number" && body.code !== 0) {
+    return Promise.reject(new Error(body.message ?? "request failed"));
   }
-);
+  return response;
+};
+
+const errorInterceptor = (error: AxiosError<{ message?: string }>) => {
+  const status = error.response?.status;
+  const url: string = error.config?.url ?? "";
+  const isMeRequest = url.endsWith("/auth/me") || url.includes("/auth/refresh");
+  if (status === 401 && !isMeRequest) {
+    const redirect = encodeURIComponent(window.location.pathname);
+    window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
+  }
+  const message = error.response?.data?.message ?? error.message ?? "network error";
+  return Promise.reject(new Error(message));
+};
+
+http.interceptors.response.use(responseInterceptor, errorInterceptor);
+cronHttp.interceptors.response.use(responseInterceptor, errorInterceptor);
 
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   const res = await http.get<ApiResponse<T>>(url, { params });

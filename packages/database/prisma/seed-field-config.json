@@ -1,0 +1,35 @@
+[
+  {
+    "category": "scheduler",
+    "module": "tags",
+    "label": "标签",
+    "fieldType": "select",
+    "options": ["每日", "每小时", "每周", "数据同步", "清理", "通知"],
+    "description": "定时任务标签分类"
+  },
+  {
+    "category": "scheduler",
+    "module": "modules",
+    "label": "模块",
+    "fieldType": "select",
+    "options": ["基础数据", "订单", "通知", "系统"],
+    "description": "定时任务所属模块"
+  },
+  {
+    "category": "scheduler",
+    "module": "cron",
+    "label": "Cron 表达式",
+    "fieldType": "select",
+    "options": [
+      { "label": "每分钟", "value": "* * * * *" },
+      { "label": "每小时", "value": "0 * * * *" },
+      { "label": "每天凌晨 2 点", "value": "0 2 * * *" },
+      { "label": "每天凌晨 3 点", "value": "0 3 * * *" },
+      { "label": "每天凌晨 4 点", "value": "0 4 * * *" },
+      { "label": "每天上午 8 点", "value": "0 8 * * *" },
+      { "label": "每周一凌晨 2 点", "value": "0 2 * * 1" },
+      { "label": "每月 1 号凌晨 2 点", "value": "0 2 1 * *" }
+    ],
+    "description": "常用 Cron 表达式"
+  }
+]

@@ -7,12 +7,13 @@ import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
+import { FieldConfigPage } from "./pages/FieldConfigPage";
 
 function HomePage() {
   return (
     <div className="flex flex-1 items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-gray-800">{PROJECT_NAME} · 管理台</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">{PROJECT_NAME} · 管理后台</h1>
         <p className="mt-2 text-sm text-gray-500">系统管理入口：用户、角色、操作审计</p>
       </div>
     </div>
@@ -29,6 +30,7 @@ function AppRoutes() {
         <Route path="/roles" element={<RolesPage />} />
         <Route path="/permissions" element={<PermissionsPage />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
+        <Route path="/field-config" element={<FieldConfigPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

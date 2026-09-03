@@ -28,6 +28,7 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
   { key: "/users", label: "用户管理", icon: <IconSettings /> },
   { key: "/roles", label: "角色与权限", icon: <IconSafe /> },
   { key: "/permissions", label: "权限配置", icon: <IconLock /> },
+  { key: "/field-config", label: "字段配置", icon: <IconTool /> },
   { key: "/audit-logs", label: "操作审计", icon: <IconFile /> },
 ];
 

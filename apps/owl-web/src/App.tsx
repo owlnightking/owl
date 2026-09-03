@@ -8,7 +8,7 @@ function HomePage() {
   return (
     <div className="flex flex-1 items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-gray-800">{PROJECT_NAME} · 业务工作台</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">{PROJECT_NAME} · 业务前台</h1>
         <p className="mt-2 text-sm text-gray-500">跨境电商运营管理平台</p>
       </div>
     </div>

@@ -12,25 +12,72 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  unionId      String    @unique @map("union_id")
-  openId       String    @map("open_id")
-  name         String
-  avatarUrl    String?   @map("avatar_url")
-  email        String?
-  status       String    @default("active")
-  lastLoginAt  DateTime? @map("last_login_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  roles        UserRole[]
-  sessions     AuthSession[]
-  auditLogs    AuditLog[]
-  notifications Notification[]
-  files        File[]
-  mcpSessions  McpSession[]
-  mcpToolLogs  McpToolLog[]
+  id             String       @id @default(uuid())
+  unionId        String       @unique @map("union_id")
+  openId         String       @map("open_id")
+  name           String
+  nickname       String?
+  enName         String?      @map("en_name")
+  description    String?
+  email          String?
+  avatar72       String?      @map("avatar_72")
+  avatar240      String?      @map("avatar_240")
+  avatar640      String?      @map("avatar_640")
+  avatarOrigin   String?      @map("avatar_origin")
+  mobileVisible  Boolean?     @map("mobile_visible")
+  departmentIds  Json?        @map("department_ids")
+  status         String       @default("active")
+  departmentId   String?      @map("department_id")
+  lastLoginAt    DateTime?    @map("last_login_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  department     Department?  @relation(fields: [departmentId], references: [feishuDepartmentId], onDelete: SetNull)
+  roles          UserRole[]
+  sessions       AuthSession[]
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  files          File[]
+  mcpSessions    McpSession[]
+  mcpToolLogs    McpToolLog[]
 
   @@map("user")
+}
+
+model Department {
+  id                 String       @id @default(uuid())
+  feishuDepartmentId String       @unique @map("feishu_department_id")
+  openDepartmentId   String?      @unique @map("open_department_id")
+  name               String
+  i18nName           Json?        @map("i18n_name")
+  parentId           String?      @map("parent_id")
+  order              Int          @default(0)
+  leaderUserId       String?      @map("leader_user_id")
+  leaders            Json?
+  memberCount        Int?         @map("member_count")
+  primaryMemberCount Int?         @map("primary_member_count")
+  isDeleted          Boolean?     @default(false) @map("is_deleted")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  parent             Department?  @relation("DeptTree", fields: [parentId], references: [feishuDepartmentId])
+  children           Department[] @relation("DeptTree")
+  users              User[]
+
+  @@map("department")
+}
+
+model SyncLog {
+  id         String    @id @default(uuid())
+  type       String
+  status     String    @default("running")
+  startedAt  DateTime  @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  total      Int       @default(0)
+  created    Int       @default(0)
+  updated    Int       @default(0)
+  errorMsg   String?   @map("error_msg")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@map("sync_log")
 }
 
 model Role {
@@ -156,6 +203,21 @@ model SystemConfig {
   @@map("system_config")
 }
 
+model FieldConfig {
+  id          String   @id @default(uuid())
+  category    String
+  module      String
+  label       String
+  options     Json?
+  value       String?
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([category, module])
+  @@map("field_config")
+}
+
 model McpTool {
   id                String   @id @default(uuid())
   name              String   @unique
@@ -205,9 +267,12 @@ model McpToolLog {
 model SchedulerConfig {
   id          String   @id @default(uuid())
   name        String   @unique
+  area        String
   cron        String
   queue       String
   handler     String
+  tags        String[]
+  module      String?
   retryPolicy Json     @map("retry_policy")
   timeoutMs   Int      @map("timeout_ms")
   enabled     Boolean  @default(true)
@@ -222,6 +287,8 @@ model SchedulerRun {
   id          String    @id @default(uuid())
   taskRunId   String    @unique @map("task_run_id")
   configId    String    @map("config_id")
+  area        String?
+  taskName    String?   @map("task_name")
   scheduledAt DateTime  @map("scheduled_at")
   startedAt   DateTime? @map("started_at")
   finishedAt  DateTime? @map("finished_at")

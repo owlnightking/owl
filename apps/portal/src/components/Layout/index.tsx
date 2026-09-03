@@ -21,8 +21,8 @@ export interface AppModule {
 }
 
 export const APP_MODULES: AppModule[] = [
-  { key: "owl", name: "业务工作台", path: "/owl", icon: <IconDesktop /> },
-  { key: "admin", name: "管理台", path: "/admin", icon: <IconSettings /> },
+  { key: "owl", name: "业务前台", path: "/owl", icon: <IconDesktop /> },
+  { key: "admin", name: "管理后台", path: "/admin", icon: <IconSettings /> },
   { key: "cron", name: "定时任务", path: "/cron", icon: <IconClockCircle /> },
 ];
 

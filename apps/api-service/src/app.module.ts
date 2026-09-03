@@ -10,6 +10,7 @@ import { AuditLogModule } from "./modules/audit-log/audit-log.module";
 import { NotificationModule } from "./modules/notification/notification.module";
 import { FileModule } from "./modules/file/file.module";
 import { SystemConfigModule } from "./modules/system-config/system-config.module";
+import { FieldConfigModule } from "./modules/field-config/field-config.module";
 import { McpModule } from "./modules/mcp/mcp.module";
 import { ProjectModule } from "./modules/project/project.module";
 
@@ -27,6 +28,7 @@ import { ProjectModule } from "./modules/project/project.module";
     NotificationModule,
     FileModule,
     SystemConfigModule,
+    FieldConfigModule,
     McpModule,
     ProjectModule,
   ],

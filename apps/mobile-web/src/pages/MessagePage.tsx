@@ -1,4 +1,3 @@
-import { NavBar } from "@arco-design/mobile-react";
 import { IconNotice, IconSuccessCircle } from "@arco-design/mobile-react/esm/icon";
 import { mockMessages, type MessageItem } from "../data/messages";
 
@@ -28,8 +27,7 @@ function MessageCard({ item }: { item: MessageItem }) {
 export function MessagePage() {
   return (
     <div className="min-h-dvh bg-gray-100">
-      <NavBar title="消息" />
-      <div className="px-4 pt-14 pb-20">
+      <div className="px-4 pt-4 pb-20">
         {mockMessages.map((item) => (
           <MessageCard key={item.id} item={item} />
         ))}

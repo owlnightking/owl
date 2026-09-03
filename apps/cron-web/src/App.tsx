@@ -3,6 +3,9 @@ import { PROJECT_NAME } from "@owl/shared";
 import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { AuthGuard } from "./components/AuthGuard";
 import { Layout, CRON_SIDER_ITEMS } from "./components/Layout";
+import { TasksPage } from "./pages/TasksPage";
+import { LogsPage } from "./pages/LogsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function HomePage() {
   return (
@@ -21,6 +24,9 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route element={<Layout siderItems={CRON_SIDER_ITEMS} />}>
         <Route path="/home" element={<HomePage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/logs" element={<LogsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
