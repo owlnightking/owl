@@ -29,6 +29,7 @@ pnpm test             # 单元测试
 - **空 catch 禁止**：异常必须记录或重新抛出。
 - **外部输入校验**：Controller 层入参必须经过 DTO + class-validator；禁止直接 `@Body() body: any`。
 - **禁止颜文字/emoji**：源码中禁止直接使用 Unicode emoji 字符（如 📢✅❤️🚀⚙️ 等）。所有图标统一使用 UI 库的 Icon 组件（`@arco-design/web-react/icon` 或 `@arco-design/mobile-react/icon`）。
+- **UI 组件库严格匹配应用类型**：`mobile-web` 必须使用 `@arco-design/mobile-react`，禁止导入 `@arco-design/web-react`；`admin-web`/`cron-web`/`owl-web`/`portal` 必须使用 `@arco-design/web-react`，禁止导入 `@arco-design/mobile-react`。
 
 以上规则由 `scripts/scan-ai-residue.sh` 扫描兜底（`--staged` 用于 pre-commit 增量扫描）。
 

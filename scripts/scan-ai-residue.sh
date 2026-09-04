@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scan-ai-residue.sh — AI 残渣扫描（10 类）
+# scan-ai-residue.sh — AI 残渣扫描（11 类）
 # 用法: bash scripts/scan-ai-residue.sh [--staged]
 # 存在 ERROR 或 WARN 时 exit 1
 
@@ -181,6 +181,28 @@ check_emoji() {
   done <<< "$TS_FILES"
 }
 check_emoji
+
+# 11. UI 组件库交叉导入（mobile-web 禁用 web-react，web 应用禁用 mobile-react）
+check_ui_library_cross_import() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    case "$file" in
+      */mobile-web/*)
+        while IFS= read -r line; do
+          [ -z "$line" ] && continue
+          error "$file" "mobile-web 禁止导入 @arco-design/web-react，应使用 @arco-design/mobile-react: $(echo "$line" | sed 's/^[0-9]*: *//')"
+        done < <(grep -nE "from ['\"]@arco-design/web-react" "$file" 2>/dev/null)
+        ;;
+      */admin-web/*|*/cron-web/*|*/owl-web/*|*/portal/*)
+        while IFS= read -r line; do
+          [ -z "$line" ] && continue
+          error "$file" "web 应用禁止导入 @arco-design/mobile-react，应使用 @arco-design/web-react: $(echo "$line" | sed 's/^[0-9]*: *//')"
+        done < <(grep -nE "from ['\"]@arco-design/mobile-react" "$file" 2>/dev/null)
+        ;;
+    esac
+  done <<< "$TS_FILES"
+}
+check_ui_library_cross_import
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
