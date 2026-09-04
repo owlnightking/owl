@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Inject } from "@nestjs/common";
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Inject } from "@nestjs/common";
 import { SchedulerUseCase } from "../application/scheduler.use-case";
 import { SCHEDULER_CONFIG_REPOSITORY, SCHEDULER_RUN_REPOSITORY } from "../domain/scheduler.ports";
 import { PrismaSchedulerConfigRepository } from "../infrastructure/prisma-scheduler-config.repository";
 import { PrismaSchedulerRunRepository } from "../infrastructure/prisma-scheduler-run.repository";
 import { ok } from "../../../common/response/api-response";
-import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { IsArray, IsBoolean, IsIn, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { Type } from "class-transformer";
 
 const DEFAULT_PAGE = 1;
@@ -34,6 +34,11 @@ class CreateSchedulerDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(["dev", "prod", "all"])
+  env?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 }
 
@@ -58,6 +63,11 @@ class UpdateSchedulerDto {
   @IsOptional()
   @IsString()
   module?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["dev", "prod", "all"])
+  env?: string;
 }
 
 class RunQueryDto {
@@ -76,6 +86,11 @@ class RunQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["dev", "prod"])
+  env?: string;
 }
 
 @Controller("schedulers")
@@ -100,7 +115,8 @@ export class SchedulerController {
       await this.schedulerUseCase.getAllRuns(
         query.page ?? DEFAULT_PAGE,
         query.pageSize ?? DEFAULT_PAGE_SIZE,
-        query.status
+        query.status,
+        query.env
       )
     );
   }
@@ -120,7 +136,7 @@ export class SchedulerController {
     return ok(await this.schedulerUseCase.createConfig(dto));
   }
 
-  @Patch(":id")
+  @Put(":id")
   async update(@Param("id") id: string, @Body() dto: UpdateSchedulerDto) {
     await this.schedulerUseCase.updateConfig(id, dto);
     return ok(null);

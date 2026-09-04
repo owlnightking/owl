@@ -1,22 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Select, Space, Table, Tag } from "@arco-design/web-react";
+import { Button, Select, Space, Table, Tabs, Tag } from "@arco-design/web-react";
 import type { SchedulerRun } from "../types/scheduler";
 
 export function LogsPage() {
   const [data, setData] = useState<SchedulerRun[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [activeEnv, setActiveEnv] = useState<string>("prod");
+
+  useEffect(() => {
+    void fetch("/cron/health/env")
+      .then((res) => res.json() as Promise<{ env: string }>)
+      .then((json) => setActiveEnv(json.env === "prod" ? "prod" : "dev"))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await fetch("/cron/schedulers/runs" + (statusFilter ? `?status=${statusFilter}` : ""));
+      const params = new URLSearchParams();
+      if (statusFilter) params.set("status", statusFilter);
+      params.set("env", activeEnv);
+      const result = await fetch(`/cron/schedulers/runs?${params.toString()}`);
       const json = (await result.json()) as { data: { items: SchedulerRun[] } };
       setData(json.data?.items ?? []);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, activeEnv]);
 
   useEffect(() => {
     void load();
@@ -90,6 +101,10 @@ export function LogsPage() {
           <Button onClick={() => void load()}>刷新</Button>
         </Space>
       </div>
+      <Tabs activeTab={activeEnv} onChange={setActiveEnv}>
+        <Tabs.TabPane key="prod" title="PROD" />
+        <Tabs.TabPane key="dev" title="DEV" />
+      </Tabs>
       <Table rowKey="id" loading={loading} columns={columns} data={data} pagination={false} />
     </div>
   );

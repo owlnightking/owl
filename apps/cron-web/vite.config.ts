@@ -27,6 +27,10 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${apiPort}`,
           changeOrigin: true,
         },
+        "/cron/health": {
+          target: `http://localhost:${cronPort}`,
+          changeOrigin: true,
+        },
         "/cron/schedulers": {
           target: `http://localhost:${cronPort}`,
           changeOrigin: true,

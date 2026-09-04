@@ -18,6 +18,7 @@ export async function createScheduler(data: {
   handler: string;
   tags?: string[];
   module?: string;
+  env?: string;
   description?: string;
 }): Promise<SchedulerConfig> {
   const res = await cronHttp.post<{ data: SchedulerConfig }>("/schedulers", data);

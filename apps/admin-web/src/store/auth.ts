@@ -5,6 +5,7 @@ export interface MeResponse {
   sub: string;
   name: string;
   unionId?: string;
+  avatarUrl: string | null;
   client: string;
 }
 

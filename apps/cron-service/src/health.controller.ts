@@ -6,4 +6,9 @@ export class HealthController {
   health() {
     return { status: "ok", service: "cron-service", time: new Date().toISOString() };
   }
+
+  @Get("env")
+  getEnv() {
+    return { env: process.env.APP_ENV ?? process.env.NODE_ENV ?? "dev" };
+  }
 }

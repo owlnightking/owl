@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, Tag, Table, Button, Message, Spin } from "@arco-design/web-react";
+import { Card, Tag, Table, Button, Notification, Spin } from "@arco-design/web-react";
 import { APP_ROUTES, type RouteConfig } from "@owl/permission";
 import { get, post } from "../api/client";
 
@@ -51,7 +51,7 @@ export function PermissionsPage() {
   const handleSync = async () => {
     const unsynced = getUnsyncedPermissions();
     if (unsynced.length === 0) {
-      Message.info("所有权限已同步");
+      Notification.info({ title: "提示", content: "所有权限已同步" });
       return;
     }
 
@@ -65,10 +65,10 @@ export function PermissionsPage() {
           action: "view",
         })),
       });
-      Message.success(`已同步 ${unsynced.length} 个权限`);
+      Notification.success({ title: "操作成功", content: `已同步 ${unsynced.length} 个权限` });
       await loadBackendPermissions();
-    } catch {
-      Message.error("同步失败");
+    } catch (error) {
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "同步失败" });
     } finally {
       setSyncing(false);
     }

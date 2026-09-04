@@ -6,6 +6,7 @@ export interface SchedulerConfigItem {
   handler: string;
   tags: string[];
   module: string | null;
+  env: string;
   enabled: boolean;
   description: string | null;
   timeoutMs: number;
@@ -36,11 +37,12 @@ export interface SchedulerConfigRepositoryPort {
     handler: string;
     tags?: string[];
     module?: string;
+    env?: string;
     description?: string;
   }): Promise<SchedulerConfigItem>;
   update(
     id: string,
-    data: Partial<Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs">>
+    data: Partial<Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "env">>
   ): Promise<void>;
   delete(id: string): Promise<void>;
 }
@@ -54,6 +56,7 @@ export interface SchedulerRunRepositoryPort {
     page: number;
     pageSize: number;
     status?: string;
+    env?: string;
   }): Promise<{ items: SchedulerRunItem[]; total: number }>;
 }
 

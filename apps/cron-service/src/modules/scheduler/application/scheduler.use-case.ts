@@ -30,6 +30,7 @@ export class SchedulerUseCase {
     handler: string;
     tags?: string[];
     module?: string;
+    env?: string;
     description?: string;
   }): Promise<SchedulerConfigItem> {
     return this.configRepo.create(data);
@@ -37,7 +38,9 @@ export class SchedulerUseCase {
 
   async updateConfig(
     id: string,
-    data: Partial<Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "tags" | "module">>
+    data: Partial<
+      Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "tags" | "module" | "env">
+    >
   ): Promise<void> {
     await this.configRepo.update(id, data);
   }
@@ -57,8 +60,9 @@ export class SchedulerUseCase {
   async getAllRuns(
     page: number,
     pageSize: number,
-    status?: string
+    status?: string,
+    env?: string
   ): Promise<{ items: SchedulerRunItem[]; total: number }> {
-    return this.runRepo.findAll({ page, pageSize, status });
+    return this.runRepo.findAll({ page, pageSize, status, env });
   }
 }

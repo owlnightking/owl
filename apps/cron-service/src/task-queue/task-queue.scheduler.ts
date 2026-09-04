@@ -9,14 +9,21 @@ const CRON_CHECK_INTERVAL_MS = 60_000;
 @Injectable()
 export class TaskQueueScheduler {
   private readonly logger = new Logger(TaskQueueScheduler.name);
+  private readonly currentEnv: string;
 
   constructor(
     private readonly prisma: PrismaClient,
     private readonly taskQueueService: TaskQueueService
-  ) {}
+  ) {
+    this.currentEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? "dev";
+  }
 
   @Cron("* * * * *")
   async check() {
+    if (this.currentEnv !== "prod") {
+      return;
+    }
+
     const now = new Date();
     const configs = await this.prisma.schedulerConfig.findMany({
       where: { enabled: true },

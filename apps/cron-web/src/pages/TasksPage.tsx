@@ -3,8 +3,8 @@ import {
   Button,
   Form,
   Input,
-  Message,
   Modal,
+  Notification,
   Popconfirm,
   Select,
   Space,
@@ -12,6 +12,7 @@ import {
   Switch,
   Table,
   Tag,
+  Message,
 } from "@arco-design/web-react";
 import type { SchedulerConfig } from "../types/scheduler";
 import { fetchSchedulers, createScheduler, updateScheduler, deleteScheduler, triggerTask } from "../api/scheduler";
@@ -26,8 +27,10 @@ function parseOptions(raw: unknown): SelectOption[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((item) => {
     if (typeof item === "string") return { label: item, value: item };
-    if (typeof item === "object" && item !== null && "label" in item && "value" in item) {
-      return { label: String(item.label), value: String(item.value) };
+    if (typeof item === "object" && item !== null && "value" in item) {
+      const val = String(item.value);
+      const lab = "label" in item && item.label != null ? String(item.label) : val;
+      return { label: lab, value: val };
     }
     return { label: String(item), value: String(item) };
   });
@@ -75,7 +78,7 @@ export function TasksPage() {
         }
       }
     } catch (error) {
-      Message.error(error instanceof Error ? error.message : "加载字段配置失败");
+      Notification.error({ title: "加载失败", content: error instanceof Error ? error.message : "加载字段配置失败" });
     } finally {
       setOptionsLoading(false);
     }
@@ -150,16 +153,16 @@ export function TasksPage() {
   const handleDelete = async (config: SchedulerConfig) => {
     try {
       await deleteScheduler(config.id);
-      Message.success("已删除");
+      Notification.success({ title: "操作成功", content: "已删除" });
       void load();
     } catch (error) {
-      Message.error(error instanceof Error ? error.message : "删除失败");
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "删除失败" });
     }
   };
 
   const toggleEnabled = async (config: SchedulerConfig) => {
     await updateScheduler(config.id, { enabled: !config.enabled });
-    Message.success(`已${config.enabled ? "禁用" : "启用"}`);
+    Notification.success({ title: "操作成功", content: `已${config.enabled ? "禁用" : "启用"}` });
     void load();
   };
 
@@ -167,9 +170,9 @@ export function TasksPage() {
     setTriggering(config.id);
     try {
       await triggerTask(config.area, config.handler);
-      Message.success(`${config.name} 已触发执行`);
+      Notification.success({ title: "操作成功", content: `${config.name} 已触发执行` });
     } catch (error) {
-      Message.error(error instanceof Error ? error.message : "触发失败");
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "触发失败" });
     } finally {
       setTriggering(null);
     }

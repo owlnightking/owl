@@ -1,4 +1,13 @@
-import { Layout as ArcoLayout, Menu, Avatar, Badge, Button, Dropdown, Message, Drawer } from "@arco-design/web-react";
+import {
+  Layout as ArcoLayout,
+  Menu,
+  Avatar,
+  Badge,
+  Button,
+  Dropdown,
+  Notification,
+  Drawer,
+} from "@arco-design/web-react";
 import {
   IconNotification,
   IconPoweroff,
@@ -10,6 +19,7 @@ import {
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/auth";
+import owlLogo from "../../assets/owl-logo.jpg";
 
 const { Header, Content } = ArcoLayout;
 
@@ -22,8 +32,8 @@ export interface AppModule {
 
 export const APP_MODULES: AppModule[] = [
   { key: "owl", name: "业务前台", path: "/owl", icon: <IconDesktop /> },
-  { key: "admin", name: "管理后台", path: "/admin", icon: <IconSettings /> },
   { key: "cron", name: "定时任务", path: "/cron", icon: <IconClockCircle /> },
+  { key: "admin", name: "管理后台", path: "/admin", icon: <IconSettings /> },
 ];
 
 export function Layout() {
@@ -42,7 +52,7 @@ export function Layout() {
 
   const handleLogout = async () => {
     await logout();
-    Message.success("已退出登录");
+    Notification.success({ title: "操作成功", content: "已退出登录" });
     window.location.href = "/api/auth/feishu/login?redirect=%2F";
   };
 
@@ -59,7 +69,7 @@ export function Layout() {
       >
         {/* 左侧 Logo */}
         <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80">
-          <IconSettings style={{ fontSize: 30, color: "#9ca3af" }} />
+          <img src={owlLogo} alt="Owl Logo" className="h-10 w-10 rounded-xl object-cover" />
           <span className="text-lg font-semibold text-gray-800">Owl</span>
         </button>
 
@@ -105,7 +115,15 @@ export function Layout() {
             }
           >
             <div className="flex cursor-pointer items-center gap-2">
-              <Avatar size={32}>{user?.name?.[0] ?? "U"}</Avatar>
+              {user?.avatarUrl ? (
+                <Avatar size={32} shape="circle">
+                  <img src={user.avatarUrl} alt={user.name} />
+                </Avatar>
+              ) : (
+                <Avatar size={32} shape="circle" style={{ backgroundColor: "#3370ff" }}>
+                  {user?.name?.[0] ?? "U"}
+                </Avatar>
+              )}
               <span className="text-sm text-gray-600">{user?.name ?? "用户"}</span>
             </div>
           </Dropdown>

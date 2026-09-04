@@ -1,4 +1,5 @@
 import axios from "axios";
+import { Notification } from "@arco-design/web-react";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -29,6 +30,14 @@ http.interceptors.response.use(
     if (status === 401 && !isMeRequest) {
       const redirect = encodeURIComponent(window.location.pathname);
       window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
+    }
+    if (status === 403) {
+      Notification.error({
+        title: "无权限",
+        content: "您没有执行此操作的权限，请联系管理员",
+        duration: 5000,
+      });
+      return Promise.reject(new Error("permission denied"));
     }
     const message = error.response?.data?.message ?? error.message ?? "network error";
     return Promise.reject(new Error(message));

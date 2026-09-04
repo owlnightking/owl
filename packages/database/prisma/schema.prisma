@@ -273,6 +273,7 @@ model SchedulerConfig {
   handler     String
   tags        String[]
   module      String?
+  env         String   @default("all")  // dev: 仅开发环境, prod: 仅生产环境, all: 所有环境
   retryPolicy Json     @map("retry_policy")
   timeoutMs   Int      @map("timeout_ms")
   enabled     Boolean  @default(true)
@@ -286,9 +287,10 @@ model SchedulerConfig {
 model SchedulerRun {
   id          String    @id @default(uuid())
   taskRunId   String    @unique @map("task_run_id")
-  configId    String    @map("config_id")
+  configId    String?   @map("config_id")
   area        String?
   taskName    String?   @map("task_name")
+  env         String    @default("all")
   scheduledAt DateTime  @map("scheduled_at")
   startedAt   DateTime? @map("started_at")
   finishedAt  DateTime? @map("finished_at")
@@ -297,7 +299,7 @@ model SchedulerRun {
   lastError   String?   @map("last_error")
   businessKey String?   @map("business_key")
   createdAt   DateTime  @default(now()) @map("created_at")
-  config      SchedulerConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  config      SchedulerConfig? @relation(fields: [configId], references: [id], onDelete: SetNull)
 
   @@index([configId, status, scheduledAt])
   @@map("scheduler_run")

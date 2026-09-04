@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Message, Modal, Select, Table, Tag, Input } from "@arco-design/web-react";
+import { Button, Modal, Notification, Select, Table, Tag, Input, Avatar } from "@arco-design/web-react";
 import { get, put } from "../api/client";
 
 interface UserRole {
@@ -12,6 +12,7 @@ interface UserItem {
   id: string;
   name: string;
   unionId: string;
+  avatarUrl: string | null;
   email: string | null;
   status: string;
   lastLoginAt: string | null;
@@ -72,20 +73,43 @@ export function UsersPage() {
     if (!editing) {
       return;
     }
-    await put<void>(`/users/${editing.id}/roles`, { roleIds: editingRoleIds });
-    Message.success("角色已更新");
-    setEditing(null);
-    void load(page, pageSize, keyword);
+    try {
+      await put<void>(`/users/${editing.id}/roles`, { roleIds: editingRoleIds });
+      Notification.success({ title: "操作成功", content: "角色已更新" });
+      setEditing(null);
+      void load(page, pageSize, keyword);
+    } catch (error) {
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "操作失败" });
+    }
   };
 
   const toggleStatus = async (user: UserItem) => {
     const next = user.status === "active" ? "disabled" : "active";
-    await put<void>(`/users/${user.id}/status`, { status: next });
-    Message.success(`已${next === "active" ? "启用" : "禁用"}`);
-    void load(page, pageSize, keyword);
+    try {
+      await put<void>(`/users/${user.id}/status`, { status: next });
+      Notification.success({ title: "操作成功", content: `已${next === "active" ? "启用" : "禁用"}` });
+      void load(page, pageSize, keyword);
+    } catch (error) {
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "操作失败" });
+    }
   };
 
   const columns = [
+    {
+      title: "头像",
+      dataIndex: "avatarUrl",
+      width: 80,
+      render: (url: string | null, record: UserItem) =>
+        url ? (
+          <Avatar size={32} shape="circle">
+            <img src={url} alt={record.name} />
+          </Avatar>
+        ) : (
+          <Avatar size={32} shape="circle" style={{ backgroundColor: "#3370ff" }}>
+            {record.name?.charAt(0)}
+          </Avatar>
+        ),
+    },
     { title: "姓名", dataIndex: "name" },
     { title: "unionId", dataIndex: "unionId" },
     { title: "邮箱", dataIndex: "email", render: (v: string | null) => v ?? "-" },

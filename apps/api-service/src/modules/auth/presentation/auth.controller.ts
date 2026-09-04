@@ -87,6 +87,7 @@ export class AuthController {
       sub: payload.sub,
       name: user?.name ?? payload.name,
       unionId: user?.unionId ?? payload.name,
+      avatarUrl: user?.avatarUrl ?? null,
       client: payload.client,
     });
   }

@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Form, Input, Message, Modal, Popconfirm, Space, Table, Tabs, Tag } from "@arco-design/web-react";
+import {
+  Button,
+  Form,
+  Input,
+  Message,
+  Modal,
+  Notification,
+  Popconfirm,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+} from "@arco-design/web-react";
 import { fetchFieldConfigs, upsertFieldConfig, deleteFieldConfig, type FieldConfigItem } from "../api/field-config";
 
 const CATEGORY_TABS = [
@@ -16,6 +28,9 @@ interface OptionItem {
 function OptionInput({ value, onChange }: { value: OptionItem[]; onChange: (v: OptionItem[]) => void }) {
   const [inputValue, setInputValue] = useState("");
   const [inputLabel, setInputLabel] = useState("");
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editLabel, setEditLabel] = useState("");
 
   const addOption = () => {
     const trimmedValue = inputValue.trim();
@@ -37,10 +52,48 @@ function OptionInput({ value, onChange }: { value: OptionItem[]; onChange: (v: O
     onChange(value.filter((_, i) => i !== idx));
   };
 
+  const startEdit = (idx: number) => {
+    setEditingIndex(idx);
+    setEditValue(value[idx].value);
+    setEditLabel(value[idx].label ?? "");
+  };
+
+  const saveEdit = () => {
+    if (editingIndex === null) return;
+    const trimmedValue = editValue.trim();
+    if (!trimmedValue) {
+      Message.warning("选项值不能为空");
+      return;
+    }
+    if (value.some((o, i) => i !== editingIndex && o.value === trimmedValue)) {
+      Message.warning("选项值已存在");
+      return;
+    }
+    const trimmedLabel = editLabel.trim();
+    const updated = value.map((o, i) =>
+      i === editingIndex ? { value: trimmedValue, label: trimmedLabel || undefined } : o
+    );
+    onChange(updated);
+    setEditingIndex(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
       addOption();
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveEdit();
+    } else if (e.key === "Escape") {
+      cancelEdit();
     }
   };
 
@@ -56,13 +109,43 @@ function OptionInput({ value, onChange }: { value: OptionItem[]; onChange: (v: O
       <div className="flex flex-col gap-1">
         {value.map((opt, idx) => (
           <div key={idx} className="flex items-center gap-2">
-            <Tag color="arcoblue" className="flex-1">
-              {opt.label ?? opt.value}
-              {opt.label && <span className="ml-1 text-xs text-gray-400">({opt.value})</span>}
-            </Tag>
-            <Button size="mini" status="danger" type="text" onClick={() => removeOption(idx)}>
-              删除
-            </Button>
+            {editingIndex === idx ? (
+              <>
+                <Input
+                  value={editValue}
+                  onChange={setEditValue}
+                  onKeyDown={handleEditKeyDown}
+                  placeholder="选项值"
+                  className="flex-1"
+                />
+                <Input
+                  value={editLabel}
+                  onChange={setEditLabel}
+                  onKeyDown={handleEditKeyDown}
+                  placeholder="显示名"
+                  className="flex-1"
+                />
+                <Button size="mini" type="primary" onClick={saveEdit}>
+                  保存
+                </Button>
+                <Button size="mini" onClick={cancelEdit}>
+                  取消
+                </Button>
+              </>
+            ) : (
+              <>
+                <Tag color="arcoblue" className="flex-1">
+                  {opt.label ?? opt.value}
+                  {opt.label && <span className="ml-1 text-xs text-gray-400">({opt.value})</span>}
+                </Tag>
+                <Button size="mini" type="text" onClick={() => startEdit(idx)}>
+                  编辑
+                </Button>
+                <Button size="mini" status="danger" type="text" onClick={() => removeOption(idx)}>
+                  删除
+                </Button>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -128,22 +211,22 @@ export function FieldConfigPage() {
         options: options,
         description: values.description,
       });
-      Message.success(editing ? "已更新" : "已创建");
+      Notification.success({ title: "操作成功", content: editing ? "已更新" : "已创建" });
       setModalVisible(false);
       setEditing(null);
       void load();
     } catch (error) {
-      Message.error(error instanceof Error ? error.message : "操作失败");
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "操作失败" });
     }
   };
 
   const handleDelete = async (item: FieldConfigItem) => {
     try {
       await deleteFieldConfig(item.category, item.module);
-      Message.success("已删除");
+      Notification.success({ title: "操作成功", content: "已删除" });
       void load();
     } catch (error) {
-      Message.error(error instanceof Error ? error.message : "删除失败");
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "删除失败" });
     }
   };
 

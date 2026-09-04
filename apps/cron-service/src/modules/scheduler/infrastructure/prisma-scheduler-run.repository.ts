@@ -55,9 +55,16 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
     page: number;
     pageSize: number;
     status?: string;
+    env?: string;
   }): Promise<{ items: SchedulerRunItem[]; total: number }> {
-    const { page, pageSize, status } = options;
-    const where = status ? { status } : undefined;
+    const { page, pageSize, status, env } = options;
+    const where: Record<string, unknown> = {};
+    if (status) {
+      where.status = status;
+    }
+    if (env) {
+      where.OR = [{ env }, { env: "all" }];
+    }
     const [rows, total] = await Promise.all([
       this.prisma.schedulerRun.findMany({
         where,

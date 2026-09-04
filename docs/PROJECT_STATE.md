@@ -99,14 +99,19 @@
 
 <!-- AUTO-MIGRATIONS-BEGIN -->
 
-| 迁移                                               | 说明 |
-| -------------------------------------------------- | ---- |
-| 20260813021549_init                                |      |
-| 20260902075136_add_department_sync_log             |      |
-| 20260902085837_add_tags_module_to_scheduler        |      |
-| 20260902094247_add_field_config                    |      |
-| 20260902100000_remove_field_type_from_field_config |      |
-| 20260903085852_fix_department_relation             |      |
+| 迁移                                                 | 说明 |
+| ---------------------------------------------------- | ---- |
+| 20260813021549_init                                  |      |
+| 20260902075136_add_department_sync_log               |      |
+| 20260902085837_add_tags_module_to_scheduler          |      |
+| 20260902094247_add_field_config                      |      |
+| 20260902100000_remove_field_type_from_field_config   |      |
+| 20260903085852_fix_department_relation               |      |
+| 20260904000000_remove_sync_log                       |      |
+| 20260904010000_add_env_to_scheduler_config           |      |
+| 20260904020000_make_scheduler_run_config_id_nullable |      |
+| 20260904030000_add_env_to_scheduler_run              |      |
+| 20260904040000_restore_sync_log                      |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 

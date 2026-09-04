@@ -9,6 +9,8 @@ const PERMISSIONS = [
   { code: "role:write", name: "管理角色", resource: "role", action: "write" },
   { code: "project:read", name: "查看项目", resource: "project", action: "read" },
   { code: "project:write", name: "管理项目", resource: "project", action: "write" },
+  { code: "system-config:read", name: "查看系统配置", resource: "system-config", action: "read" },
+  { code: "system-config:write", name: "管理系统配置", resource: "system-config", action: "write" },
 ];
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {

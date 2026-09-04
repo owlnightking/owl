@@ -1,4 +1,4 @@
-import { Layout as ArcoLayout, Menu } from "@arco-design/web-react";
+import { Layout as ArcoLayout, Menu, Breadcrumb } from "@arco-design/web-react";
 import {
   IconHome,
   IconSettings,
@@ -64,6 +64,12 @@ export function Layout({ siderItems }: LayoutProps) {
   }, [collapsed]);
 
   const selectedKey = siderItems.find((item) => location.pathname.startsWith(item.key))?.key ?? "/home";
+  const selectedItem = siderItems.find((item) => item.key === selectedKey);
+
+  const breadcrumbItems = [
+    { key: "home", path: "/", label: "首页" },
+    ...(selectedItem ? [{ key: "current", path: selectedItem.key, label: selectedItem.label }] : []),
+  ];
 
   const trigger = (
     <div className="flex h-12 cursor-pointer items-center justify-center border-t border-gray-100 hover:bg-gray-50">
@@ -89,8 +95,28 @@ export function Layout({ siderItems }: LayoutProps) {
         </Menu>
       </Sider>
 
-      <Content className="overflow-auto bg-gray-50 p-6">
-        <Outlet />
+      <Content className="flex flex-col overflow-auto bg-gray-50 p-3">
+        <div className="flex-1 overflow-auto bg-white p-6">
+          <div className="mb-4 border-b border-gray-100 pb-3">
+            <Breadcrumb className="m-0">
+              {breadcrumbItems.map((item, index) => (
+                <Breadcrumb.Item key={item.key}>
+                  {index < breadcrumbItems.length - 1 ? (
+                    <span
+                      className="cursor-pointer text-gray-400 hover:text-blue-600"
+                      onClick={() => navigate(item.path)}
+                    >
+                      {item.label}
+                    </span>
+                  ) : (
+                    <span className="text-gray-700">{item.label}</span>
+                  )}
+                </Breadcrumb.Item>
+              ))}
+            </Breadcrumb>
+          </div>
+          <Outlet />
+        </div>
       </Content>
     </ArcoLayout>
   );

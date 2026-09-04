@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Form, Input, Message, Modal, Popconfirm, Select, Table, Tag } from "@arco-design/web-react";
+import { Button, Form, Input, Modal, Notification, Popconfirm, Select, Table, Tag } from "@arco-design/web-react";
 import { get, post, put, del } from "../api/client";
 
 interface Permission {
@@ -71,30 +71,38 @@ export function RolesPage() {
 
   const save = async () => {
     const values = await form.validate();
-    if (editing) {
-      await put<void>(`/roles/${editing.id}`, {
-        name: values.name,
-        description: values.description,
-        permissionIds: values.permissionIds ?? [],
-      });
-      Message.success("角色已更新");
-    } else {
-      await post<void>("/roles", {
-        code: values.code,
-        name: values.name,
-        description: values.description,
-        permissionIds: values.permissionIds ?? [],
-      });
-      Message.success("角色已创建");
+    try {
+      if (editing) {
+        await put<void>(`/roles/${editing.id}`, {
+          name: values.name,
+          description: values.description,
+          permissionIds: values.permissionIds ?? [],
+        });
+        Notification.success({ title: "操作成功", content: "角色已更新" });
+      } else {
+        await post<void>("/roles", {
+          code: values.code,
+          name: values.name,
+          description: values.description,
+          permissionIds: values.permissionIds ?? [],
+        });
+        Notification.success({ title: "操作成功", content: "角色已创建" });
+      }
+      setModalVisible(false);
+      void load();
+    } catch (error) {
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "操作失败" });
     }
-    setModalVisible(false);
-    void load();
   };
 
   const remove = async (role: RoleItem) => {
-    await del<void>(`/roles/${role.id}`);
-    Message.success("角色已删除");
-    void load();
+    try {
+      await del<void>(`/roles/${role.id}`);
+      Notification.success({ title: "操作成功", content: "角色已删除" });
+      void load();
+    } catch (error) {
+      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "删除失败" });
+    }
   };
 
   const columns = [

@@ -17,6 +17,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
     handler: string;
     tags: string[];
     module: string | null;
+    env: string;
     enabled: boolean;
     description: string | null;
     timeoutMs: number;
@@ -30,6 +31,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
       handler: raw.handler,
       tags: raw.tags,
       module: raw.module,
+      env: raw.env,
       enabled: raw.enabled,
       description: raw.description,
       timeoutMs: raw.timeoutMs,
@@ -54,6 +56,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
     handler: string;
     tags?: string[];
     module?: string;
+    env?: string;
     description?: string;
   }): Promise<SchedulerConfigItem> {
     const row = await this.prisma.schedulerConfig.create({
@@ -65,6 +68,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
         queue: `task-queue:${data.area}`,
         tags: data.tags ?? [],
         module: data.module,
+        env: data.env ?? "all",
         description: data.description,
         timeoutMs: DEFAULT_TIMEOUT_MS,
         retryPolicy: { maxRetries: DEFAULT_MAX_RETRIES },
@@ -75,7 +79,9 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
 
   async update(
     id: string,
-    data: Partial<Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "tags" | "module">>
+    data: Partial<
+      Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "tags" | "module" | "env">
+    >
   ): Promise<void> {
     await this.prisma.schedulerConfig.update({ where: { id }, data });
   }
