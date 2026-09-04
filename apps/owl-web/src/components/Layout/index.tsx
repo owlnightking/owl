@@ -21,10 +21,11 @@ export interface SiderItem {
 }
 
 export const OWL_SIDER_ITEMS: SiderItem[] = [
-  { key: "/home", label: "工作台首页", icon: <IconEye /> },
-  { key: "/orders", label: "订单管理", icon: <IconList /> },
-  { key: "/products", label: "商品管理", icon: <IconFile /> },
-  { key: "/settings", label: "系统设置", icon: <IconTool /> },
+  { key: "/workbench", label: "工作台", icon: <IconHome /> },
+  { key: "/ipd", label: "IPD", icon: <IconEye /> },
+  { key: "/gtm", label: "GTM", icon: <IconList /> },
+  { key: "/isc", label: "ISC", icon: <IconFile /> },
+  { key: "/voc", label: "VOC", icon: <IconTool /> },
 ];
 
 export const CRON_SIDER_ITEMS: SiderItem[] = [

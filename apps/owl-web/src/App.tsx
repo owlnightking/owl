@@ -1,15 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { PROJECT_NAME } from "@owl/shared";
 import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { AuthGuard } from "./components/AuthGuard";
 import { Layout, OWL_SIDER_ITEMS } from "./components/Layout";
 
-function HomePage() {
+function ModulePage({ title }: { title: string }) {
   return (
     <div className="flex flex-1 items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-gray-800">{PROJECT_NAME} · 业务前台</h1>
-        <p className="mt-2 text-sm text-gray-500">跨境电商运营管理平台</p>
+        <h1 className="text-2xl font-semibold text-gray-800">{title}</h1>
+        <p className="mt-2 text-sm text-gray-500">功能开发中...</p>
       </div>
     </div>
   );
@@ -18,11 +17,15 @@ function HomePage() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/" element={<Navigate to="/workbench" replace />} />
       <Route element={<Layout siderItems={OWL_SIDER_ITEMS} />}>
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/workbench" element={<ModulePage title="工作台" />} />
+        <Route path="/ipd" element={<ModulePage title="IPD" />} />
+        <Route path="/gtm" element={<ModulePage title="GTM" />} />
+        <Route path="/isc" element={<ModulePage title="ISC" />} />
+        <Route path="/voc" element={<ModulePage title="VOC" />} />
       </Route>
-      <Route path="*" element={<Navigate to="/home" replace />} />
+      <Route path="*" element={<Navigate to="/workbench" replace />} />
     </Routes>
   );
 }
