@@ -125,8 +125,14 @@ jobs:
           COPY packages/shared/package.json packages/shared/package.json
           COPY packages/database/package.json packages/database/package.json
           COPY packages/database/prisma packages/database/prisma
+          COPY packages/permission/package.json packages/permission/package.json
           COPY apps/api-service/package.json apps/api-service/package.json
           COPY apps/cron-service/package.json apps/cron-service/package.json
+          COPY apps/admin-web/package.json apps/admin-web/package.json
+          COPY apps/cron-web/package.json apps/cron-web/package.json
+          COPY apps/mobile-web/package.json apps/mobile-web/package.json
+          COPY apps/owl-web/package.json apps/owl-web/package.json
+          COPY apps/portal/package.json apps/portal/package.json
           RUN pnpm install --frozen-lockfile \
             && pnpm --filter @owl/database exec prisma generate
           COPY . .
