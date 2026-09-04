@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Notification } from "@arco-design/web-react";
+import { Notify } from "@arco-design/mobile-react";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -32,8 +32,7 @@ http.interceptors.response.use(
       window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
     }
     if (status === 403) {
-      Notification.error({
-        title: "无权限",
+      Notify.error({
         content: "您没有执行此操作的权限，请联系管理员",
         duration: 5000,
       });
