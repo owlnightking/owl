@@ -1,7 +1,7 @@
 {
   "name": "owl",
   "private": true,
-  "version": "0.2.26",
+  "version": "0.2.27",
   "description": "Owl - 跨境电商内网管理系统（monorepo）",
   "packageManager": "pnpm@10.12.4",
   "engines": {
