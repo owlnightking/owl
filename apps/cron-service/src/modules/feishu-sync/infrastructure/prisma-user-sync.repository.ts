@@ -17,7 +17,8 @@ export class PrismaUserSyncRepository implements UserSyncRepositoryPort {
 
     for (const user of users) {
       const localDeptId = user.departmentId ? (deptByOpenId.get(user.departmentId) ?? user.departmentId) : null;
-      const validDeptId = localDeptId && depts.some((d) => d.feishuDepartmentId === localDeptId) ? localDeptId : null;
+      const validDeptId =
+        localDeptId && depts.some((dept) => dept.feishuDepartmentId === localDeptId) ? localDeptId : null;
 
       await this.prisma.user.upsert({
         where: { unionId: user.unionId },

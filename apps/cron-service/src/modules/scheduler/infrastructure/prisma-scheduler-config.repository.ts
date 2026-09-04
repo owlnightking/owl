@@ -39,7 +39,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
 
   async findAll(): Promise<SchedulerConfigItem[]> {
     const rows = await this.prisma.schedulerConfig.findMany({ orderBy: { updatedAt: "desc" } });
-    return rows.map((r) => this.toItem(r));
+    return rows.map((row) => this.toItem(row));
   }
 
   async findById(id: string): Promise<SchedulerConfigItem | null> {

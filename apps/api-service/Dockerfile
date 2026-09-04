@@ -17,6 +17,7 @@ COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps/api-service ./apps/api-service
 COPY . .
 RUN pnpm --filter @owl/shared build
+RUN pnpm --filter @owl/api-service typecheck
 RUN pnpm --filter @owl/api-service build
 
 FROM node:22-alpine AS runtime

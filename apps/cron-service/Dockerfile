@@ -8,6 +8,8 @@ COPY apps/cron-service/package.json apps/cron-service/package.json
 RUN pnpm install --frozen-lockfile --filter @owl/cron-service...
 COPY . .
 RUN pnpm --filter @owl/shared build
+RUN pnpm --filter @owl/database build
+RUN pnpm --filter @owl/cron-service typecheck
 RUN pnpm --filter @owl/cron-service build
 
 FROM node:22-alpine AS runtime

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaClient } from "@owl/database";
+import { PrismaClient, type Prisma } from "@owl/database";
 import type { DepartmentRepositoryPort, FeishuDepartment } from "../domain/feishu-sync.ports";
 
 @Injectable()
@@ -7,7 +7,7 @@ export class PrismaDepartmentRepository implements DepartmentRepositoryPort {
   constructor(private readonly prisma: PrismaClient) {}
 
   async replaceAll(depts: FeishuDepartment[]): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.department.deleteMany();
 
       for (const dept of depts) {

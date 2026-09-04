@@ -48,7 +48,7 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
       }),
       this.prisma.schedulerRun.count({ where: { configId } }),
     ]);
-    return { items: rows.map((r) => this.toItem(r)), total };
+    return { items: rows.map((row) => this.toItem(row)), total };
   }
 
   async findAll(options: {
@@ -67,6 +67,6 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
       }),
       this.prisma.schedulerRun.count({ where }),
     ]);
-    return { items: rows.map((r) => this.toItem(r)), total };
+    return { items: rows.map((row) => this.toItem(row)), total };
   }
 }

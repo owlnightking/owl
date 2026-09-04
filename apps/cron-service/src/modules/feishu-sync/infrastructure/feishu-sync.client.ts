@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 import type { FeishuSyncPort, FeishuDepartment, FeishuUser } from "../domain/feishu-sync.ports";
 
 const FEISHU_TOKEN_URL = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal";
@@ -74,8 +74,9 @@ export class FeishuSyncClient implements FeishuSyncPort {
       return this.tenantAccessToken;
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
         this.logger.error(
-          `Feishu token request failed: ${error.response?.status} ${JSON.stringify(error.response?.data)}`
+          `Feishu token request failed: ${axiosError.response?.status} ${JSON.stringify(axiosError.response?.data)}`
         );
       }
       throw error;
@@ -125,7 +126,10 @@ export class FeishuSyncClient implements FeishuSyncPort {
       } while (pageToken);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        this.logger.error(`Department API failed: ${error.response?.status} ${JSON.stringify(error.response?.data)}`);
+        const axiosError = error as AxiosError;
+        this.logger.error(
+          `Department API failed: ${axiosError.response?.status} ${JSON.stringify(axiosError.response?.data)}`
+        );
       }
       throw error;
     }
