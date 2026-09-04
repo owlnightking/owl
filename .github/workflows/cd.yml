@@ -170,7 +170,8 @@ jobs:
     needs:
       - detect-release
       - verify
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'cron-service')
+      - build-api-service
+    if: always() && needs.build-api-service.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'cron-service')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -194,7 +195,7 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'admin-web')
+    if: always() && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'admin-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -218,7 +219,7 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'owl-web')
+    if: always() && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'owl-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -242,7 +243,7 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'cron-web')
+    if: always() && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'cron-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -266,7 +267,7 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'portal')
+    if: always() && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'portal')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -290,7 +291,7 @@ jobs:
       - verify
       - build-api-service
       - build-cron-service
-    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'mobile-web')
+    if: always() && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && contains(needs.detect-release.outputs.frontend_apps, 'mobile-web')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -318,7 +319,7 @@ jobs:
       - build-owl-web
       - build-cron-web
       - build-mobile-web
-    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && needs.verify.result == 'success' && (needs.build-api-service.result == 'success' || needs.build-api-service.result == 'skipped') && (needs.build-cron-service.result == 'success' || needs.build-cron-service.result == 'skipped') && (needs.build-portal.result == 'success' || needs.build-portal.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped') && (needs.build-mobile-web.result == 'success' || needs.build-mobile-web.result == 'skipped')
+    if: always() && needs.detect-release.outputs.should_deploy == 'true' && needs.detect-release.result == 'success' && needs.verify.result == 'success' && needs.build-api-service.result == 'success' && needs.build-cron-service.result == 'success' && (needs.build-portal.result == 'success' || needs.build-portal.result == 'skipped') && (needs.build-admin-web.result == 'success' || needs.build-admin-web.result == 'skipped') && (needs.build-owl-web.result == 'success' || needs.build-owl-web.result == 'skipped') && (needs.build-cron-web.result == 'success' || needs.build-cron-web.result == 'skipped') && (needs.build-mobile-web.result == 'success' || needs.build-mobile-web.result == 'skipped')
     outputs:
       deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:
