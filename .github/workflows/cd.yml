@@ -126,6 +126,8 @@ jobs:
           COPY packages/database/prisma packages/database/prisma
           COPY apps/api-service/package.json apps/api-service/package.json
           COPY apps/cron-service/package.json apps/cron-service/package.json
+          COPY packages/shared/src packages/shared/src
+          COPY packages/shared/tsconfig*.json packages/shared/
           RUN pnpm install --frozen-lockfile \
             && pnpm --filter @owl/database exec prisma generate \
             && pnpm --filter @owl/shared build
