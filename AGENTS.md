@@ -107,3 +107,16 @@ apps/ow/               → CLI / 脚本工具
 3. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则层**：低频更新，与状态文档解耦。
 
 **防漂移门禁**：`scripts/check-doc-freshness.sh` 对比源码与 `PROJECT_STATE.md` 的最近提交时间，源码新 → ERROR（提示运行 `pnpm state:update`）；pre-commit 增量检查暂存区。**版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
+
+## 九、CI/CD 工作流保护规则
+
+`.github/workflows/cd.yml` 是本项目**唯一的 CD 工作流文件**，承担构建、部署、通知、清理等全部持续部署职责。
+
+**AI Agent 硬性约束：**
+
+1. **禁止私自改动 `cd.yml`**：任何对该文件的修改必须先向用户说明改动原因、具体变更内容，经用户明确同意后方可执行。未经许可的改动视为违规。
+2. **禁止创建新的 `.github/workflows/*.yml` 文件**：CD 流水线统一由 `cd.yml` 管理，不允许新建其他 workflow 文件。如需新增 CI 流水线（如 PR 检查），须与用户确认后再操作。
+3. **禁止删除或禁用 `cd.yml` 中的清理步骤**：Docker 镜像清理、缓存清理等步骤是磁盘空间保障机制，不得移除或跳过。
+4. **修改 `cd.yml` 时必须保持 job 依赖关系正确**：改动 `needs` / `if` 条件前需确认不会破坏流水线拓扑（如并行变串行、遗漏必要依赖等）。
+
+违反以上规则的提交将被阻断。
