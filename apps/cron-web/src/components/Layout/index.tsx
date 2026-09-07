@@ -1,5 +1,5 @@
 import { Layout as ArcoLayout, Menu, Breadcrumb } from "@arco-design/web-react";
-import { IconHome, IconFile, IconCalendar, IconMenuFold, IconMenuUnfold } from "@arco-design/web-react/icon";
+import { IconDashboard, IconFile, IconCalendar, IconMenuFold, IconMenuUnfold } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -12,7 +12,7 @@ export interface SiderItem {
 }
 
 export const CRON_SIDER_ITEMS: SiderItem[] = [
-  { key: "/home", label: "任务中心", icon: <IconHome /> },
+  { key: "/home", label: "任务中心", icon: <IconDashboard /> },
   { key: "/tasks", label: "任务列表", icon: <IconCalendar /> },
   { key: "/logs", label: "执行日志", icon: <IconFile /> },
 ];

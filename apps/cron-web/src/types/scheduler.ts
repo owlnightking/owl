@@ -38,3 +38,29 @@ export interface SyncLog {
   errorMsg: string | null;
   createdAt: string;
 }
+
+export interface StatusDatum {
+  status: string;
+  name: string;
+  value: number;
+}
+
+export interface TrendDatum {
+  date: string;
+  success: number;
+  failed: number;
+}
+
+export interface DashboardStats {
+  totalConfigs: number;
+  enabledConfigs: number;
+  disabledConfigs: number;
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  runningRuns: number;
+  pendingRuns: number;
+  runsByStatus: StatusDatum[];
+  recentRuns: SchedulerRun[];
+  runsTrend: TrendDatum[];
+}
