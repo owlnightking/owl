@@ -170,8 +170,7 @@ jobs:
     needs:
       - detect-release
       - verify
-      - build-api-service
-    if: always() && needs.build-api-service.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'cron-service')
+    if: always() && needs.verify.result == 'success' && contains(needs.detect-release.outputs.backend_apps, 'cron-service')
     steps:
       - uses: actions/checkout@v4
       - name: Get version
@@ -379,12 +378,20 @@ jobs:
           echo "Removing versioned owl images from host docker (keeping latest)..."
           for entry in $APP_VERSIONS; do
             ref="owl/${entry%%:*}:${entry##*:}"
-            docker rmi "$ref" >/dev/null 2>&1 && echo "removed $ref"
+            if docker rmi "$ref" 2>&1; then
+              echo "removed $ref"
+            else
+              echo "WARN: failed to remove $ref"
+            fi
           done
           docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
             tag="${ref##*:}"
             [ "$tag" = "latest" ] && continue
-            docker rmi "$ref" >/dev/null 2>&1 && echo "removed stale $ref"
+            if docker rmi "$ref" 2>&1; then
+              echo "removed stale $ref"
+            else
+              echo "WARN: failed to remove stale $ref"
+            fi
           done
 
   notify:
@@ -491,16 +498,45 @@ jobs:
           rm -rf "${{ github.workspace }}/*"
           find /runner/_work -maxdepth 1 -type d -name "*" -mtime +7 -exec rm -rf {} \; 2>/dev/null || true
           echo "Runner workspace cleaned"
-      - name: Clean Docker build cache
+      - name: Clean all Docker cache and images
         run: |
-          echo "Pruning docker build cache..."
-          docker builder prune -f
-      - name: Clean old Docker images
-        run: |
-          echo "Cleaning old owl images from host docker (keeping only latest)..."
+          echo "=== Phase 1: Stop all non-running containers ==="
+          docker ps -a --format '{{.ID}}' | while read -r cid; do
+            status=$(docker inspect --format '{{.State.Status}}' "$cid" 2>/dev/null)
+            if [ "$status" = "exited" ] || [ "$status" = "dead" ] || [ "$status" = "created" ]; then
+              docker rm -f "$cid" 2>/dev/null && echo "removed container $cid ($status)"
+            fi
+          done
+
+          echo "=== Phase 2: Remove all non-latest owl images ==="
           docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
             tag="${ref##*:}"
             [ "$tag" = "latest" ] && continue
-            docker rmi "$ref" >/dev/null 2>&1 && echo "removed $ref"
+            if docker rmi "$ref" 2>&1; then
+              echo "removed $ref"
+            else
+              echo "WARN: failed to remove $ref, attempting forced cleanup..."
+              docker stop $(docker ps -aq --filter "ancestor=$ref") 2>/dev/null || true
+              docker rm $(docker ps -aq --filter "ancestor=$ref") 2>/dev/null || true
+              docker rmi -f "$ref" 2>&1 && echo "force-removed $ref" || echo "ERROR: could not remove $ref"
+            fi
           done
-          docker image prune -f
+
+          echo "=== Phase 3: Remove ALL non-owl images (base images, dangling, etc.) ==="
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | while read -r ref; do
+            echo "$ref" | grep -q '^owl/.*:latest$' && continue
+            docker rmi -f "$ref" 2>&1 && echo "removed $ref" || true
+          done
+
+          echo "=== Phase 4: Prune everything ==="
+          docker image prune -af
+          docker builder prune -af
+          docker container prune -f
+          docker network prune -f
+          docker volume prune -f
+
+          echo "=== Phase 5: Final verification ==="
+          echo "Remaining images:"
+          docker image ls
+          echo "Remaining build cache:"
+          docker system df
