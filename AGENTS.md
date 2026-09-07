@@ -108,7 +108,50 @@ apps/ow/               → CLI / 脚本工具
 
 **防漂移门禁**：`scripts/check-doc-freshness.sh` 对比源码与 `PROJECT_STATE.md` 的最近提交时间，源码新 → ERROR（提示运行 `pnpm state:update`）；pre-commit 增量检查暂存区。**版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
 
-## 九、CI/CD 工作流保护规则
+## 九、生产环境 Secret 管理（Rancher）
+
+**生产环境 Secrets 由 Rancher 管理，严禁通过 CD 流水线或代码配置。**
+
+### 架构
+
+```
+Rancher UI (https://localhost:8443)
+  ↓ 管理
+k3s-owl-prod 集群 → owl namespace → Secrets
+  ↓ 注入
+Pod 环境变量 (envFrom secretRef)
+```
+
+### Secret 清单
+
+| Secret 名称           | Namespace | 用途                 | 数据项                                                                                           |
+| --------------------- | --------- | -------------------- | ------------------------------------------------------------------------------------------------ |
+| `api-service-secret`  | owl       | API 服务敏感配置     | DATABASE_URL, FEISHU_APP_SECRET, JWT_SECRET, MINIO_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD |
+| `cron-service-secret` | owl       | 定时任务服务敏感配置 | DATABASE_URL, FEISHU_BUSINESS_APP_SECRET, POSTGRES_PASSWORD, REDIS_PASSWORD                      |
+
+### 硬性规则
+
+1. **禁止在 CD 流水线（cd.yml）中创建或管理 Secrets**：CD 只负责构建和部署应用，不涉及 Secret 配置。
+2. **禁止在代码中硬编码任何敏感值**：所有敏感配置通过 K8s Secret 注入环境变量。
+3. **Secret 变更必须通过 Rancher UI 操作**：登录 Rancher → k3s-owl-prod → Storage → Secrets → 选择 owl namespace → 编辑对应 Secret。
+4. **新增 Secret 必须更新本文档**：添加新 Secret 时同步更新上方清单表。
+
+### Rancher 访问信息
+
+- URL: `https://localhost:8443`
+- 用户名: `admin`
+- 集群: `k3s-owl-prod`（Active）
+
+### 操作流程
+
+1. 登录 Rancher UI
+2. 左侧导航选择 `k3s-owl-prod` 集群
+3. 进入 `Storage` → `Secrets`
+4. 选择 `owl` namespace
+5. 点击 Secret 名称 → `Edit Config` 修改值
+6. 修改后需重启对应 Pod 生效（Deployment 滚动更新）
+
+## 十、CI/CD 工作流保护规则
 
 `.github/workflows/cd.yml` 是本项目**唯一的 CD 工作流文件**，承担构建、部署、通知、清理等全部持续部署职责。
 
