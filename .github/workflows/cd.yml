@@ -324,34 +324,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Ensure namespace and deployments
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
-          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          FEISHU_BUSINESS_APP_SECRET: ${{ secrets.FEISHU_BUSINESS_APP_SECRET }}
         run: |
           docker exec k3s kubectl get namespace owl >/dev/null 2>&1 || docker exec k3s kubectl create namespace owl
 
-          echo "Applying secrets (gitignored, created via GitHub Secrets)..."
-          docker exec k3s kubectl -n owl create secret generic api-service-secret \
-            --from-literal=POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
-            --from-literal=DATABASE_URL="${DATABASE_URL}" \
-            --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
-            --from-literal=MINIO_SECRET_KEY="${MINIO_SECRET_KEY}" \
-            --from-literal=FEISHU_APP_SECRET="${FEISHU_APP_SECRET}" \
-            --from-literal=JWT_SECRET="${JWT_SECRET}" \
-            --dry-run=client -o yaml | docker exec -i k3s kubectl apply -f -
-          docker exec k3s kubectl -n owl create secret generic cron-service-secret \
-            --from-literal=POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
-            --from-literal=DATABASE_URL="${DATABASE_URL}" \
-            --from-literal=REDIS_PASSWORD="${REDIS_PASSWORD}" \
-            --from-literal=FEISHU_BUSINESS_APP_SECRET="${FEISHU_BUSINESS_APP_SECRET}" \
-            --dry-run=client -o yaml | docker exec -i k3s kubectl apply -f -
-
-          echo "Applying k8s manifests..."
+          echo "Applying k8s manifests (Secrets managed by Rancher)..."
           docker exec k3s rm -rf /tmp/k8s-base
           docker cp k8s/base k3s:/tmp/k8s-base
           docker exec k3s kubectl apply -k /tmp/k8s-base/
