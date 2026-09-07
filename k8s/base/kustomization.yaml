@@ -4,11 +4,14 @@ kind: Kustomization
 resources:
   - api-service.yaml
   - api-service-config.yaml
+  - api-service-secret.yaml
+  - cron-service.yaml
+  - cron-service-config.yaml
+  - cron-service-secret.yaml
   - portal.yaml
   - admin-web.yaml
   - owl-web.yaml
   - cron-web.yaml
-  - cron-service.yaml
   - mobile-web.yaml
 
 labels:

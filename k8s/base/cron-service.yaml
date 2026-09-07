@@ -21,6 +21,11 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: cron-service-config
+            - secretRef:
+                name: cron-service-secret
           env:
             - name: NODE_ENV
               value: production
@@ -28,13 +33,13 @@ spec:
               value: "3001"
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /cron/health
               port: 3001
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /cron/health
               port: 3001
             initialDelaySeconds: 15
             periodSeconds: 20
