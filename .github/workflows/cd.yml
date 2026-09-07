@@ -352,6 +352,7 @@ jobs:
             --dry-run=client -o yaml | docker exec -i k3s kubectl apply -f -
 
           echo "Applying k8s manifests..."
+          docker exec k3s rm -rf /tmp/k8s-base
           docker cp k8s/base k3s:/tmp/k8s-base
           docker exec k3s kubectl apply -k /tmp/k8s-base/
           docker exec k3s rm -rf /tmp/k8s-base
