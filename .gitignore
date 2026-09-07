@@ -39,3 +39,4 @@ packages/database/prisma/*.db
 
 # k8s secrets (contain real credentials, apply manually via kubectl)
 k8s/base/api-service-secret.yaml
+Dockerfile.verify
