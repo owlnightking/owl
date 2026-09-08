@@ -8,7 +8,7 @@
 
 - 领域地图（ADR 002）：主领域 = 自研产品跨境电商 13 阶段流水线（远期保留）；组织支撑域 = 认可中心/人才中心/智能客服+知识库/基础配置监控（当前主线）；副业域 = 付费知识 md 文档库
 - 开发顺序：先组织支撑域、再副业域、后主领域（详见 implementation-plan）
-- 里程碑 2'（当前目标）：S0 支撑域底座（permission 按钮级 RBAC / notification / file / system-config / admin 二级菜单 / 本地 mock 登录）+ S1 认可中心闭环 —— 未开始，需求基线已收敛
+- 里程碑 2'（当前目标）：S0 支撑域底座 ✅ 已完成（PrismaClient 全局单例 / system-config / mock 登录 / permission / notification / file / admin 二级菜单 + 权限渲染）；下一步 S1 认可中心闭环
 - Phase 1 (M1') 认证与权限底座：代码基本完成，验收项未全部勾选
 - 后续阶段：S2 人才中心 / S3 智能客服+知识库 / S4 基础配置监控 / B1 付费知识 / M0 主领域流水线 —— 未开始
 - 部署：K3s 已部署；mobile-web（飞书 OAuth，k8s NodePort 9263）已上线但页面全 mock
@@ -16,14 +16,14 @@
 
 ## 已知缺口（开工前确认，做完一项划一项）
 
-- [ ] permission 模块空壳，无按钮级四层 RBAC（菜单/页面/按钮/接口）与权限点管理 API
-- [ ] admin 菜单仅一级平铺，缺一级分组 + 二级菜单及按角色权限派生渲染
-- [ ] notification / file / system-config 空壳（S0 需填实：内站消息、MinIO 上传、可配参数）；mcp 空壳（S4）
+- [x] ~~PrismaClient 每模块各自 new，模块多时需收敛全局单例~~（S0 T1 已完成）
+- [x] ~~permission 模块空壳，无按钮级四层 RBAC~~（S0 T4 已完成：CRUD + controller + 集成）
+- [x] ~~admin 菜单仅一级平铺，缺一级分组 + 二级菜单及按角色权限派生渲染~~（S0 T7 已完成）
+- [x] ~~notification / file / system-config 空壳~~（S0 T2/T5/T6 已完成：CRUD + 集成）
+- [x] ~~本地飞书应用未配置，SSO 本地无法真实跑通~~（S0 T3 mock 登录通道已完成）
 - [ ] 组织支撑域与副业域领域模块均未建：认可（徽章/认可贴/币账户/币流水/兑换单/商品）、人才、知识库、付费知识文档库、使用统计/消息推送监控/数据监控（规划见 implementation-plan S1-S4/B1）
 - [ ] mobile-web 四个 Tab 与个人中心全为 mock 数据，无真实接口；「我的」md 编写文档模块未建
-- [ ] 本地飞书应用未配置（FEISHU_APP_ID/SECRET 空），SSO 本地无法真实跑通；S0 落地可切角色 mock 登录通道验收
-- [ ] 测试覆盖仅 auth.use-case 1 个 spec，user/role 无单测
-- [ ] PrismaClient 每模块各自 new，模块多时需收敛全局单例
+- [ ] 测试覆盖仅 auth.use-case 1 个 spec，user/role/permission/system-config/notification/file 无单测
 - [ ] cron-service 仅 health + ScheduleModule，任务中心未建（人才表单同步 / 数据监控探针后续挂靠）
 - [ ] 主领域（13 阶段流水线）领域后移，project 模块空壳（M0 重启时建）
 
@@ -52,13 +52,13 @@
 | audit-log     | 1   | 1   | 1     | 1    | ✅ 完整 |
 | auth          | 3   | 1   | 5     | 2    | ✅ 完整 |
 | field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
-| file          | 0   | 0   | 0     | 0    | ❌ 空壳 |
+| file          | 1   | 1   | 1     | 1    | ✅ 完整 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
-| notification  | 0   | 0   | 0     | 0    | ❌ 空壳 |
-| permission    | 0   | 0   | 0     | 0    | ❌ 空壳 |
+| notification  | 1   | 1   | 1     | 1    | ✅ 完整 |
+| permission    | 1   | 1   | 1     | 1    | ✅ 完整 |
 | project       | 0   | 0   | 0     | 0    | ❌ 空壳 |
 | role          | 1   | 1   | 1     | 1    | ✅ 完整 |
-| system-config | 0   | 0   | 0     | 0    | ❌ 空壳 |
+| system-config | 1   | 1   | 1     | 1    | ✅ 完整 |
 | user          | 1   | 1   | 1     | 1    | ✅ 完整 |
 
 <!-- AUTO-MODULES-END -->
@@ -143,27 +143,45 @@
 
 <!-- AUTO-API-BEGIN -->
 
-| 模块         | 方法   | 路径                                |
-| ------------ | ------ | ----------------------------------- |
-| field-config | Delete | /api/field-config/:category/:module |
-| role         | Delete | /api/roles/:id                      |
-| audit-log    | Get    | /api/audit-logs                     |
-| auth         | Get    | /api/auth/feishu/callback           |
-| auth         | Get    | /api/auth/feishu/login              |
-| auth         | Get    | /api/auth/me                        |
-| field-config | Get    | /api/field-config/:category         |
-| field-config | Get    | /api/field-config/:category/:module |
-| role         | Get    | /api/roles                          |
-| role         | Get    | /api/roles/permissions              |
-| user         | Get    | /api/users                          |
-| user         | Get    | /api/users/:id/roles                |
-| user         | Get    | /api/users/roles                    |
-| auth         | Post   | /api/auth/logout                    |
-| auth         | Post   | /api/auth/refresh                   |
-| role         | Post   | /api/roles                          |
-| field-config | Put    | /api/field-config/:category/:module |
-| role         | Put    | /api/roles/:id                      |
-| user         | Put    | /api/users/:id/roles                |
-| user         | Put    | /api/users/:id/status               |
+| 模块          | 方法   | 路径                                |
+| ------------- | ------ | ----------------------------------- |
+| field-config  | Delete | /api/field-config/:category/:module |
+| file          | Delete | /api/files/:id                      |
+| permission    | Delete | /api/permissions/:id                |
+| role          | Delete | /api/roles/:id                      |
+| system-config | Delete | /api/system-config/:key             |
+| audit-log     | Get    | /api/audit-logs                     |
+| auth          | Get    | /api/auth/feishu/callback           |
+| auth          | Get    | /api/auth/feishu/login              |
+| auth          | Get    | /api/auth/me                        |
+| auth          | Get    | /api/auth/mock-users                |
+| field-config  | Get    | /api/field-config/:category         |
+| field-config  | Get    | /api/field-config/:category/:module |
+| file          | Get    | /api/files                          |
+| file          | Get    | /api/files/:id                      |
+| notification  | Get    | /api/notifications                  |
+| notification  | Get    | /api/notifications/unread-count     |
+| permission    | Get    | /api/permissions                    |
+| permission    | Get    | /api/permissions/:id                |
+| role          | Get    | /api/roles                          |
+| role          | Get    | /api/roles/permissions              |
+| system-config | Get    | /api/system-config/:key             |
+| user          | Get    | /api/users                          |
+| user          | Get    | /api/users/:id/roles                |
+| user          | Get    | /api/users/roles                    |
+| auth          | Post   | /api/auth/logout                    |
+| auth          | Post   | /api/auth/mock-login                |
+| auth          | Post   | /api/auth/refresh                   |
+| notification  | Post   | /api/notifications                  |
+| permission    | Post   | /api/permissions                    |
+| role          | Post   | /api/roles                          |
+| field-config  | Put    | /api/field-config/:category/:module |
+| notification  | Put    | /api/notifications/:id/read         |
+| notification  | Put    | /api/notifications/read-all         |
+| permission    | Put    | /api/permissions/:id                |
+| role          | Put    | /api/roles/:id                      |
+| system-config | Put    | /api/system-config/:key             |
+| user          | Put    | /api/users/:id/roles                |
+| user          | Put    | /api/users/:id/status               |
 
 <!-- AUTO-API-END -->

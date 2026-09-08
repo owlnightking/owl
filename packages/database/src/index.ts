@@ -1,4 +1,4 @@
-import { PrismaClient } from "./generated";
+import { PrismaClient } from "./generated/index.js";
 
-export * from "./generated";
+export * from "./generated/index.js";
 export { PrismaClient };

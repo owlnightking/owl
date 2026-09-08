@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
-import { PrismaClient } from "@owl/database";
 import { AuthUseCase } from "./application/auth.use-case";
 import { AuthController } from "./presentation/auth.controller";
 import { FeishuAuthClient } from "./infrastructure/feishu-auth.client";
@@ -19,16 +18,10 @@ import {
   USER_REPOSITORY_PORT,
 } from "./domain/auth.ports";
 
-const databaseProvider = {
-  provide: PrismaClient,
-  useFactory: () => new PrismaClient(),
-};
-
 @Module({
   imports: [JwtModule.register({})],
   controllers: [AuthController],
   providers: [
-    databaseProvider,
     JwtTokenService,
     { provide: AUTH_PORT, useClass: FeishuAuthClient },
     { provide: SESSION_STORE_PORT, useClass: RedisSessionStore },
@@ -39,14 +32,6 @@ const databaseProvider = {
     JwtAuthGuard,
     PermissionGuard,
   ],
-  exports: [
-    PrismaClient,
-    TOKEN_PORT,
-    AUTH_SERVICE,
-    SESSION_STORE_PORT,
-    USER_REPOSITORY_PORT,
-    JwtAuthGuard,
-    PermissionGuard,
-  ],
+  exports: [TOKEN_PORT, AUTH_SERVICE, SESSION_STORE_PORT, USER_REPOSITORY_PORT, JwtAuthGuard, PermissionGuard],
 })
 export class AuthModule {}

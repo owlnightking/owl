@@ -1,5 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaClient } from "@owl/database";
+import { Inject, Injectable } from "@nestjs/common";
+import { DATABASE_CLIENT } from "@owl/database/provider";
+import type { PrismaClient } from "@owl/database";
 import type { FeishuUserInfo, StoredUser, UserRepository } from "../domain/auth.ports";
 
 export type { StoredUser, UserRepository };
@@ -8,7 +9,7 @@ const DEFAULT_NEW_USER_ROLE_CODE = "business_user";
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toStored(raw: {
     id: string;

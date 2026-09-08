@@ -29,7 +29,8 @@ http.interceptors.response.use(
     const isMeRequest = url.endsWith("/auth/me") || url.includes("/auth/refresh");
     if (status === 401 && !isMeRequest) {
       const redirect = encodeURIComponent(window.location.pathname);
-      window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
+      const isDev = import.meta.env.DEV;
+      window.location.href = isDev ? `/mock-login?redirect=${redirect}` : `/api/auth/feishu/login?redirect=${redirect}`;
     }
     if (status === 403) {
       Notification.error({

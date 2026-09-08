@@ -9,6 +9,11 @@
       "types": "./src/generated/index.d.ts",
       "require": "./src/generated/index.js",
       "default": "./src/generated/index.js"
+    },
+    "./provider": {
+      "types": "./provider.d.ts",
+      "require": "./provider.js",
+      "default": "./provider.js"
     }
   },
   "prisma": {
@@ -17,6 +22,7 @@
   },
   "scripts": {
     "generate": "prisma generate",
+    "prisma:generate": "prisma generate",
     "prisma:generate": "prisma generate",
     "db:push": "prisma db push",
     "migrate": "prisma migrate dev",

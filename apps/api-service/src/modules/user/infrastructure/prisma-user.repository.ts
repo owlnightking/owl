@@ -1,10 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaClient } from "@owl/database";
+import { Inject, Injectable } from "@nestjs/common";
+import { DATABASE_CLIENT } from "@owl/database/provider";
+import type { PrismaClient } from "@owl/database";
 import type { UserListItem, UserQuery, UserRepositoryPort } from "../domain/user.ports";
 
 @Injectable()
 export class PrismaUserRepository implements UserRepositoryPort {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
     id: string;

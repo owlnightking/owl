@@ -1,9 +1,20 @@
-import { Controller, Get, HttpStatus, Inject, Post, Query, Req, Res, UnauthorizedException } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Inject,
+  Post,
+  Query,
+  Req,
+  Res,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Request, Response } from "express";
 import { IsOptional, IsString } from "class-validator";
 import { ok } from "../../../common/response/api-response";
-import { AUTH_SERVICE, type AuthService } from "../domain/auth.ports";
+import { AUTH_SERVICE, USER_REPOSITORY_PORT, type AuthService, type UserRepository } from "../domain/auth.ports";
 
 export class FeishuLoginQueryDto {
   @IsString()
@@ -26,6 +37,15 @@ export class FeishuCallbackQueryDto {
   state!: string;
 }
 
+export class MockLoginDto {
+  @IsString()
+  unionId!: string;
+
+  @IsOptional()
+  @IsString()
+  clientName?: string;
+}
+
 const ACCESS_COOKIE = "owl_access";
 const REFRESH_COOKIE = "owl_refresh";
 
@@ -33,13 +53,16 @@ const REFRESH_COOKIE = "owl_refresh";
 export class AuthController {
   private readonly cookieDomain?: string;
   private readonly secure: boolean;
+  private readonly isProd: boolean;
 
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: AuthService,
+    @Inject(USER_REPOSITORY_PORT) private readonly users: UserRepository,
     config: ConfigService
   ) {
     this.cookieDomain = config.get<string>("COOKIE_DOMAIN") ?? undefined;
     this.secure = (config.get<string>("COOKIE_SECURE") ?? "false") === "true";
+    this.isProd = config.get<string>("NODE_ENV") === "production";
   }
 
   @Get("feishu/login")
@@ -83,13 +106,46 @@ export class AuthController {
   async me(@Req() req: Request) {
     const access = (req.cookies as Record<string, string> | undefined)?.[ACCESS_COOKIE] ?? "";
     const { payload, user } = await this.authService.resolveSession(access);
+    let permissions: string[] = [];
+    if (user?.id) {
+      permissions = await this.users.findPermissionCodes(user.id);
+    }
     return ok({
       sub: payload.sub,
       name: user?.name ?? payload.name,
       unionId: user?.unionId ?? payload.name,
       avatarUrl: user?.avatarUrl ?? null,
       client: payload.client,
+      permissions,
     });
+  }
+
+  @Post("mock-login")
+  async mockLogin(@Body() dto: MockLoginDto, @Res() res: Response) {
+    if (this.isProd) {
+      throw new UnauthorizedException("mock login disabled in production");
+    }
+    const clientName = dto.clientName ?? "owl-web";
+    const result = await this.authService.loginUser({ unionId: dto.unionId }, clientName);
+    this.setAuthCookies(res, result);
+    return res.status(HttpStatus.OK).json(ok(result));
+  }
+
+  @Get("mock-users")
+  async mockUsers() {
+    if (this.isProd) {
+      throw new UnauthorizedException("mock users disabled in production");
+    }
+    const { items } = await this.users.list({ page: 1, pageSize: 100 });
+    return ok(
+      items.map((u) => ({
+        id: u.id,
+        unionId: u.unionId,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        status: u.status,
+      }))
+    );
   }
 
   private setAuthCookies(res: Response, tokens: { accessToken: string; refreshToken: string; expiresIn: number }) {

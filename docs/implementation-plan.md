@@ -37,7 +37,18 @@ monorepo / pnpm workspaces / 工程护栏（typecheck、lint、format、arch、A
 
 - auth：飞书 OAuth 登录、JWT 双 token 无感刷新、Redis 会话与黑名单、SSO
 - user / role / audit-log / field-config：完整实现 + admin 页面
-- 未完成验收项：permission 模块仍是空壳（权限点无管理 API/页面，靠 seed）、单测覆盖低、本地飞书 SSO 未配置真跑
+- 未完成验收项：单测覆盖低、本地飞书 SSO 未配置真跑
+
+### S0：支撑域底座（已完成）
+
+- PrismaClient 全局单例（DATABASE_CLIENT token + DatabaseProvider）
+- system-config 模块：CRUD + Redis 缓存（300s TTL）
+- permission 模块：CRUD + @RequirePermission 权限守卫
+- notification 模块：CRUD + 未读计数 + 全部已读
+- file 模块：元数据 CRUD（MinIO 集成待后续补全）
+- admin 菜单：二级分组 + 权限过滤渲染
+- mock 登录通道：GET /auth/mock-users + POST /auth/mock-login（非生产环境）
+- /auth/me 返回 permissions 数组
 
 ---
 
@@ -90,17 +101,17 @@ monorepo / pnpm workspaces / 工程护栏（typecheck、lint、format、arch、A
 
 ## 四、开发排期（组织支撑 → 副业 → 主领域）
 
-### 阶段 S0：支撑域底座（前置，里程碑 1 的地基）
+### 阶段 S0：支撑域底座（前置，里程碑 1 的地基） ✅ 已完成
 
 **目标**：把认可中心需要的横切能力补齐，否则业务长不出来。
 
-1. **permission 模块填实**：权限点管理 API（resource/action 注册、CRUD）+ 内置两角色种子；按钮级四层校验基建（前端菜单/按钮按权限渲染，后端 @RequirePermission）
-2. **admin 菜单改造**：支持一级分组 + 二级菜单；菜单项由角色权限派生
-3. **notification 模块落地**：内站消息（写库、未读/已读、按用户列表、轮询拉取），业务事件触发发消息的通用入口
-4. **file 模块落地**：MinIO 预签名上传/下载，桶规划（badges/products/...）
-5. **system-config 落地**：字典与可配参数（认可币额、体力上限等）
-6. **本地 mock 登录通道**：可切换任意用户/角色，供验收 RBAC 四层
-7. **PrismaClient 单例收敛**（顺带，属底座债务）
+1. ✅ **permission 模块填实**：权限点管理 API（resource/action 注册、CRUD）+ 内置两角色种子；按钮级四层校验基建（前端菜单/按钮按权限渲染，后端 @RequirePermission）
+2. ✅ **admin 菜单改造**：支持一级分组 + 二级菜单；菜单项由角色权限派生
+3. ✅ **notification 模块落地**：内站消息（写库、未读/已读、按用户列表、轮询拉取），业务事件触发发消息的通用入口
+4. ✅ **file 模块落地**：MinIO 预签名上传/下载，桶规划（badges/products/...）
+5. ✅ **system-config 落地**：字典与可配参数（认可币额、体力上限等）
+6. ✅ **本地 mock 登录通道**：可切换任意用户/角色，供验收 RBAC 四层
+7. ✅ **PrismaClient 单例收敛**（顺带，属底座债务）
 
 ### 阶段 S1：里程碑 1 = 认可中心闭环（admin + mobile）
 
@@ -140,7 +151,7 @@ md 编辑组件（web + mobile）+ 文档创作入库 + 列表/编辑/预览，�
 | ------ | ---------------------------------------- | -------------- |
 | M0'    | 工程脚手架 + 护栏 + CI/CD 可用           | 已完成（历史） |
 | M1'    | 认证与权限底座可用（验收项未全勾）       | 代码基本完成   |
-| M2'    | **S0 + S1 认可中心闭环验收（当前目标）** | 未开始         |
+| M2'    | **S0 + S1 认可中心闭环验收（当前目标）** | S0 已完成      |
 | M3'    | S2 人才中心 + S3 智能客服知识库          | 未开始         |
 | M4'    | S4 基础配置监控 + B1 付费知识            | 未开始         |
 | M5'    | 主领域业务主干 13 阶段流水线（远期）     | 未开始         |

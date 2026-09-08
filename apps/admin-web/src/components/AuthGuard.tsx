@@ -6,9 +6,15 @@ interface Props {
   children: ReactNode;
 }
 
+const isDev = import.meta.env.DEV;
+
 function loginRedirect() {
   const redirect = encodeURIComponent(window.location.pathname);
-  window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
+  if (isDev) {
+    window.location.href = `/mock-login?redirect=${redirect}`;
+  } else {
+    window.location.href = `/api/auth/feishu/login?redirect=${redirect}`;
+  }
 }
 
 export function AuthGuard({ children }: Props) {

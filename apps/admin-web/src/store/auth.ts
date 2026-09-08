@@ -7,6 +7,7 @@ export interface MeResponse {
   unionId?: string;
   avatarUrl: string | null;
   client: string;
+  permissions?: string[];
 }
 
 interface AuthState {

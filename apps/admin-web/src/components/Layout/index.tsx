@@ -3,7 +3,6 @@ import {
   IconHome,
   IconSettings,
   IconSafe,
-  IconLock,
   IconFile,
   IconEye,
   IconList,
@@ -13,7 +12,8 @@ import {
   IconMenuUnfold,
 } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useAuthStore } from "../../store/auth";
 
 const { Sider, Content } = ArcoLayout;
 
@@ -21,15 +21,29 @@ export interface SiderItem {
   key: string;
   label: string;
   icon?: React.ReactNode;
+  permission?: string;
+  children?: SiderItem[];
 }
 
 export const ADMIN_SIDER_ITEMS: SiderItem[] = [
   { key: "/home", label: "概览", icon: <IconHome /> },
-  { key: "/users", label: "用户管理", icon: <IconSettings /> },
-  { key: "/roles", label: "角色与权限", icon: <IconSafe /> },
-  { key: "/permissions", label: "权限配置", icon: <IconLock /> },
-  { key: "/field-config", label: "字段配置", icon: <IconTool /> },
-  { key: "/audit-logs", label: "操作审计", icon: <IconFile /> },
+  {
+    key: "system",
+    label: "系统管理",
+    icon: <IconSettings />,
+    children: [
+      { key: "/users", label: "用户管理", permission: "system:user:read" },
+      { key: "/roles", label: "角色与权限", permission: "system:role:read" },
+      { key: "/permissions", label: "权限配置", permission: "system:permission:read" },
+      { key: "/field-config", label: "字段配置", permission: "system:field:read" },
+    ],
+  },
+  {
+    key: "audit",
+    label: "审计",
+    icon: <IconSafe />,
+    children: [{ key: "/audit-logs", label: "操作审计", permission: "system:audit:read" }],
+  },
 ];
 
 export const OWL_SIDER_ITEMS: SiderItem[] = [
@@ -48,27 +62,78 @@ export const CRON_SIDER_ITEMS: SiderItem[] = [
 
 interface LayoutProps {
   siderItems: SiderItem[];
+  hidePermissionFilter?: boolean;
 }
 
-export function Layout({ siderItems }: LayoutProps) {
+function filterByPermission(items: SiderItem[], permissions: Set<string>): SiderItem[] {
+  return items
+    .map((item) => {
+      if (item.children) {
+        const filteredChildren = filterByPermission(item.children, permissions);
+        if (filteredChildren.length === 0) return null;
+        return { ...item, children: filteredChildren };
+      }
+      if (item.permission && !permissions.has(item.permission)) return null;
+      return item;
+    })
+    .filter(Boolean) as SiderItem[];
+}
+
+function findSelectedKey(pathname: string, items: SiderItem[]): string | null {
+  for (const item of items) {
+    if (item.children) {
+      const child = findSelectedKey(pathname, item.children);
+      if (child) return child;
+    } else if (pathname.startsWith(item.key)) {
+      return item.key;
+    }
+  }
+  return null;
+}
+
+function findParentKey(selectedKey: string, items: SiderItem[]): string | undefined {
+  for (const item of items) {
+    if (item.children?.some((c) => c.key === selectedKey)) return item.key;
+  }
+  return undefined;
+}
+
+export function Layout({ siderItems, hidePermissionFilter }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const permissions = useAuthStore((s) => s.user?.permissions);
 
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sider-collapsed");
     return saved ? JSON.parse(saved) : false;
   });
 
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+
   useEffect(() => {
     localStorage.setItem("sider-collapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
-  const selectedKey = siderItems.find((item) => location.pathname.startsWith(item.key))?.key ?? "/home";
-  const selectedItem = siderItems.find((item) => item.key === selectedKey);
+  const visibleItems = useMemo(() => {
+    if (hidePermissionFilter || !permissions) return siderItems;
+    return filterByPermission(siderItems, new Set(permissions));
+  }, [siderItems, permissions, hidePermissionFilter]);
+
+  const selectedKey = findSelectedKey(location.pathname, visibleItems) ?? "/home";
+  const parentKey = findParentKey(selectedKey, visibleItems);
+
+  useEffect(() => {
+    if (parentKey && !openKeys.includes(parentKey)) {
+      setOpenKeys((prev) => [...prev, parentKey]);
+    }
+  }, [parentKey, openKeys]);
 
   const breadcrumbItems = [
     { key: "home", path: "/", label: "首页" },
-    ...(selectedItem ? [{ key: "current", path: selectedItem.key, label: selectedItem.label }] : []),
+    ...(parentKey
+      ? [{ key: parentKey, path: "", label: visibleItems.find((i) => i.key === parentKey)?.label ?? "" }]
+      : []),
+    { key: "current", path: selectedKey, label: findLabel(selectedKey, visibleItems) ?? "" },
   ];
 
   const trigger = (
@@ -77,21 +142,44 @@ export function Layout({ siderItems }: LayoutProps) {
     </div>
   );
 
+  function renderMenuItems(items: SiderItem[]) {
+    return items.map((item) => {
+      if (item.children) {
+        return (
+          <Menu.SubMenu
+            key={item.key}
+            title={
+              <span>
+                {item.icon}
+                <span>{item.label}</span>
+              </span>
+            }
+          >
+            {renderMenuItems(item.children)}
+          </Menu.SubMenu>
+        );
+      }
+      return (
+        <Menu.Item key={item.key}>
+          {item.icon}
+          <span>{item.label}</span>
+        </Menu.Item>
+      );
+    });
+  }
+
   return (
     <ArcoLayout style={{ height: "calc(100vh - 66px)" }}>
       <Sider width={200} theme="light" collapsed={collapsed} onCollapse={setCollapsed} trigger={trigger} collapsible>
         <Menu
           theme="light"
           selectedKeys={[selectedKey]}
+          openKeys={collapsed ? [] : openKeys}
+          onClickSubMenu={(_key, openKeys) => setOpenKeys(openKeys)}
           onClickMenuItem={(key) => navigate(key)}
           style={{ width: "100%" }}
         >
-          {siderItems.map((item) => (
-            <Menu.Item key={item.key}>
-              {item.icon}
-              <span>{item.label}</span>
-            </Menu.Item>
-          ))}
+          {renderMenuItems(visibleItems)}
         </Menu>
       </Sider>
 
@@ -104,7 +192,7 @@ export function Layout({ siderItems }: LayoutProps) {
                   {index < breadcrumbItems.length - 1 ? (
                     <span
                       className="cursor-pointer text-gray-400 hover:text-blue-600"
-                      onClick={() => navigate(item.path)}
+                      onClick={() => item.path && navigate(item.path)}
                     >
                       {item.label}
                     </span>
@@ -120,4 +208,15 @@ export function Layout({ siderItems }: LayoutProps) {
       </Content>
     </ArcoLayout>
   );
+}
+
+function findLabel(key: string, items: SiderItem[]): string | null {
+  for (const item of items) {
+    if (item.key === key) return item.label;
+    if (item.children) {
+      const found = findLabel(key, item.children);
+      if (found) return found;
+    }
+  }
+  return null;
 }

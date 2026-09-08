@@ -8,6 +8,7 @@ import { RolesPage } from "./pages/RolesPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { FieldConfigPage } from "./pages/FieldConfigPage";
+import { MockLoginPage } from "./pages/MockLoginPage";
 
 function HomePage() {
   return (
@@ -23,6 +24,7 @@ function HomePage() {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/mock-login" element={<MockLoginPage />} />
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route element={<Layout siderItems={ADMIN_SIDER_ITEMS} />}>
         <Route path="/home" element={<HomePage />} />

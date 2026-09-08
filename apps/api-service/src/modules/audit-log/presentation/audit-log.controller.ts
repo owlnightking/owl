@@ -1,7 +1,9 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { PrismaClient } from "@owl/database";
+import { DATABASE_CLIENT } from "@owl/database/provider";
+import type { PrismaClient } from "@owl/database";
 import { Type } from "class-transformer";
 import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { Inject } from "@nestjs/common";
 import { ok } from "../../../common/response/api-response";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
 
@@ -31,7 +33,7 @@ class ListAuditLogsQueryDto {
 @Controller("audit-logs")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AuditLogController {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   @Get()
   @RequirePermission("role:read")

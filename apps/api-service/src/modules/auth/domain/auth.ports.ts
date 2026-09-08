@@ -1,4 +1,4 @@
-import type { JwtPayload } from "@owl/shared";
+import type { JwtPayload, LoginResult } from "@owl/shared";
 
 export interface FeishuUserInfo {
   unionId: string;
@@ -86,6 +86,7 @@ export interface TokenPort {
 export interface AuthService {
   buildAuthorizeUrl(redirectPath: string, redirectUri: string): Promise<string>;
   handleCallback(code: string, state: string): Promise<{ tokens: AuthTokens; redirectPath: string }>;
+  loginUser(user: { unionId: string }, clientName: string): Promise<LoginResult>;
   refreshSession(refreshToken: string): Promise<AuthTokens>;
   logout(accessToken: string, refreshToken: string): Promise<void>;
   resolveSession(accessToken: string): Promise<{ payload: JwtPayload; user: StoredUser | null }>;
