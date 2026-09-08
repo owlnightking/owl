@@ -11,7 +11,9 @@ pnpm format:check     # Prettier 格式校验
 pnpm arch:check       # 架构依赖方向校验
 pnpm doc:check        # 文档新鲜度（PROJECT_STATE.md 是否落后于源码）
 pnpm state:update     # 重新生成 PROJECT_STATE.md 自动段（改代码后必须跑）
-pnpm verify:quick     # = 以上五项 + 残渣扫描 + 特征规则检查，CI / pre-commit / pre-push 使用
+pnpm business:update  # 更新 business-snapshot.md 最近更新记录（改业务需求/计划后必须跑，可带摘要）
+pnpm business:check   # 业务快照新鲜度（implementation-plan/decisions 有更新未同步快照 → ERROR）
+pnpm verify:quick     # = 以上五项 + 业务快照 + 残渣扫描 + 特征规则检查，CI / pre-commit / pre-push 使用
 pnpm verify:full      # = verify:quick + smoke
 pnpm test             # 单元测试
 ```
@@ -60,24 +62,26 @@ apps/ow/               → CLI / 脚本工具
 
 ## 四、根目录脚本（scripts/*）
 
-| 脚本                   | 作用                                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| check-typecheck.sh     | 逐包 tsc --noEmit，聚合退出码                                                           |
-| check-lint.sh          | 逐包 eslint，聚合退出码                                                                 |
-| check-architecture.sh  | 架构依赖方向检测（ERROR=0 才通过）                                                      |
-| scan-ai-residue.sh     | AI 残渣扫描（9 类规则，ERROR 阻断 / WARN 提示；`--staged` 用于 pre-commit 增量扫描）    |
-| check-feature-rules.sh | 业务特征规则检查（success 不在 vo 判断、filter 不返回 entity、id 生成放 domain 等）     |
-| smoke.sh               | 冒烟验收（构建后启动心跳检查）                                                          |
-| release.sh             | 版本发布（verify:quick → version bump → commit，失败自动回滚）                          |
-| verify.sh              | 完整验证流水线聚合（typecheck → lint → format → arch → doc → 残渣 → test）              |
-| update-state.sh        | 重新生成 `docs/PROJECT_STATE.md` 自动段（扫描源码，脚本管事实 / 人管"为什么"）          |
-| check-doc-freshness.sh | 代码改动但状态文档未同步 → ERROR（`--staged` 用于 pre-commit 增量检查；版本 bump 豁免） |
+| 脚本                        | 作用                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| check-typecheck.sh          | 逐包 tsc --noEmit，聚合退出码                                                           |
+| check-lint.sh               | 逐包 eslint，聚合退出码                                                                 |
+| check-architecture.sh       | 架构依赖方向检测（ERROR=0 才通过）                                                      |
+| scan-ai-residue.sh          | AI 残渣扫描（9 类规则，ERROR 阻断 / WARN 提示；`--staged` 用于 pre-commit 增量扫描）    |
+| check-feature-rules.sh      | 业务特征规则检查（success 不在 vo 判断、filter 不返回 entity、id 生成放 domain 等）     |
+| smoke.sh                    | 冒烟验收（构建后启动心跳检查）                                                          |
+| release.sh                  | 版本发布（verify:quick → version bump → commit，失败自动回滚）                          |
+| verify.sh                   | 完整验证流水线聚合（typecheck → lint → format → arch → doc → 残渣 → test）              |
+| update-state.sh             | 重新生成 `docs/PROJECT_STATE.md` 自动段（扫描源码，脚本管事实 / 人管"为什么"）          |
+| check-doc-freshness.sh      | 代码改动但状态文档未同步 → ERROR（`--staged` 用于 pre-commit 增量检查；版本 bump 豁免） |
+| update-business-snapshot.sh | 更新 `docs/business-snapshot.md`「最近更新」段并格式化（业务需求/计划变化后运行）       |
+| check-business-freshness.sh | 计划/决策文档改动但业务快照未同步 → ERROR（`--staged` 用于 pre-commit 增量检查）        |
 
 新增扫描/校验脚本：必须加入 `package.json` 对应脚本、`verify:quick`、pre-commit/pre-push 与 CI 工作流，保持入口一致。
 
 ## 五、数据库与本地中间件
 
-- **中间件复用本机 Docker 容器**：PostgreSQL（`postgresql`，5432，admin/123456）、Redis（`redis`，6379，123456）、RabbitMQ（`rabbitmq`，5672，admin/123456）、MinIO（`minio`，9000，admin/minio123456）。本项目**不自起中间件**，连接配置见 `.env.example`。
+- **中间件复用本机 Docker 容器**：PostgreSQL（`postgresql`，5432，admin/123456）、Redis（`redis`，6379，123456）、RabbitMQ（`rabbitmq`，5672，admin/123456）、MinIO（`minio`，9000，admin/minio123456）。本项目**不自起中间件**，连接配置见 `.env.example`。本机容器/镜像完整清单与保护规则见**第十一节**。
 - Prisma Schema 为唯一数据契约，改动后必须 `pnpm -F @owl/database prisma:generate`。
 - 迁移：`pnpm -F @owl/database prisma:migrate --name <描述>`（dev）；生产改动用 `prisma:migrate deploy`。
 - 模型与命名：`camelCase` 字段、snake_case 表名（`@@map`），默认加 `createAt/updateAt` 审计时间戳。
@@ -93,20 +97,25 @@ apps/ow/               → CLI / 脚本工具
 
 1. 修改前读本文件与目标文件上下文，遵守现有模式。
 2. 提交前：`pnpm verify:quick` 全绿。
-3. husky：pre-commit 检测源码改动 → 自动重生成并暂存 `PROJECT_STATE.md` → prettier --check 暂存文件 → AI 残渣增量扫描 → 文档新鲜度增量检查；pre-push 跑 `pnpm verify:quick`。
+3. husky：pre-commit 检测源码改动 → 自动重生成并暂存 `PROJECT_STATE.md` → prettier --check 暂存文件 → AI 残渣增量扫描 → 文档新鲜度增量检查 → 业务快照新鲜度检查（计划/决策改动需同 commit 同步 `business-snapshot.md`）；pre-push 跑 `pnpm verify:quick`。
 4. 提交信息遵循约定式提交 `feat/fix/refactor/chore/docs/test/...`。
 5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。`release.sh` 会在 bump commit 后自动打版本 tag（`v<app>-<version>` 单 app / `v<version>` all）仅作版本标记；**CD 监听 main push 的 `package.json` 变化，由 `detect-release` 版本门禁决定是否部署（非版本变化自动跳过）**。
 6. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
 
 ## 八、文档新鲜度（Documentation Harness）
 
-**核心原则：文档分三层，各有防漂移机制；任何代码改动必须同 commit 更新状态文档。**
+**核心原则：文档分四层，各有防漂移机制；任何代码改动必须同 commit 更新状态文档，任何业务需求/计划变化必须同 commit 更新业务快照。**
 
-1. **`docs/PROJECT_STATE.md` — 状态快照**：AI/人开工前先读这一个文件拿全局，避免重扫全仓。`### 自动 ###` 段由 `scripts/update-state.sh` 扫描源码生成（**禁止手改**），人工只维护"当前阶段 / 已知缺口 / 模块说明"三处。**pre-commit 检测到源码改动会自动重生成并暂存该文档**；人工维护段（如已知缺口）需手动编辑，随改动提交。也可随时 `pnpm state:update` 手动刷新。
-2. **`docs/decisions/NNN-<slug>.md` — 决策日志（ADR-lite）**：只追加、永不修改；决策变化就新开一条更高编号记录变更。字段：日期 / 背景 / 决策 / 后果 / 关联。
-3. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则层**：低频更新，与状态文档解耦。
+1. **`docs/PROJECT_STATE.md` — 工程状态快照**：AI/人开工前先读这一个文件拿源码全局，避免重扫全仓。`### 自动 ###` 段由 `scripts/update-state.sh` 扫描源码生成（**禁止手改**），人工只维护"当前阶段 / 已知缺口 / 模块说明"三处。**pre-commit 检测到源码改动会自动重生成并暂存该文档**；人工维护段（如已知缺口）需手动编辑，随改动提交。也可随时 `pnpm state:update` 手动刷新。
+2. **`docs/business-snapshot.md` — 业务功能现状 + 最新计划（快照，AI 读）**：记录各业务功能现状（规则/角色/入口/状态）与最新计划/排期，随业务需求与计划变化更新（不随源码）。「最近更新」段由 `scripts/update-business-snapshot.sh` 维护（**禁止手改**）；功能/计划内容人工维护。计划或决策文档更新后必须同步本文件并随改动提交。也可随时 `pnpm business:update "变更摘要"` 手动记录。
+3. **`docs/decisions/NNN-<slug>.md` — 决策日志（ADR-lite）**：只追加、永不修改；决策变化就新开一条更高编号记录变更。字段：日期 / 背景 / 决策 / 后果 / 关联。
+4. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则与计划层**：低频更新；implementation-plan 变化须同步业务快照。
 
-**防漂移门禁**：`scripts/check-doc-freshness.sh` 对比源码与 `PROJECT_STATE.md` 的最近提交时间，源码新 → ERROR（提示运行 `pnpm state:update`）；pre-commit 增量检查暂存区。**版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
+**防漂移门禁**：
+
+- `scripts/check-doc-freshness.sh` 对比源码与 `PROJECT_STATE.md` 的最近提交时间，源码新 → ERROR（提示运行 `pnpm state:update`）；pre-commit 增量检查暂存区。
+- `scripts/check-business-freshness.sh` 对比 `docs/implementation-plan.md` + `docs/decisions/` 与 `docs/business-snapshot.md` 的最近提交时间，计划/决策新 → ERROR（提示运行 `pnpm business:update`）；pre-commit 增量检查暂存区。
+- **版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
 
 ## 九、生产环境 Secret 管理（Rancher）
 
@@ -163,3 +172,60 @@ Pod 环境变量 (envFrom secretRef)
 4. **修改 `cd.yml` 时必须保持 job 依赖关系正确**：改动 `needs` / `if` 条件前需确认不会破坏流水线拓扑（如并行变串行、遗漏必要依赖等）。
 
 违反以上规则的提交将被阻断。
+
+## 十一、本机容器与镜像清单（SSOT + 保护规则）
+
+**本节固化本项目当前依赖的本机 Docker 容器/镜像——k3s、rancher、system 中间件组、actions-runner 四组，是容器与镜像事实的唯一权威来源。** 各容器运行/重建命令等细节以 **仓库外** 的 `~/Desktop/system/dockerData/README.md` 为准（dockerData 不属于 owl 仓库）；仓库内相关编排：`.github/actions-runner/`（CD runner）、根目录 `docker-compose.yml`（owl 应用容器）。
+
+> 以下容器重启策略均为 `unless-stopped`。`k3s-net`（172.23.0.0/24，网关 172.23.0.1）承载 k3s / rancher / system 中间件，所有成员固定 IP，**Docker 重启后 IP 不变**，k3s pods 据此访问中间件。
+
+### 1. k3s（单节点 K8s 集群）
+
+| 项       | 值                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| 容器     | `k3s`（`--privileged`，`docker run` 直启，非 compose）                                                        |
+| 镜像     | `rancher/k3s:latest`                                                                                          |
+| 网络     | `k3s-net` 固定 IP `172.23.0.2`；node IP 必须固定，变更会导致集群无法启动                                      |
+| 宿主端口 | `6443`（API Server）、`9262`（NodePort 统一入口）、`9263`                                                     |
+| 数据     | containerd 运行时走命名卷（宿主机 APFS bind 跑不动）；`server/db` bind 到 `dockerData/k3s/server/db`          |
+| 说明     | 集群名 `k3s-owl-prod`，由 rancher 管理；重建必须带 `--node-ip 172.23.0.2 --disable-network-policy` 等固定参数 |
+
+### 2. rancher（Rancher 面板）
+
+| 项       | 值                                                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 容器     | `rancher`（`docker run` 直启，非 compose）                                                                              |
+| 镜像     | `rancher/rancher:v2.14.3`                                                                                               |
+| 网络     | `k3s-net` 固定 IP `172.23.0.3`                                                                                          |
+| 宿主端口 | `80`（http 跳转）、`8443`（→ 容器 443）                                                                                 |
+| 数据     | `dockerData/rancher` bind + 命名卷 `rancher-containerd`（containerd 必须走命名卷，宿主机 gRPC-FUSE 挂载跑不了嵌套 pod） |
+| 说明     | 访问 https://localhost:8443（admin）；生产 Secret 管理见第九节                                                          |
+
+### 3. system 中间件组（compose project `system`）
+
+- 编排：`~/Desktop/system/dockerData/docker-compose.middleware.yml`（仓库外）
+- **必须以 `-p system` 启动**：直接 `-f dockerData/...` 会把 project 名推断为 `dockerdata`，生成脱离分组的独立容器（minio 曾因此脱组）
+- 全部在 `k3s-net` 固定 IP，k3s pods 经 `k3s-net` 访问
+
+| 容器       | 镜像                       | 固定 IP     | 宿主端口    | 数据 bind（→ 容器内）                                       |
+| ---------- | -------------------------- | ----------- | ----------- | ----------------------------------------------------------- |
+| postgresql | bitnami/postgresql:latest  | 172.23.0.10 | 5432        | `dockerData/postgresql`（/bitnami/postgresql）              |
+| redis      | redis:latest               | 172.23.0.11 | 6379        | `dockerData/redis`（/data）                                 |
+| rabbitmq   | rabbitmq:latest            | 172.23.0.12 | 5672、15672 | `dockerData/rabbitmq`（/var/lib/rabbitmq）                  |
+| minio      | bitnamilegacy/minio:latest | 172.23.0.13 | 9000、9001  | `dockerData/minio`（/bitnami/minio/data，镜像原生 datadir） |
+
+### 4. actions-runner CD 组（compose project `actions-runner`）
+
+- 编排：`.github/actions-runner/docker-compose.yml`（仓库内）；管理脚本 `manage.sh`
+- 容器 `github-runner`；镜像 `owl/github-runner:latest`（`.github/actions-runner/Dockerfile` 构建）
+- 网络 `actions-runner_default`（172.22.0.2），无宿主端口
+- 挂载 `/var/run/docker.sock`（CD 中可构建镜像）；命名卷 `runner-work` / `runner-config`；环境变量经 `.env`（不入库）
+
+> 根目录 `docker-compose.yml` 编排 owl 应用容器（project `owl`），是仓库自有应用的正常开发对象，不在下面保护范围内；改其镜像引用/编排按常规流程走。
+
+### 硬性规则（AI 约束）
+
+1. **禁止未经用户明确同意修改上述四组的容器方式**：不得创建/删除/停止/重启/重建这些容器，不得改动其启动参数、端口映射、网络、卷、环境变量或编排文件（含仓库外 `dockerData/docker-compose.middleware.yml` 与仓库内 `.github/actions-runner/`）。
+2. **禁止未经用户明确同意修改镜像**：不得对上述镜像执行 `docker pull` / `docker tag` / `docker rmi` / `docker build`，不得改动编排文件中的镜像引用或相关 Dockerfile。
+3. **任何容器/镜像变更必须先向用户说明原因与具体变更内容，经用户明确同意后方可执行**；未获许可的改动视为违规。
+4. 只读检查（`docker ps` / `docker inspect` / `docker logs` / `docker compose ... ps` / `docker images`）不属于变更，可直接执行。
