@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     base: "/mobile/",
     plugins: [react()],
     server: {
-      host: "127.0.0.1",
+      host: "0.0.0.0",
       port: Number(rootEnv.MOBILE_WEB_PORT ?? 5276),
       proxy: {
         "/api": {

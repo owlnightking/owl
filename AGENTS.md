@@ -86,6 +86,11 @@ apps/ow/               → CLI / 脚本工具
 - 迁移：`pnpm -F @owl/database prisma:migrate --name <描述>`（dev）；生产改动用 `prisma:migrate deploy`。
 - 模型与命名：`camelCase` 字段、snake_case 表名（`@@map`），默认加 `createAt/updateAt` 审计时间戳。
 - 种子：`pnpm -F @owl/database prisma:seed`，幂等（upsert）。
+- **⚠️ 禁止破坏性 Prisma 命令（硬性规则）**：本项目共享单一 PostgreSQL 数据库，承载 api-service、cron-service 等多服务数据。以下命令**严禁在共享库上执行**，违规将清空全库所有服务数据且不可恢复：
+  - `prisma migrate reset` — 会删除整个数据库并重建
+  - `prisma db push --accept-data-loss` — 会丢弃不兼容的表数据
+  - **唯一安全的迁移方式**：`prisma migrate dev --name <描述>`（增量迁移，保留数据）；生产环境用 `prisma migrate deploy`。
+  - 如确实需要重置本地开发库，**必须先 `pg_dump` 备份**，且仅限个人开发环境，不得影响他人共享数据。
 
 ## 六、测试
 

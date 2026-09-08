@@ -106,6 +106,8 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-09-08: S1 recognition center: backend DDD module + admin pages (badge/recognition/exchange/products) + mobile pages (feed/create/message/mall/profile) all connected to real API
+
 - 2026-09-08: 新增 business-snapshot 文档：领域地图/功能现状/最新计划基线（ADR 002/003）
 
 <!-- RECENT-END -->

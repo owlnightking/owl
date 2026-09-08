@@ -5,6 +5,7 @@ import { HomePage } from "./pages/HomePage";
 import { MallPage } from "./pages/MallPage";
 import { MessagePage } from "./pages/MessagePage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { CreateRecognitionPage } from "./pages/CreateRecognitionPage";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/create" element={<CreateRecognitionPage />} />
         <Route path="/message" element={<MessagePage />} />
         <Route path="/mall" element={<MallPage />} />
         <Route path="/profile" element={<ProfilePage />} />

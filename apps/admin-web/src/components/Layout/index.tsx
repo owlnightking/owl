@@ -44,6 +44,17 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
     icon: <IconSafe />,
     children: [{ key: "/audit-logs", label: "操作审计", permission: "system:audit:read" }],
   },
+  {
+    key: "recognition",
+    label: "认可中心",
+    icon: <IconEye />,
+    children: [
+      { key: "/recognition/badges", label: "徽章管理", permission: "recognition:badge:read" },
+      { key: "/recognition/list", label: "认可管理", permission: "recognition:recognition:read" },
+      { key: "/recognition/products", label: "商品管理", permission: "recognition:product:read" },
+      { key: "/recognition/exchange", label: "兑换单管理", permission: "recognition:exchange:read" },
+    ],
+  },
 ];
 
 export const OWL_SIDER_ITEMS: SiderItem[] = [

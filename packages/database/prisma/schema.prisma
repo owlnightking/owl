@@ -39,6 +39,12 @@ model User {
   files          File[]
   mcpSessions    McpSession[]
   mcpToolLogs    McpToolLog[]
+  sentRecognitions     Recognition[] @relation("RecognitionSender")
+  receivedRecognitions Recognition[] @relation("RecognitionReceiver")
+  recognitionLikes     RecognitionLike[]
+  coinAccount     CoinAccount?
+  staminaAccount  StaminaAccount?
+  exchangeOrders  ExchangeOrder[]
 
   @@map("user")
 }
@@ -303,4 +309,137 @@ model SchedulerRun {
 
   @@index([configId, status, scheduledAt])
   @@map("scheduler_run")
+}
+
+// ========== 认可中心 ==========
+
+model Badge {
+  id          String   @id @default(uuid())
+  name        String
+  icon        String?
+  description String?
+  coinReward  Int      @default(0) @map("coin_reward")
+  expReward   Int      @default(0) @map("exp_reward")
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  recognitions Recognition[]
+
+  @@map("badge")
+}
+
+model Recognition {
+  id           String   @id @default(uuid())
+  senderId     String   @map("sender_id")
+  receiverId   String   @map("receiver_id")
+  badgeId      String?  @map("badge_id")
+  message      String
+  status       String   @default("pending") // pending / approved / rejected
+  pinned       Boolean  @default(false)
+  approverId   String?  @map("approver_id")
+  approvedAt   DateTime? @map("approved_at")
+  rejectReason String?  @map("reject_reason")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  sender       User     @relation("RecognitionSender", fields: [senderId], references: [id])
+  receiver     User     @relation("RecognitionReceiver", fields: [receiverId], references: [id])
+  badge        Badge?   @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  likes        RecognitionLike[]
+
+  @@index([receiverId, status])
+  @@index([createdAt])
+  @@map("recognition")
+}
+
+model RecognitionLike {
+  id             String   @id @default(uuid())
+  recognitionId  String   @map("recognition_id")
+  userId         String   @map("user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  recognition    Recognition @relation(fields: [recognitionId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recognitionId, userId])
+  @@map("recognition_like")
+}
+
+model CoinAccount {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  balance   Int      @default(0)
+  totalEarned Int    @default(0) @map("total_earned")
+  totalSpent  Int    @default(0) @map("total_spent")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+  transactions CoinTransaction[]
+
+  @@map("coin_account")
+}
+
+model CoinTransaction {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  type        String   // earn / spend / adjust
+  amount      Int
+  balance     Int      // 交易后余额
+  source      String   // recognition / exchange / admin_adjust
+  referenceId String?  @map("reference_id")
+  remark      String?
+  operatorId  String?  @map("operator_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  account     CoinAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, createdAt])
+  @@map("coin_transaction")
+}
+
+model StaminaAccount {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  current      Int      @default(50)
+  maxStamina   Int      @default(50) @map("max_stamina")
+  month        String   // YYYY-MM
+  lastResetAt  DateTime? @map("last_reset_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("stamina_account")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  image       String?
+  price       Int      // 币价格
+  stock       Int      @default(0)
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  exchangeOrders ExchangeOrder[]
+
+  @@map("product")
+}
+
+model ExchangeOrder {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  productId   String   @map("product_id")
+  quantity    Int      @default(1)
+  totalCost   Int      @map("total_cost")
+  status      String   @default("pending") // pending / approved / rejected / fulfilled
+  approverId  String?  @map("approver_id")
+  approvedAt  DateTime? @map("approved_at")
+  rejectReason String? @map("reject_reason")
+  fulfilledAt DateTime? @map("fulfilled_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("exchange_order")
 }

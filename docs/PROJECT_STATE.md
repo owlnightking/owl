@@ -57,6 +57,7 @@
 | notification  | 1   | 1   | 1     | 1    | ✅ 完整 |
 | permission    | 1   | 1   | 1     | 1    | ✅ 完整 |
 | project       | 0   | 0   | 0     | 0    | ❌ 空壳 |
+| recognition   | 6   | 6   | 6     | 4    | ✅ 完整 |
 | role          | 1   | 1   | 1     | 1    | ✅ 完整 |
 | system-config | 1   | 1   | 1     | 1    | ✅ 完整 |
 | user          | 1   | 1   | 1     | 1    | ✅ 完整 |
@@ -105,6 +106,14 @@
 | McpToolLog      |      |
 | SchedulerConfig |      |
 | SchedulerRun    |      |
+| Badge           |      |
+| Recognition     |      |
+| RecognitionLike |      |
+| CoinAccount     |      |
+| CoinTransaction |      |
+| StaminaAccount  |      |
+| Product         |      |
+| ExchangeOrder   |      |
 
 <!-- AUTO-MODELS-END -->
 
@@ -143,45 +152,74 @@
 
 <!-- AUTO-API-BEGIN -->
 
-| 模块          | 方法   | 路径                                |
-| ------------- | ------ | ----------------------------------- |
-| field-config  | Delete | /api/field-config/:category/:module |
-| file          | Delete | /api/files/:id                      |
-| permission    | Delete | /api/permissions/:id                |
-| role          | Delete | /api/roles/:id                      |
-| system-config | Delete | /api/system-config/:key             |
-| audit-log     | Get    | /api/audit-logs                     |
-| auth          | Get    | /api/auth/feishu/callback           |
-| auth          | Get    | /api/auth/feishu/login              |
-| auth          | Get    | /api/auth/me                        |
-| auth          | Get    | /api/auth/mock-users                |
-| field-config  | Get    | /api/field-config/:category         |
-| field-config  | Get    | /api/field-config/:category/:module |
-| file          | Get    | /api/files                          |
-| file          | Get    | /api/files/:id                      |
-| notification  | Get    | /api/notifications                  |
-| notification  | Get    | /api/notifications/unread-count     |
-| permission    | Get    | /api/permissions                    |
-| permission    | Get    | /api/permissions/:id                |
-| role          | Get    | /api/roles                          |
-| role          | Get    | /api/roles/permissions              |
-| system-config | Get    | /api/system-config/:key             |
-| user          | Get    | /api/users                          |
-| user          | Get    | /api/users/:id/roles                |
-| user          | Get    | /api/users/roles                    |
-| auth          | Post   | /api/auth/logout                    |
-| auth          | Post   | /api/auth/mock-login                |
-| auth          | Post   | /api/auth/refresh                   |
-| notification  | Post   | /api/notifications                  |
-| permission    | Post   | /api/permissions                    |
-| role          | Post   | /api/roles                          |
-| field-config  | Put    | /api/field-config/:category/:module |
-| notification  | Put    | /api/notifications/:id/read         |
-| notification  | Put    | /api/notifications/read-all         |
-| permission    | Put    | /api/permissions/:id                |
-| role          | Put    | /api/roles/:id                      |
-| system-config | Put    | /api/system-config/:key             |
-| user          | Put    | /api/users/:id/roles                |
-| user          | Put    | /api/users/:id/status               |
+| 模块          | 方法   | 路径                                         |
+| ------------- | ------ | -------------------------------------------- |
+| field-config  | Delete | /api/field-config/:category/:module          |
+| file          | Delete | /api/files/:id                               |
+| permission    | Delete | /api/permissions/:id                         |
+| recognition   | Delete | /api/recognition/badges/:id                  |
+| recognition   | Delete | /api/recognition/products/:id                |
+| role          | Delete | /api/roles/:id                               |
+| system-config | Delete | /api/system-config/:key                      |
+| audit-log     | Get    | /api/audit-logs                              |
+| auth          | Get    | /api/auth/feishu/callback                    |
+| auth          | Get    | /api/auth/feishu/login                       |
+| auth          | Get    | /api/auth/me                                 |
+| auth          | Get    | /api/auth/mock-users                         |
+| field-config  | Get    | /api/field-config/:category                  |
+| field-config  | Get    | /api/field-config/:category/:module          |
+| file          | Get    | /api/files                                   |
+| file          | Get    | /api/files/:id                               |
+| notification  | Get    | /api/notifications                           |
+| notification  | Get    | /api/notifications/unread-count              |
+| permission    | Get    | /api/permissions                             |
+| permission    | Get    | /api/permissions/:id                         |
+| recognition   | Get    | /api/recognition                             |
+| recognition   | Get    | /api/recognition/badges                      |
+| recognition   | Get    | /api/recognition/badges/:id                  |
+| recognition   | Get    | /api/recognition/exchange/coin-account       |
+| recognition   | Get    | /api/recognition/exchange/coin-transactions  |
+| recognition   | Get    | /api/recognition/exchange/orders             |
+| recognition   | Get    | /api/recognition/exchange/pending-count      |
+| recognition   | Get    | /api/recognition/exchange/stamina            |
+| recognition   | Get    | /api/recognition/feed                        |
+| recognition   | Get    | /api/recognition/level                       |
+| recognition   | Get    | /api/recognition/pending-count               |
+| recognition   | Get    | /api/recognition/products                    |
+| recognition   | Get    | /api/recognition/products/:id                |
+| role          | Get    | /api/roles                                   |
+| role          | Get    | /api/roles/permissions                       |
+| system-config | Get    | /api/system-config/:key                      |
+| user          | Get    | /api/users                                   |
+| user          | Get    | /api/users/:id/roles                         |
+| user          | Get    | /api/users/roles                             |
+| auth          | Post   | /api/auth/logout                             |
+| auth          | Post   | /api/auth/mock-login                         |
+| auth          | Post   | /api/auth/refresh                            |
+| notification  | Post   | /api/notifications                           |
+| permission    | Post   | /api/permissions                             |
+| recognition   | Post   | /api/recognition                             |
+| recognition   | Post   | /api/recognition/:id/like                    |
+| recognition   | Post   | /api/recognition/badges                      |
+| recognition   | Post   | /api/recognition/exchange/orders             |
+| recognition   | Post   | /api/recognition/products                    |
+| role          | Post   | /api/roles                                   |
+| field-config  | Put    | /api/field-config/:category/:module          |
+| notification  | Put    | /api/notifications/:id/read                  |
+| notification  | Put    | /api/notifications/read-all                  |
+| permission    | Put    | /api/permissions/:id                         |
+| recognition   | Put    | /api/recognition/:id/approve                 |
+| recognition   | Put    | /api/recognition/:id/pin                     |
+| recognition   | Put    | /api/recognition/:id/reject                  |
+| recognition   | Put    | /api/recognition/badges/:id                  |
+| recognition   | Put    | /api/recognition/exchange/coin-adjust        |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/approve |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/fulfill |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/reject  |
+| recognition   | Put    | /api/recognition/products/:id                |
+| role          | Put    | /api/roles/:id                               |
+| system-config | Put    | /api/system-config/:key                      |
+| user          | Put    | /api/users/:id/roles                         |
+| user          | Put    | /api/users/:id/status                        |
 
 <!-- AUTO-API-END -->

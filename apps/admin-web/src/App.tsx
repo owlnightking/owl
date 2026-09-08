@@ -9,6 +9,10 @@ import { PermissionsPage } from "./pages/PermissionsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { FieldConfigPage } from "./pages/FieldConfigPage";
 import { MockLoginPage } from "./pages/MockLoginPage";
+import { BadgesPage } from "./pages/BadgesPage";
+import { RecognitionsPage } from "./pages/RecognitionsPage";
+import { ExchangeOrdersPage } from "./pages/ExchangeOrdersPage";
+import { ProductsPage } from "./pages/ProductsPage";
 
 function HomePage() {
   return (
@@ -33,6 +37,10 @@ function AppRoutes() {
         <Route path="/permissions" element={<PermissionsPage />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
         <Route path="/field-config" element={<FieldConfigPage />} />
+        <Route path="/recognition/badges" element={<BadgesPage />} />
+        <Route path="/recognition/list" element={<RecognitionsPage />} />
+        <Route path="/recognition/exchange" element={<ExchangeOrdersPage />} />
+        <Route path="/recognition/products" element={<ProductsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

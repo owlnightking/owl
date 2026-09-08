@@ -14,6 +14,7 @@ import { SystemConfigModule } from "./modules/system-config/system-config.module
 import { FieldConfigModule } from "./modules/field-config/field-config.module";
 import { McpModule } from "./modules/mcp/mcp.module";
 import { ProjectModule } from "./modules/project/project.module";
+import { RecognitionModule } from "./modules/recognition/recognition.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ProjectModule } from "./modules/project/project.module";
     FieldConfigModule,
     McpModule,
     ProjectModule,
+    RecognitionModule,
   ],
   controllers: [HealthController],
 })

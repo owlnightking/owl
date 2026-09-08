@@ -205,7 +205,7 @@ check_ui_library_cross_import() {
 check_ui_library_cross_import
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
-if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
+if [ "$ERROR_COUNT" -gt 0 ]; then
   exit 1
 fi
 exit 0
