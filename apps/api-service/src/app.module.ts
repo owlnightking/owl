@@ -15,6 +15,7 @@ import { FieldConfigModule } from "./modules/field-config/field-config.module";
 import { McpModule } from "./modules/mcp/mcp.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { RecognitionModule } from "./modules/recognition/recognition.module";
+import { MdDocModule } from "./modules/md-doc/md-doc.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { RecognitionModule } from "./modules/recognition/recognition.module";
     McpModule,
     ProjectModule,
     RecognitionModule,
+    MdDocModule,
   ],
   controllers: [HealthController],
 })

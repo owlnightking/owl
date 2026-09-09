@@ -13,6 +13,9 @@ import { BadgesPage } from "./pages/BadgesPage";
 import { RecognitionsPage } from "./pages/RecognitionsPage";
 import { ExchangeOrdersPage } from "./pages/ExchangeOrdersPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { MdDocsPage } from "./pages/MdDocsPage";
+import { MdDocEditorPage } from "./pages/MdDocEditorPage";
+import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
 
 function HomePage() {
   return (
@@ -41,6 +44,10 @@ function AppRoutes() {
         <Route path="/recognition/list" element={<RecognitionsPage />} />
         <Route path="/recognition/exchange" element={<ExchangeOrdersPage />} />
         <Route path="/recognition/products" element={<ProductsPage />} />
+        <Route path="/md-docs" element={<MdDocsPage />} />
+        <Route path="/md-docs/new" element={<MdDocEditorPage />} />
+        <Route path="/md-docs/:id/edit" element={<MdDocEditorPage />} />
+        <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

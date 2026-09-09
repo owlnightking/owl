@@ -27,8 +27,52 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - name: Prune Docker build cache
-        run: docker builder prune -f
+      - name: Check disk space and cleanup
+        run: |
+          echo "=== Checking Docker disk space ==="
+          docker system df
+
+          # Get available space in GB
+          AVAIL=$(df -g / | tail -1 | awk '{print $4}')
+          echo "Available disk space: ${AVAIL}GB"
+
+          # If less than 10GB available, do aggressive cleanup
+          if [ "$AVAIL" -lt 10 ]; then
+            echo "WARNING: Low disk space! Running aggressive cleanup..."
+            
+            # Stop and remove non-essential containers
+            docker ps -a --format '{{.Names}}' | grep -v -E '^(k3s|rancher|postgresql|redis|rabbitmq|minio)$' | while read -r name; do
+              docker rm -f "$name" 2>/dev/null && echo "removed container $name"
+            done
+            
+            # Remove all non-latest owl images
+            docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
+              tag="${ref##*:}"
+              [ "$tag" = "latest" ] && continue
+              docker rmi -f "$ref" 2>/dev/null && echo "force-removed $ref"
+            done
+            
+            # Remove dangling images
+            docker image prune -af
+            
+            # Remove build cache
+            docker builder prune -af
+            
+            # Remove unused volumes
+            docker volume prune -f
+            
+            echo "Aggressive cleanup completed"
+            docker system df
+          else
+            echo "Disk space OK, running normal cleanup..."
+            docker image prune -f
+            docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/' | while read -r ref; do
+              tag="${ref##*:}"
+              [ "$tag" = "latest" ] && continue
+              docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+            done
+            docker builder prune -f
+          fi
       - id: detect
         run: |
           BACKEND=""
@@ -156,12 +200,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/api-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/api-service:${{ steps.version.outputs.version }} \
             -t owl/api-service:latest \
             -f apps/api-service/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for api-service..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/api-service:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-cron-service:
     name: Build Backend (cron-service)
@@ -178,12 +235,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/cron-service/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/cron-service:${{ steps.version.outputs.version }} \
             -t owl/cron-service:latest \
             -f apps/cron-service/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for cron-service..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/cron-service:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-admin-web:
     name: Build Frontend (admin-web)
@@ -202,12 +272,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/admin-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/admin-web:${{ steps.version.outputs.version }} \
             -t owl/admin-web:latest \
             -f apps/admin-web/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for admin-web..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/admin-web:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-owl-web:
     name: Build Frontend (owl-web)
@@ -226,12 +309,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/owl-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/owl-web:${{ steps.version.outputs.version }} \
             -t owl/owl-web:latest \
             -f apps/owl-web/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for owl-web..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/owl-web:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-cron-web:
     name: Build Frontend (cron-web)
@@ -250,12 +346,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/cron-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/cron-web:${{ steps.version.outputs.version }} \
             -t owl/cron-web:latest \
             -f apps/cron-web/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for cron-web..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/cron-web:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-portal:
     name: Build Frontend (portal)
@@ -274,12 +383,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/portal/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/portal:${{ steps.version.outputs.version }} \
             -t owl/portal:latest \
             -f apps/portal/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for portal..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/portal:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   build-mobile-web:
     name: Build Frontend (mobile-web)
@@ -298,12 +420,25 @@ jobs:
         run: |
           VER=$(jq -r .version apps/mobile-web/package.json)
           echo "version=$VER" >> $GITHUB_OUTPUT
+      - name: Pre-build cleanup
+        run: |
+          echo "Cleaning dangling images before build..."
+          docker image prune -f
       - name: Build Docker image
         run: |
           docker build \
             -t owl/mobile-web:${{ steps.version.outputs.version }} \
             -t owl/mobile-web:latest \
             -f apps/mobile-web/Dockerfile .
+      - name: Post-build cleanup
+        run: |
+          echo "Removing old versioned images for mobile-web..."
+          docker image ls --format '{{.Repository}}:{{.Tag}}' | grep '^owl/mobile-web:' | while read -r ref; do
+            tag="${ref##*:}"
+            [ "$tag" = "latest" ] && continue
+            [ "$tag" = "${{ steps.version.outputs.version }}" ] && continue
+            docker rmi "$ref" 2>/dev/null && echo "removed $ref" || true
+          done
 
   deploy:
     name: Deploy to K3s
@@ -500,7 +635,7 @@ jobs:
           rm -rf "${{ github.workspace }}/*"
           find /runner/_work -maxdepth 1 -type d -name "*" -mtime +7 -exec rm -rf {} \; 2>/dev/null || true
           echo "Runner workspace cleaned"
-      - name: Clean all Docker cache and images
+      - name: Clean Docker cache and images
         run: |
           echo "=== Phase 1: Stop all non-running containers ==="
           docker ps -a --format '{{.ID}}' | while read -r cid; do
@@ -524,21 +659,14 @@ jobs:
             fi
           done
 
-          echo "=== Phase 3: Remove ALL non-owl images (base images, dangling, etc.) ==="
-          docker image ls --format '{{.Repository}}:{{.Tag}}' | while read -r ref; do
-            echo "$ref" | grep -q '^owl/.*:latest$' && continue
-            docker rmi -f "$ref" 2>&1 && echo "removed $ref" || true
-          done
+          echo "=== Phase 3: Prune dangling images and build cache ==="
+          docker image prune -f
+          docker builder prune -f
 
-          echo "=== Phase 4: Prune everything ==="
-          docker image prune -af
-          docker builder prune -af
-          docker container prune -f
-          docker network prune -f
-          docker volume prune -f
-
-          echo "=== Phase 5: Final verification ==="
+          echo "=== Phase 4: Final verification ==="
+          echo "Remaining owl images:"
+          docker image ls | grep '^owl/' || echo "none"
           echo "Remaining images:"
           docker image ls
-          echo "Remaining build cache:"
+          echo "Docker disk usage:"
           docker system df

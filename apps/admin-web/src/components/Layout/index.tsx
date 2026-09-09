@@ -10,6 +10,7 @@ import {
   IconCalendar,
   IconMenuFold,
   IconMenuUnfold,
+  IconBook,
 } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
@@ -54,6 +55,12 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
       { key: "/recognition/products", label: "商品管理", permission: "recognition:product:read" },
       { key: "/recognition/exchange", label: "兑换单管理", permission: "recognition:exchange:read" },
     ],
+  },
+  {
+    key: "docs",
+    label: "文档管理",
+    icon: <IconBook />,
+    children: [{ key: "/md-docs", label: "文档列表", permission: "md-doc:md-doc:read" }],
   },
 ];
 

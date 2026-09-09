@@ -45,6 +45,7 @@ model User {
   coinAccount     CoinAccount?
   staminaAccount  StaminaAccount?
   exchangeOrders  ExchangeOrder[]
+  mdDocs          MdDoc[]
 
   @@map("user")
 }
@@ -192,6 +193,7 @@ model File {
   url        String?
   uploadedBy String   @map("uploaded_by")
   user       User     @relation(fields: [uploadedBy], references: [id])
+  mdDocImages MdDocImage[]
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([bucket, objectKey])
@@ -442,4 +444,34 @@ model ExchangeOrder {
   @@index([userId, status])
   @@index([status, createdAt])
   @@map("exchange_order")
+}
+
+// ========== 付费知识（副业域） ==========
+
+model MdDoc {
+  id        String   @id @default(uuid())
+  authorId  String   @map("author_id")
+  content   String
+  excerpt   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  author User          @relation(fields: [authorId], references: [id])
+  images MdDocImage[]
+
+  @@index([authorId])
+  @@map("md_doc")
+}
+
+model MdDocImage {
+  id        String   @id @default(uuid())
+  docId     String   @map("doc_id")
+  fileId    String   @map("file_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  doc  MdDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
+  file File @relation(fields: [fileId], references: [id])
+
+  @@index([docId])
+  @@map("md_doc_image")
 }

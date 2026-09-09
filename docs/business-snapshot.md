@@ -106,6 +106,14 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-09-09: B1 保存提示组件：admin 用 arco Notification（启用 react-19-adapter 修复 React19 渲染）；mobile 用 arco-mobile Notify（传 createRoot context）；删除自研 toast 与 react-dom shim
+
+- 2026-09-09: B1 文档编辑器保存机制：仅 已保存/未保存 两态，失焦自动存 IndexedDB，返回/保存/切页同步 DB 并 toast 提示；新增自研 toast（arco 静态弹窗 React19 不兼容）
+
+- 2026-09-08: B1 修复：Vditor 编辑器白屏（本地 node_modules 资源 + StrictMode 生命周期）、保存 userId 注入改 @CurrentUser
+
+- 2026-09-08: B1 付费知识：新增 MdDoc 模块（Prisma schema + DDD 后端 + Vditor IR 编辑器 + IndexedDB 草稿 + admin-web/mobile-web 页面）
+
 - 2026-09-08: S1 recognition center: backend DDD module + admin pages (badge/recognition/exchange/products) + mobile pages (feed/create/message/mall/profile) all connected to real API
 
 - 2026-09-08: 新增 business-snapshot 文档：领域地图/功能现状/最新计划基线（ADR 002/003）

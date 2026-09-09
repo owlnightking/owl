@@ -54,6 +54,7 @@
 | field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
 | file          | 1   | 1   | 1     | 1    | ✅ 完整 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
+| md-doc        | 1   | 1   | 1     | 1    | ✅ 完整 |
 | notification  | 1   | 1   | 1     | 1    | ✅ 完整 |
 | permission    | 1   | 1   | 1     | 1    | ✅ 完整 |
 | project       | 0   | 0   | 0     | 0    | ❌ 空壳 |
@@ -114,6 +115,8 @@
 | StaminaAccount  |      |
 | Product         |      |
 | ExchangeOrder   |      |
+| MdDoc           |      |
+| MdDocImage      |      |
 
 <!-- AUTO-MODELS-END -->
 
@@ -134,6 +137,7 @@
 | 20260904020000_make_scheduler_run_config_id_nullable |      |
 | 20260904030000_add_env_to_scheduler_run              |      |
 | 20260904040000_restore_sync_log                      |      |
+| 20260908000000_add_md_doc                            |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -156,6 +160,7 @@
 | ------------- | ------ | -------------------------------------------- |
 | field-config  | Delete | /api/field-config/:category/:module          |
 | file          | Delete | /api/files/:id                               |
+| md-doc        | Delete | /api/md-docs/:id                             |
 | permission    | Delete | /api/permissions/:id                         |
 | recognition   | Delete | /api/recognition/badges/:id                  |
 | recognition   | Delete | /api/recognition/products/:id                |
@@ -170,6 +175,8 @@
 | field-config  | Get    | /api/field-config/:category/:module          |
 | file          | Get    | /api/files                                   |
 | file          | Get    | /api/files/:id                               |
+| md-doc        | Get    | /api/md-docs                                 |
+| md-doc        | Get    | /api/md-docs/:id                             |
 | notification  | Get    | /api/notifications                           |
 | notification  | Get    | /api/notifications/unread-count              |
 | permission    | Get    | /api/permissions                             |
@@ -196,6 +203,8 @@
 | auth          | Post   | /api/auth/logout                             |
 | auth          | Post   | /api/auth/mock-login                         |
 | auth          | Post   | /api/auth/refresh                            |
+| md-doc        | Post   | /api/md-docs                                 |
+| md-doc        | Post   | /api/md-docs/upload-image                    |
 | notification  | Post   | /api/notifications                           |
 | permission    | Post   | /api/permissions                             |
 | recognition   | Post   | /api/recognition                             |
@@ -205,6 +214,7 @@
 | recognition   | Post   | /api/recognition/products                    |
 | role          | Post   | /api/roles                                   |
 | field-config  | Put    | /api/field-config/:category/:module          |
+| md-doc        | Put    | /api/md-docs/:id                             |
 | notification  | Put    | /api/notifications/:id/read                  |
 | notification  | Put    | /api/notifications/read-all                  |
 | permission    | Put    | /api/permissions/:id                         |

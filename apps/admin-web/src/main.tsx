@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from "vite-plugin-qiankun/dist/helper";
+import "@arco-design/web-react/es/_util/react-19-adapter";
 import "@arco-design/web-react/dist/css/arco.css";
 import "./index.css";
 import App from "./App";

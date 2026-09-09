@@ -19,6 +19,7 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.28.0",
     "react-transition-group": "^4.4.5",
+    "vditor": "^4.0.0",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

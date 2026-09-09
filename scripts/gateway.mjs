@@ -31,6 +31,8 @@ const ROUTES = [
   { prefix: "/admin", port: PORTAL_WEB_PORT },
   { prefix: "/cron", port: PORTAL_WEB_PORT },
   { prefix: "/mobile", port: MOBILE_WEB_PORT },
+  // vditor 运行时资源（admin/mobile 子应用动态加载，请求落在网关源，转发到能伺服 node_modules 资源的 admin dev）
+  { prefix: "/vditor", port: ADMIN_WEB_PORT },
 ];
 
 const findTarget = (url) => {

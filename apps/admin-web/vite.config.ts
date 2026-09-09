@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import qiankun from "vite-plugin-qiankun";
 import { resolve } from "node:path";
+import { vditorPlugin } from "../../scripts/vite-plugins/vditor-serve";
 
 export default defineConfig(({ mode }) => {
   const rootEnv = loadEnv(mode, resolve(__dirname, "../.."), "");
@@ -13,6 +14,7 @@ export default defineConfig(({ mode }) => {
       qiankun("admin", {
         useDevMode: true,
       }),
+      vditorPlugin(),
     ],
     server: {
       host: "0.0.0.0",

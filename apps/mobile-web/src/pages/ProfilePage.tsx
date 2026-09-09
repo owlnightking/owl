@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Toast } from "@arco-design/mobile-react";
 import { get } from "../api/client";
 
@@ -39,6 +40,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export function ProfilePage() {
+  const navigate = useNavigate();
   const [me, setMe] = useState<MeData | null>(null);
   const [coin, setCoin] = useState<CoinAccount>({ balance: 0, totalEarned: 0, totalSpent: 0 });
   const [stamina, setStamina] = useState<StaminaAccount>({ current: 0, max: 500 });
@@ -119,6 +121,21 @@ export function ProfilePage() {
             </span>
           </div>
           <p className="mt-1 text-xs text-gray-400">点赞消耗体力，每月重置</p>
+        </div>
+
+        <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
+          <button className="flex w-full items-center justify-between" onClick={() => navigate("/md-docs")}>
+            <span className="text-sm font-medium text-gray-700">我的文档</span>
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
 
         <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
