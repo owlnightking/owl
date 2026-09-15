@@ -26,13 +26,15 @@ const PORTAL_WEB_PORT = readEnvPort("PORTAL_WEB_PORT", 5270);
 const API_PORT = readEnvPort("API_PORT", 5100);
 
 const ROUTES = [
+  // vditor 运行时资源（子应用按 BASE_URL 动态加载）：必须排在 /admin 之前，
+  // 否则 /admin/vditor/* 会被 portal 的 SPA 兜底吃掉，返回 index.html 而非 JS。
+  { prefix: "/admin/vditor", port: ADMIN_WEB_PORT },
+  { prefix: "/vditor", port: ADMIN_WEB_PORT },
   { prefix: "/portal", port: PORTAL_WEB_PORT },
   { prefix: "/owl", port: PORTAL_WEB_PORT },
   { prefix: "/admin", port: PORTAL_WEB_PORT },
   { prefix: "/cron", port: PORTAL_WEB_PORT },
   { prefix: "/mobile", port: MOBILE_WEB_PORT },
-  // vditor 运行时资源（admin/mobile 子应用动态加载，请求落在网关源，转发到能伺服 node_modules 资源的 admin dev）
-  { prefix: "/vditor", port: ADMIN_WEB_PORT },
 ];
 
 const findTarget = (url) => {
