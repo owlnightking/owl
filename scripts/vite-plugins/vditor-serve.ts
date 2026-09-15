@@ -1,6 +1,6 @@
 import { Plugin } from "vite";
 import { dirname, resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, cpSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const VDITOR_PREFIX = "/vditor/";
@@ -34,6 +34,9 @@ const MIME_MAP: Record<string, string> = {
 
 export function vditorPlugin(): Plugin {
   let vditorRoot = "";
+  let basePath = "/";
+  let outDir = "";
+  let outDirResolved = "";
 
   return {
     name: "vditor-serve",
@@ -42,16 +45,22 @@ export function vditorPlugin(): Plugin {
       if (!vditorRoot) {
         console.warn("[vditor-serve] cannot resolve vditor in node_modules");
       }
+      const base = config.base || "/";
+      basePath = base.endsWith("/") ? base : `${base}/`;
+      outDir = config.build.outDir;
+      outDirResolved = resolve(config.root, outDir);
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (!req.url || !req.url.startsWith(VDITOR_PREFIX) || !vditorRoot) {
-          return next();
-        }
-        const relativePath = req.url.slice(VDITOR_PREFIX.length);
-        const filePath = resolve(vditorRoot, relativePath);
+        if (!vditorRoot) return next();
+        const pathname = (req.url || "").split("?")[0];
+        const prefixes = [`${basePath}vditor/`, VDITOR_PREFIX];
+        const prefix = prefixes.find((p) => pathname.startsWith(p));
+        if (!prefix) return next();
 
-        if (!existsSync(filePath)) {
+        const relativePath = pathname.slice(prefix.length);
+        const filePath = resolve(vditorRoot, relativePath);
+        if (!filePath.startsWith(vditorRoot) || !existsSync(filePath)) {
           return next();
         }
 
@@ -62,6 +71,22 @@ export function vditorPlugin(): Plugin {
         res.setHeader("Content-Type", mime);
         res.setHeader("Cache-Control", `public, max-age=${CACHE_MAX_AGE_SECONDS}, immutable`);
         res.end(readFileSync(filePath));
+      });
+    },
+    closeBundle() {
+      if (!vditorRoot || !outDirResolved) return;
+      const sourceDir = resolve(vditorRoot, "dist");
+      const targetDir = resolve(outDirResolved, "vditor", "dist");
+      if (!existsSync(sourceDir)) return;
+      cpSync(sourceDir, targetDir, {
+        recursive: true,
+        filter: (src) => {
+          const relative = src.slice(sourceDir.length + 1);
+          if (!relative) return true;
+          if (relative === "ts" || relative === "types") return false;
+          if (relative.startsWith("ts/") || relative.startsWith("types/")) return false;
+          return !relative.endsWith(".d.ts");
+        },
       });
     },
   };

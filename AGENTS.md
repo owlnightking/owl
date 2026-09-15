@@ -234,3 +234,18 @@ Pod 环境变量 (envFrom secretRef)
 2. **禁止未经用户明确同意修改镜像**：不得对上述镜像执行 `docker pull` / `docker tag` / `docker rmi` / `docker build`，不得改动编排文件中的镜像引用或相关 Dockerfile。
 3. **任何容器/镜像变更必须先向用户说明原因与具体变更内容，经用户明确同意后方可执行**；未获许可的改动视为违规。
 4. 只读检查（`docker ps` / `docker inspect` / `docker logs` / `docker compose ... ps` / `docker images`）不属于变更，可直接执行。
+
+## 十二、前端 UI 规范
+
+AI Agent 在编写前端布局代码前，必须先读 `docs/frontend-rules.md`，写完后运行 `pnpm frontend:check` 验证。
+
+**检查命令**：
+
+```bash
+pnpm frontend:check  # 前端 UI 规则检查
+```
+
+**阻断规则**：
+
+- ERROR：页面组件命名错误、UI 库跨端导入、emoji 使用 → 阻断提交
+- WARN：内联 style、硬编码颜色 → 仅提示

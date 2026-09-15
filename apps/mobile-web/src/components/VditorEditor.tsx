@@ -88,7 +88,7 @@ export function VditorEditor({
       placeholder,
       height,
       icon: "ant",
-      cdn: "/vditor",
+      cdn: `${import.meta.env.BASE_URL}vditor`,
       cache: { enable: false },
       undoDelay: 300,
       outline: { enable: true, position: "left" },

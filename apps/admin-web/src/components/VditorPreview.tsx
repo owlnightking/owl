@@ -13,7 +13,7 @@ export function VditorPreview({ content }: VditorPreviewProps) {
     if (!containerRef.current) return;
     Vditor.preview(containerRef.current, content, {
       mode: "light",
-      cdn: "/vditor",
+      cdn: `${import.meta.env.BASE_URL}vditor`,
     });
   }, [content]);
 
