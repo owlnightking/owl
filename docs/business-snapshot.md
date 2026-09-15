@@ -106,6 +106,8 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-09-15: 前端 UI 检查全量阻断：check-frontend-rules.sh 将内联 style/硬编码颜色/缺骨架屏由 WARN 升级为 ERROR（ADR 005），存量 14 处代码待后续修复
+
 - 2026-09-09: B1 保存提示组件：admin 用 arco Notification（启用 react-19-adapter 修复 React19 渲染）；mobile 用 arco-mobile Notify（传 createRoot context）；删除自研 toast 与 react-dom shim
 
 - 2026-09-09: B1 文档编辑器保存机制：仅 已保存/未保存 两态，失焦自动存 IndexedDB，返回/保存/切页同步 DB 并 toast 提示；新增自研 toast（arco 静态弹窗 React19 不兼容）

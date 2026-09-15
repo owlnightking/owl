@@ -283,4 +283,6 @@ AI 写完前端代码后，必须检查：
 - [ ] 是否有硬编码颜色值
 - [ ] 是否有 emoji/颜文字
 
+以上任一问题均为 ERROR 级别，`pnpm frontend:check` 检出即阻断提交。
+
 运行检查：`pnpm frontend:check`

@@ -129,9 +129,9 @@ apps/ow/               → CLI / 脚本工具
 ### 架构
 
 ```
-Rancher UI (https://localhost:8443)
-  ↓ 管理
-k3s-owl-prod 集群 → owl namespace → Secrets
+Rancher UI (https://100.99.162.82:8443，Rancher 自身部署于 k3s 集群内 cattle-system)
+  ↓ 管理（本集群 / k3s-owl-prod）
+owl namespace → Secrets
   ↓ 注入
 Pod 环境变量 (envFrom secretRef)
 ```
@@ -152,7 +152,7 @@ Pod 环境变量 (envFrom secretRef)
 
 ### Rancher 访问信息
 
-- URL: `https://localhost:8443`
+- URL: `https://100.99.162.82:8443`（Rancher 自签证书，浏览器提示不受信任，继续访问即可；2026-09-15 起 Rancher 迁入 k3s 集群内）
 - 用户名: `admin`
 - 集群: `k3s-owl-prod`（Active）
 
@@ -180,33 +180,24 @@ Pod 环境变量 (envFrom secretRef)
 
 ## 十一、本机容器与镜像清单（SSOT + 保护规则）
 
-**本节固化本项目当前依赖的本机 Docker 容器/镜像——k3s、rancher、system 中间件组、actions-runner 四组，是容器与镜像事实的唯一权威来源。** 各容器运行/重建命令等细节以 **仓库外** 的 `~/Desktop/system/dockerData/README.md` 为准（dockerData 不属于 owl 仓库）；仓库内相关编排：`.github/actions-runner/`（CD runner）、根目录 `docker-compose.yml`（owl 应用容器）。
+**本节固化本项目当前依赖的本机 Docker 容器/镜像——k3s（内含 Rancher）、system 中间件组、actions-runner，是容器与镜像事实的唯一权威来源。** 各容器运行/重建命令等细节以 **仓库外** 的 `~/Desktop/system/dockerData/README.md` 为准（dockerData 不属于 owl 仓库）；仓库内相关编排：`.github/actions-runner/`（CD runner）、根目录 `docker-compose.yml`（owl 应用容器）。
 
-> 以下容器重启策略均为 `unless-stopped`。`k3s-net`（172.23.0.0/24，网关 172.23.0.1）承载 k3s / rancher / system 中间件，所有成员固定 IP，**Docker 重启后 IP 不变**，k3s pods 据此访问中间件。
+> 以下容器重启策略均为 `unless-stopped`。`k3s-net`（172.23.0.0/24，网关 172.23.0.1）承载 k3s / system 中间件，所有成员固定 IP，**Docker 重启后 IP 不变**，k3s pods 据此访问中间件。
 
 ### 1. k3s（单节点 K8s 集群）
 
-| 项       | 值                                                                                                            |
-| -------- | ------------------------------------------------------------------------------------------------------------- |
-| 容器     | `k3s`（`--privileged`，`docker run` 直启，非 compose）                                                        |
-| 镜像     | `rancher/k3s:latest`                                                                                          |
-| 网络     | `k3s-net` 固定 IP `172.23.0.2`；node IP 必须固定，变更会导致集群无法启动                                      |
-| 宿主端口 | `6443`（API Server）、`9262`（NodePort 统一入口）、`9263`                                                     |
-| 数据     | containerd 运行时走命名卷（宿主机 APFS bind 跑不动）；`server/db` bind 到 `dockerData/k3s/server/db`          |
-| 说明     | 集群名 `k3s-owl-prod`，由 rancher 管理；重建必须带 `--node-ip 172.23.0.2 --disable-network-policy` 等固定参数 |
+| 项       | 值                                                                                                                |
+| -------- | ----------------------------------------------------------------------------------------------------------------- |
+| 容器     | `k3s`（`--privileged`，`docker run` 直启，非 compose）                                                            |
+| 镜像     | `rancher/k3s:latest`                                                                                              |
+| 网络     | `k3s-net` 固定 IP `172.23.0.2`；node IP 必须固定，变更会导致集群无法启动                                          |
+| 宿主端口 | `6443`（API Server）、`9262`（NodePort 统一入口）、`9263`、`8443`（→ 容器 443，Traefik websecure / Rancher 面板） |
+| 数据     | containerd 运行时走命名卷（宿主机 APFS bind 跑不动）；`server/db` bind 到 `dockerData/k3s/server/db`              |
+| 说明     | 集群名 `k3s-owl-prod`，由 rancher 管理；重建必须带 `--node-ip 172.23.0.2 --disable-network-policy` 等固定参数     |
 
-### 2. rancher（Rancher 面板）
+> Rancher 已不再是独立 docker 容器：2026-09-15 起以 Helm chart（v2.15.1，含 cert-manager 依赖）部署在 k3s 集群内 `cattle-system`，经 k3s 宿主端口 `8443`（→ 容器 443，Traefik websecure）访问 `https://100.99.162.82:8443`（自签证书），生产 Secret 管理见第九节。
 
-| 项       | 值                                                                                                                      |
-| -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 容器     | `rancher`（`docker run` 直启，非 compose）                                                                              |
-| 镜像     | `rancher/rancher:v2.14.3`                                                                                               |
-| 网络     | `k3s-net` 固定 IP `172.23.0.3`                                                                                          |
-| 宿主端口 | `80`（http 跳转）、`8443`（→ 容器 443）                                                                                 |
-| 数据     | `dockerData/rancher` bind + 命名卷 `rancher-containerd`（containerd 必须走命名卷，宿主机 gRPC-FUSE 挂载跑不了嵌套 pod） |
-| 说明     | 访问 https://localhost:8443（admin）；生产 Secret 管理见第九节                                                          |
-
-### 3. system 中间件组（compose project `system`）
+### 2. system 中间件组（compose project `system`）
 
 - 编排：`~/Desktop/system/dockerData/docker-compose.middleware.yml`（仓库外）
 - **必须以 `-p system` 启动**：直接 `-f dockerData/...` 会把 project 名推断为 `dockerdata`，生成脱离分组的独立容器（minio 曾因此脱组）
@@ -219,7 +210,7 @@ Pod 环境变量 (envFrom secretRef)
 | rabbitmq   | rabbitmq:latest            | 172.23.0.12 | 5672、15672 | `dockerData/rabbitmq`（/var/lib/rabbitmq）                  |
 | minio      | bitnamilegacy/minio:latest | 172.23.0.13 | 9000、9001  | `dockerData/minio`（/bitnami/minio/data，镜像原生 datadir） |
 
-### 4. actions-runner CD 组（compose project `actions-runner`）
+### 3. actions-runner CD 组（compose project `actions-runner`）
 
 - 编排：`.github/actions-runner/docker-compose.yml`（仓库内）；管理脚本 `manage.sh`
 - 容器 `github-runner`；镜像 `owl/github-runner:latest`（`.github/actions-runner/Dockerfile` 构建）
@@ -230,7 +221,7 @@ Pod 环境变量 (envFrom secretRef)
 
 ### 硬性规则（AI 约束）
 
-1. **禁止未经用户明确同意修改上述四组的容器方式**：不得创建/删除/停止/重启/重建这些容器，不得改动其启动参数、端口映射、网络、卷、环境变量或编排文件（含仓库外 `dockerData/docker-compose.middleware.yml` 与仓库内 `.github/actions-runner/`）。
+1. **禁止未经用户明确同意修改上述容器组的方式**：不得创建/删除/停止/重启/重建这些容器，不得改动其启动参数、端口映射、网络、卷、环境变量或编排文件（含仓库外 `dockerData/docker-compose.middleware.yml` 与仓库内 `.github/actions-runner/`）。
 2. **禁止未经用户明确同意修改镜像**：不得对上述镜像执行 `docker pull` / `docker tag` / `docker rmi` / `docker build`，不得改动编排文件中的镜像引用或相关 Dockerfile。
 3. **任何容器/镜像变更必须先向用户说明原因与具体变更内容，经用户明确同意后方可执行**；未获许可的改动视为违规。
 4. 只读检查（`docker ps` / `docker inspect` / `docker logs` / `docker compose ... ps` / `docker images`）不属于变更，可直接执行。
@@ -245,7 +236,9 @@ AI Agent 在编写前端布局代码前，必须先读 `docs/frontend-rules.md`�
 pnpm frontend:check  # 前端 UI 规则检查
 ```
 
-**阻断规则**：
+**阻断规则（以下问题均为 ERROR，存在即阻断提交）**：
 
-- ERROR：页面组件命名错误、UI 库跨端导入、emoji 使用 → 阻断提交
-- WARN：内联 style、硬编码颜色 → 仅提示
+- 页面组件命名错误、UI 库跨端导入、emoji 使用
+- 内联 style（Arco 组件必要属性除外）
+- 硬编码颜色值（HEX/RGB）
+- 页面有 loading 状态但未使用 Skeleton 骨架屏

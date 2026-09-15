@@ -7,7 +7,7 @@
 # 5. emoji/颜文字检测
 # 6. 操作反馈组件检测（web: Notification, mobile: Notify）
 # 7. 骨架屏加载检测
-# 存在 ERROR 时 exit 1
+# 所有问题均为 ERROR 级别，存在即 exit 1（阻断提交）
 
 set -u
 
@@ -18,10 +18,8 @@ cd "$ROOT"
 FRONTEND_FILES="$(find apps -name '*.tsx' -o -name '*.ts' | grep -v node_modules | grep -v dist || true)"
 
 ERROR_COUNT=0
-WARN_COUNT=0
 
 error() { printf "[ERROR] %s - %s\n" "$1" "$2"; ERROR_COUNT=$((ERROR_COUNT + 1)); }
-warn() { printf "[WARN] %s - %s\n" "$1" "$2"; WARN_COUNT=$((WARN_COUNT + 1)); }
 
 # 1. 页面组件命名规范（必须以 Page.tsx 结尾）
 check_page_naming() {
@@ -63,7 +61,7 @@ check_inline_style() {
       if echo "$line" | grep -qE 'style=\{\{' 2>/dev/null; then
         # 检查是否只包含 width/height/borderBottom 等必要属性
         if ! echo "$line" | grep -qE 'style=\{\{\s*(width|height|borderLeft|borderBottom|paddingLeft|top|left|right|bottom)' 2>/dev/null; then
-          warn "$file" "检测到内联 style，优先使用 Tailwind 工具类"
+          error "$file" "检测到内联 style，优先使用 Tailwind 工具类"
         fi
       fi
     done < <(grep -n 'style={{' "$file" 2>/dev/null)
@@ -81,7 +79,7 @@ check_hardcoded_colors() {
       [[ "$file" == *.css ]] && continue
       # 检测 HEX 颜色
       if echo "$line" | grep -qE '"#[0-9a-fA-F]{3,8}"' 2>/dev/null; then
-        warn "$file" "检测到硬编码 HEX 颜色，优先使用 Tailwind 调色板"
+        error "$file" "检测到硬编码 HEX 颜色，优先使用 Tailwind 调色板"
       fi
     done < <(grep -nE '"#[0-9a-fA-F]{3,8}"' "$file" 2>/dev/null)
   done <<< "$FRONTEND_FILES"
@@ -132,7 +130,7 @@ check_skeleton_loading() {
     # 检查是否有 loading 状态和 Skeleton 组件
     if grep -qE 'useState.*loading' "$file" 2>/dev/null; then
       if ! grep -qE 'Skeleton' "$file" 2>/dev/null; then
-        warn "$file" "页面有 loading 状态但未使用 Skeleton 骨架屏组件"
+        error "$file" "页面有 loading 状态但未使用 Skeleton 骨架屏组件"
       fi
     fi
   done <<< "$FRONTEND_FILES"
@@ -146,7 +144,7 @@ check_emoji
 check_notification_component
 check_skeleton_loading
 
-echo "check-frontend-rules.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
+echo "check-frontend-rules.sh: ERROR=$ERROR_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ]; then
   exit 1
 fi

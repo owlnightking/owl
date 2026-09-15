@@ -13,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import colors from "tailwindcss/colors";
 import { fetchDashboardStats } from "../api/dashboard";
 import type { DashboardStats } from "../types/scheduler";
 
@@ -26,10 +27,10 @@ const TAG_STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  success: "#00b42a",
-  failed: "#f53f3f",
-  running: "#165dff",
-  PENDING: "#86909c",
+  success: colors.green[500],
+  failed: colors.red[500],
+  running: colors.blue[500],
+  PENDING: colors.gray[500],
 };
 
 function StatCard({ title, value, color }: { title: string; value: number; color?: string }) {

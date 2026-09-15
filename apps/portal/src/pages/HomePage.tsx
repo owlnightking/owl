@@ -69,9 +69,9 @@ function HomePageSkeleton() {
 }
 
 const APP_ICONS: Record<string, React.ReactNode> = {
-  admin: <IconSettings style={{ fontSize: 28 }} />,
-  owl: <IconDesktop style={{ fontSize: 28 }} />,
-  cron: <IconClockCircle style={{ fontSize: 28 }} />,
+  admin: <IconSettings className="text-[28px]" />,
+  owl: <IconDesktop className="text-[28px]" />,
+  cron: <IconClockCircle className="text-[28px]" />,
 };
 
 const APP_COLORS: Record<string, { bg: string; icon: string }> = {
@@ -337,10 +337,7 @@ export function HomePage() {
       <div className="flex min-w-0 flex-[2] flex-col gap-3">
         {/* 上：通知 */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white px-4 pb-3 pt-4">
-          <h2
-            className="mb-2 flex flex-shrink-0 items-center text-sm font-bold text-gray-500"
-            style={{ borderLeft: "3px solid #3370ff", paddingLeft: 10 }}
-          >
+          <h2 className="mb-2 flex flex-shrink-0 items-center border-l-[3px] border-blue-500 pl-2.5 text-sm font-bold text-gray-500">
             企业通知
           </h2>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -352,10 +349,7 @@ export function HomePage() {
 
         {/* 下：应用 */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-white px-4 pb-4 pt-4">
-          <h2
-            className="mb-3 flex flex-shrink-0 items-center text-sm font-bold text-gray-500"
-            style={{ borderLeft: "3px solid #3370ff", paddingLeft: 10 }}
-          >
+          <h2 className="mb-3 flex flex-shrink-0 items-center border-l-[3px] border-blue-500 pl-2.5 text-sm font-bold text-gray-500">
             系统模块
           </h2>
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -368,7 +362,7 @@ export function HomePage() {
                     onClick={() => navigate(`/${app.app}`)}
                     className={`flex h-[90px] w-[90px] flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 transition-all hover:shadow-md ${colors.bg}`}
                   >
-                    <span className={colors.icon}>{APP_ICONS[app.app] ?? <IconApps style={{ fontSize: 28 }} />}</span>
+                    <span className={colors.icon}>{APP_ICONS[app.app] ?? <IconApps className="text-[28px]" />}</span>
                     <span className="text-xs font-medium text-gray-700">{app.name}</span>
                   </button>
                 );

@@ -64,8 +64,8 @@ export function Layout() {
     <ArcoLayout className="h-screen">
       <Header
         data-portal-header="true"
-        className="flex items-center justify-between bg-white px-6"
-        style={{ height: 66, borderBottom: "1px solid #e5e7eb" }}
+        className="flex items-center justify-between border-b border-gray-200 bg-white px-6"
+        style={{ height: 66 }}
       >
         {/* 左侧 Logo */}
         <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80">
@@ -96,7 +96,7 @@ export function Layout() {
         <div className="flex items-center gap-4">
           <Badge count={0} dot>
             <Button type="text" shape="circle" onClick={() => setMessageDrawerVisible(true)}>
-              <IconNotification style={{ fontSize: 18, color: "#9ca3af" }} />
+              <IconNotification className="text-lg text-gray-400" />
             </Button>
           </Badge>
 
@@ -120,7 +120,7 @@ export function Layout() {
                   <img src={user.avatarUrl} alt={user.name} />
                 </Avatar>
               ) : (
-                <Avatar size={32} shape="circle" style={{ backgroundColor: "#3370ff" }}>
+                <Avatar size={32} shape="circle" className="bg-blue-500">
                   {user?.name?.[0] ?? "U"}
                 </Avatar>
               )}

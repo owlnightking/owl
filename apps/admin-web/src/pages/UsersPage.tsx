@@ -105,7 +105,7 @@ export function UsersPage() {
             <img src={url} alt={record.name} />
           </Avatar>
         ) : (
-          <Avatar size={32} shape="circle" style={{ backgroundColor: "#3370ff" }}>
+          <Avatar size={32} shape="circle" className="bg-blue-500">
             {record.name?.charAt(0)}
           </Avatar>
         ),

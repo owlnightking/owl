@@ -23,8 +23,8 @@ if [ "$MODE" = "--staged" ]; then
   TS_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.ts' '*.tsx')"
   ALL_FILES="$(git diff --cached --name-only --diff-filter=ACM)"
 else
-  TS_FILES="$(find apps packages -type f \( -name '*.ts' -o -name '*.tsx' \) -not -path '*/node_modules/*' -not -path '*/generated/*' 2>/dev/null)"
-  ALL_FILES="$(find apps packages scripts docker .github -type f -not -path '*/node_modules/*' -not -path '*/generated/*' 2>/dev/null)"
+  TS_FILES="$(find apps packages -type f \( -name '*.ts' -o -name '*.tsx' \) -not -path '*/node_modules/*' -not -path '*/generated/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/coverage/*' 2>/dev/null)"
+  ALL_FILES="$(find apps packages scripts docker .github -type f -not -path '*/node_modules/*' -not -path '*/generated/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/coverage/*' 2>/dev/null)"
 fi
 
 if [ -z "$TS_FILES" ]; then
