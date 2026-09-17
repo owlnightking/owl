@@ -5,7 +5,7 @@ import { RECOGNITION_SERVICE, type RecognitionItem } from "../domain/recognition
 import { RecognitionUseCase } from "../application/recognition.use-case";
 import { ok } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
-import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
 import { DATABASE_CLIENT } from "@owl/database/provider";
 import type { PrismaClient } from "@owl/database";
 
@@ -32,12 +32,8 @@ export class RecognitionController {
   ) {}
 
   @Get("feed")
-  async feed(
-    @Query("page") page?: string,
-    @Query("pageSize") pageSize?: string,
-    @Inject("CURRENT_USER_ID") userId?: string
-  ) {
-    const result = await this.service.listFeed(Number(page) || 1, Number(pageSize) || 20, userId);
+  async feed(@Query("page") page?: string, @Query("pageSize") pageSize?: string, @CurrentUser() user?: AuthPrincipal) {
+    const result = await this.service.listFeed(Number(page) || 1, Number(pageSize) || 20, user?.userId);
     return ok({ items: result.items.map(this.toResponse), total: result.total });
   }
 
@@ -49,27 +45,30 @@ export class RecognitionController {
 
   @Get()
   @RequirePermission("recognition:recognition:read")
-  async list(@Query() query: RecognitionQueryDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    const result = await this.service.list({ ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 }, userId);
+  async list(@Query() query: RecognitionQueryDto, @CurrentUser() user?: AuthPrincipal) {
+    const result = await this.service.list(
+      { ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 },
+      user?.userId
+    );
     return ok({ items: result.items.map(this.toResponse), total: result.total });
   }
 
   @Post()
-  async create(@Body() dto: CreateRecognitionDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    return ok(this.toResponse(await this.service.create(userId!, dto)));
+  async create(@Body() dto: CreateRecognitionDto, @CurrentUser() user: AuthPrincipal) {
+    return ok(this.toResponse(await this.service.create(user.userId, dto)));
   }
 
   @Put(":id/approve")
   @RequirePermission("recognition:recognition:approve")
-  async approve(@Param("id") id: string, @Inject("CURRENT_USER_ID") userId?: string) {
-    await this.service.approve(id, userId!);
+  async approve(@Param("id") id: string, @CurrentUser() user: AuthPrincipal) {
+    await this.service.approve(id, user.userId);
     return ok(undefined);
   }
 
   @Put(":id/reject")
   @RequirePermission("recognition:recognition:approve")
-  async reject(@Param("id") id: string, @Body() body: { reason?: string }, @Inject("CURRENT_USER_ID") userId?: string) {
-    await this.service.reject(id, userId!, body.reason);
+  async reject(@Param("id") id: string, @Body() body: { reason?: string }, @CurrentUser() user: AuthPrincipal) {
+    await this.service.reject(id, user.userId, body.reason);
     return ok(undefined);
   }
 
@@ -81,21 +80,22 @@ export class RecognitionController {
   }
 
   @Post(":id/like")
-  async toggleLike(@Param("id") id: string, @Inject("CURRENT_USER_ID") userId?: string) {
-    const liked = await this.service.toggleLike(id, userId!);
+  async toggleLike(@Param("id") id: string, @CurrentUser() user: AuthPrincipal) {
+    const liked = await this.service.toggleLike(id, user.userId);
     return ok({ liked });
   }
 
   @Get("level")
-  async getLevel(@Inject("CURRENT_USER_ID") userId?: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId! }, select: { createdAt: true } });
-    if (!user) return ok({ level: 1, exp: 0, nextLevelExp: 1000 });
+  async getLevel(@CurrentUser() user: AuthPrincipal) {
+    const userId = user.userId;
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true } });
+    if (!u) return ok({ level: 1, exp: 0, nextLevelExp: 1000 });
 
     const now = new Date();
-    const years = now.getFullYear() - user.createdAt.getFullYear();
+    const years = now.getFullYear() - u.createdAt.getFullYear();
     const level = Math.max(1, years);
 
-    const account = await this.prisma.coinAccount.findUnique({ where: { userId: userId! }, select: { id: true } });
+    const account = await this.prisma.coinAccount.findUnique({ where: { userId }, select: { id: true } });
     let exp = 0;
     if (account) {
       const expResult = await this.prisma.coinTransaction.aggregate({

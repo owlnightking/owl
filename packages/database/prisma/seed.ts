@@ -241,6 +241,33 @@ async function seed() {
     });
   }
   console.log("seed: products done");
+
+  // Assign admin role to all existing users (mock users)
+  const allUsers = await prisma.user.findMany();
+  const adminRoleId = roles["admin"];
+  if (adminRoleId && allUsers.length > 0) {
+    await prisma.userRole.createMany({
+      data: allUsers.map((u) => ({ userId: u.id, roleId: adminRoleId })),
+      skipDuplicates: true,
+    });
+    console.log(`seed: assigned admin role to ${allUsers.length} users`);
+  }
+
+  // Create coin accounts and stamina accounts for all users
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  for (const user of allUsers) {
+    await prisma.coinAccount.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id, balance: 0, totalEarned: 0, totalSpent: 0 },
+    });
+    await prisma.staminaAccount.upsert({
+      where: { userId: user.id },
+      update: { month: currentMonth },
+      create: { userId: user.id, current: 50, maxStamina: 50, month: currentMonth },
+    });
+  }
+  console.log("seed: coin & stamina accounts done");
 }
 
 seed()

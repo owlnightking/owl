@@ -37,6 +37,6 @@ tmp/
 # prisma
 packages/database/prisma/*.db
 
-# k8s secrets (contain real credentials, apply manually via kubectl)
-k8s/base/api-service-secret.yaml
+# k8s secrets: 明文不入库，仅提交 SOPS 加密后的 *.enc.yaml（见 .sops.yaml）
+k8s/base/*-secret.yaml
 Dockerfile.verify

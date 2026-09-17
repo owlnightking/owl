@@ -5,3 +5,5 @@ dist/
 generated/
 tmp/
 *.log
+# SOPS 加密的 Secret（格式由 sops 管理，不参与 prettier 格式化）
+*.enc.yaml

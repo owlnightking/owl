@@ -4,6 +4,7 @@ metadata:
   name: cron-service-config
   namespace: owl
 data:
+  APP_ENV: prod
   NODE_ENV: production
   CRON_PORT: "3001"
   POSTGRES_HOST: 172.23.0.10

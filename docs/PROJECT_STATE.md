@@ -8,9 +8,9 @@
 
 - 领域地图（ADR 002）：主领域 = 自研产品跨境电商 13 阶段流水线（远期保留）；组织支撑域 = 认可中心/人才中心/智能客服+知识库/基础配置监控（当前主线）；副业域 = 付费知识 md 文档库
 - 开发顺序：先组织支撑域、再副业域、后主领域（详见 implementation-plan）
-- 里程碑 2'（当前目标）：S0 支撑域底座 ✅ 已完成（PrismaClient 全局单例 / system-config / mock 登录 / permission / notification / file / admin 二级菜单 + 权限渲染）；下一步 S1 认可中心闭环
+- 里程碑 2'（当前目标）：S0 支撑域底座 ✅ 已完成；S1 认可中心闭环 ✅ 已完成（Badge/Recognition/Coin/Stamina/Product/Exchange 完整 DDD 模块 + admin 4 页面 + mobile Feed/消息/商城/我的 + 种子权限 + API 端到端验证）
 - Phase 1 (M1') 认证与权限底座：代码基本完成，验收项未全部勾选
-- 后续阶段：S2 人才中心 / S3 智能客服+知识库 / S4 基础配置监控 / B1 付费知识 / M0 主领域流水线 —— 未开始
+- 后续阶段：S2 人才中心 / S3 智能客服+知识库 / S4 基础配置监控 —— 未开始；B1 付费知识核心功能已完成
 - 部署：K3s 已部署；mobile-web（飞书 OAuth，k8s NodePort 9263）已上线但页面全 mock
 - CI/CD：CD 为 main push 触发（paths 命中 package.json + 版本门禁），`v*` tag 仅作版本标记
 
@@ -21,8 +21,8 @@
 - [x] ~~admin 菜单仅一级平铺，缺一级分组 + 二级菜单及按角色权限派生渲染~~（S0 T7 已完成）
 - [x] ~~notification / file / system-config 空壳~~（S0 T2/T5/T6 已完成：CRUD + 集成）
 - [x] ~~本地飞书应用未配置，SSO 本地无法真实跑通~~（S0 T3 mock 登录通道已完成）
-- [ ] 组织支撑域与副业域领域模块均未建：认可（徽章/认可贴/币账户/币流水/兑换单/商品）、人才、知识库、付费知识文档库、使用统计/消息推送监控/数据监控（规划见 implementation-plan S1-S4/B1）
-- [ ] mobile-web 四个 Tab 与个人中心全为 mock 数据，无真实接口；「我的」md 编写文档模块未建
+- [x] ~~组织支撑域与副业域领域模块均未建~~（S1 认可中心模块已完成：Badge/Recognition/Coin/Stamina/Product/Exchange；B1 付费知识 md 文档库已完成）
+- [x] ~~mobile-web 四个 Tab 与个人中心全为 mock 数据~~（S1 认可中心 Feed/消息/商城/我的已接入真实接口）
 - [ ] 测试覆盖仅 auth.use-case 1 个 spec，user/role/permission/system-config/notification/file 无单测
 - [ ] cron-service 仅 health + ScheduleModule，任务中心未建（人才表单同步 / 数据监控探针后续挂靠）
 - [ ] 主领域（13 阶段流水线）领域后移，project 模块空壳（M0 重启时建）

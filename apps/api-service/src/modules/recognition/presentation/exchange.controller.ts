@@ -11,7 +11,7 @@ import { CoinUseCase } from "../application/coin.use-case";
 import { StaminaUseCase } from "../application/stamina.use-case";
 import { ok } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
-import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
 
 class CreateExchangeDto {
   @IsString() @IsNotEmpty() productId!: string;
@@ -53,25 +53,21 @@ export class ExchangeController {
   }
 
   @Post("orders")
-  async createOrder(@Body() dto: CreateExchangeDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    return ok(this.toResponse(await this.exchangeService.create(userId!, dto)));
+  async createOrder(@Body() dto: CreateExchangeDto, @CurrentUser() user: AuthPrincipal) {
+    return ok(this.toResponse(await this.exchangeService.create(user.userId, dto)));
   }
 
   @Put("orders/:id/approve")
   @RequirePermission("recognition:exchange:approve")
-  async approveOrder(@Param("id") id: string, @Inject("CURRENT_USER_ID") userId?: string) {
-    await this.exchangeService.approve(id, userId!);
+  async approveOrder(@Param("id") id: string, @CurrentUser() user: AuthPrincipal) {
+    await this.exchangeService.approve(id, user.userId);
     return ok(undefined);
   }
 
   @Put("orders/:id/reject")
   @RequirePermission("recognition:exchange:approve")
-  async rejectOrder(
-    @Param("id") id: string,
-    @Body() body: { reason?: string },
-    @Inject("CURRENT_USER_ID") userId?: string
-  ) {
-    await this.exchangeService.reject(id, userId!, body.reason);
+  async rejectOrder(@Param("id") id: string, @Body() body: { reason?: string }, @CurrentUser() user: AuthPrincipal) {
+    await this.exchangeService.reject(id, user.userId, body.reason);
     return ok(undefined);
   }
 
@@ -83,18 +79,18 @@ export class ExchangeController {
   }
 
   @Get("coin-account")
-  async getCoinAccount(@Inject("CURRENT_USER_ID") userId?: string) {
-    return ok(await this.coinService.getAccount(userId!));
+  async getCoinAccount(@CurrentUser() user: AuthPrincipal) {
+    return ok(await this.coinService.getAccount(user.userId));
   }
 
   @Get("coin-transactions")
   async listCoinTransactions(
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
-    @Inject("CURRENT_USER_ID") userId?: string
+    @CurrentUser() user?: AuthPrincipal
   ) {
     return ok(
-      await this.coinService.listTransactions(userId!, Number(page) || 1, Number(pageSize) || DEFAULT_PAGE_SIZE)
+      await this.coinService.listTransactions(user!.userId, Number(page) || 1, Number(pageSize) || DEFAULT_PAGE_SIZE)
     );
   }
 
@@ -102,15 +98,15 @@ export class ExchangeController {
   @RequirePermission("recognition:exchange:approve")
   async adjustCoin(
     @Body() body: { userId: string; amount: number; remark?: string },
-    @Inject("CURRENT_USER_ID") operatorId?: string
+    @CurrentUser() operator: AuthPrincipal
   ) {
-    await this.coinService.adjustBalance(body.userId, body.amount, operatorId!, body.remark);
+    await this.coinService.adjustBalance(body.userId, body.amount, operator.userId, body.remark);
     return ok(undefined);
   }
 
   @Get("stamina")
-  async getStamina(@Inject("CURRENT_USER_ID") userId?: string) {
-    return ok(await this.staminaService.getAccount(userId!));
+  async getStamina(@CurrentUser() user: AuthPrincipal) {
+    return ok(await this.staminaService.getAccount(user.userId));
   }
 
   private toResponse(item: ExchangeOrderItem) {

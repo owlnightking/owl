@@ -122,48 +122,64 @@ apps/ow/               → CLI / 脚本工具
 - `scripts/check-business-freshness.sh` 对比 `docs/implementation-plan.md` + `docs/decisions/` 与 `docs/business-snapshot.md` 的最近提交时间，计划/决策新 → ERROR（提示运行 `pnpm business:update`）；pre-commit 增量检查暂存区。
 - **版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
 
-## 九、生产环境 Secret 管理（Rancher）
+## 九、生产环境 Secret 管理（SOPS + age）
 
-**生产环境 Secrets 由 Rancher 管理，严禁通过 CD 流水线或代码配置。**
+**生产环境 Secrets 以 SOPS（age 加密）形式入库，禁止提交明文，严禁通过 CD 流水线或代码配置明文。**
+
+> 2026-09-16 起弃用 Rancher（其管理面板已从 k3s 卸载，见第十一节）；改为 SOPS + age 的 git-ops 方案，监控改用 k9s / Lens（零集群内组件）。
 
 ### 架构
 
 ```
-Rancher UI (https://100.99.162.82:8443，Rancher 自身部署于 k3s 集群内 cattle-system)
-  ↓ 管理（本集群 / k3s-owl-prod）
-owl namespace → Secrets
+仓库内 k8s/base/*-secret.enc.yaml（SOPS 密文，可入库）
+  ↓ sops -d（用本机 age 私钥解密）
+kubectl apply -f -（写入 owl namespace Secrets）
   ↓ 注入
 Pod 环境变量 (envFrom secretRef)
 ```
 
 ### Secret 清单
 
-| Secret 名称           | Namespace | 用途                 | 数据项                                                                                           |
-| --------------------- | --------- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| `api-service-secret`  | owl       | API 服务敏感配置     | DATABASE_URL, FEISHU_APP_SECRET, JWT_SECRET, MINIO_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD |
-| `cron-service-secret` | owl       | 定时任务服务敏感配置 | DATABASE_URL, FEISHU_BUSINESS_APP_SECRET, POSTGRES_PASSWORD, REDIS_PASSWORD                      |
+| Secret 名称           | 明文（不入库）                      | 密文（入库）                            | 用途                 | 数据项                                                                                           |
+| --------------------- | ----------------------------------- | --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
+| `api-service-secret`  | `k8s/base/api-service-secret.yaml`  | `k8s/base/api-service-secret.enc.yaml`  | API 服务敏感配置     | DATABASE_URL, FEISHU_APP_SECRET, JWT_SECRET, MINIO_SECRET_KEY, POSTGRES_PASSWORD, REDIS_PASSWORD |
+| `cron-service-secret` | `k8s/base/cron-service-secret.yaml` | `k8s/base/cron-service-secret.enc.yaml` | 定时任务服务敏感配置 | DATABASE_URL, FEISHU_BUSINESS_APP_SECRET, POSTGRES_PASSWORD, REDIS_PASSWORD                      |
+
+### 密钥与工具
+
+- **age 私钥（严禁入库）**：`~/.config/sops/age/keys.txt`（权限 600）；公钥写在仓库根 `.sops.yaml` 的 `creation_rules`。
+- **SOPS 配置**：仓库根 `.sops.yaml`，仅加密 `data` / `stringData` 字段。
+- **工具安装**：`sops` / `age` / `k9s` 装在 `~/.local/bin`（`PATH` 已含）。
+- 环境变量：`export SOPS_AGE_KEY_FILE=$HOME/.config/sops/age/keys.txt`（未设置时 sops 默认也读该路径）。
 
 ### 硬性规则
 
 1. **禁止在 CD 流水线（cd.yml）中创建或管理 Secrets**：CD 只负责构建和部署应用，不涉及 Secret 配置。
 2. **禁止在代码中硬编码任何敏感值**：所有敏感配置通过 K8s Secret 注入环境变量。
-3. **Secret 变更必须通过 Rancher UI 操作**：登录 Rancher → k3s-owl-prod → Storage → Secrets → 选择 owl namespace → 编辑对应 Secret。
+3. **禁止提交明文 Secret**：`k8s/base/*-secret.yaml` 已在 `.gitignore` 中忽略；只提交 `*.enc.yaml` 密文。age 私钥**永不入库**。
 4. **新增 Secret 必须更新本文档**：添加新 Secret 时同步更新上方清单表。
+5. **凭证轮换**：任何曾以明文进入 git 历史的凭证必须轮换（旧值视为已泄露）。
 
-### Rancher 访问信息
+### 操作流程（修改 Secret）
 
-- URL: `https://100.99.162.82:8443`（Rancher 自签证书，浏览器提示不受信任，继续访问即可；2026-09-15 起 Rancher 迁入 k3s 集群内）
-- 用户名: `admin`
-- 集群: `k3s-owl-prod`（Active）
+```bash
+export SOPS_AGE_KEY_FILE=$HOME/.config/sops/age/keys.txt
+# 1. 编辑密文（sops 自动解密到编辑器，保存后自动重新加密）
+sops k8s/base/api-service-secret.enc.yaml
+# 2. 应用到集群
+sops -d k8s/base/api-service-secret.enc.yaml | kubectl apply -f -
+# 3. 重启对应 Deployment 使新值生效
+kubectl rollout restart deployment/api-service -n owl
+```
 
-### 操作流程
+### 集群监控（替代 Rancher 面板）
 
-1. 登录 Rancher UI
-2. 左侧导航选择 `k3s-owl-prod` 集群
-3. 进入 `Storage` → `Secrets`
-4. 选择 `owl` namespace
-5. 点击 Secret 名称 → `Edit Config` 修改值
-6. 修改后需重启对应 Pod 生效（Deployment 滚动更新）
+```bash
+k9s                     # TUI，默认读取 ~/.kube/config 的 owl-k3s context
+kubectl -n owl get pods # 或直接用 kubectl
+```
+
+- kubeconfig：`~/.kube/config` 中的 `owl-k3s` context（cluster `owl-k3s-cluster`，namespace `owl`）。
 
 ## 十、CI/CD 工作流保护规则
 
@@ -180,22 +196,22 @@ Pod 环境变量 (envFrom secretRef)
 
 ## 十一、本机容器与镜像清单（SSOT + 保护规则）
 
-**本节固化本项目当前依赖的本机 Docker 容器/镜像——k3s（内含 Rancher）、system 中间件组、actions-runner，是容器与镜像事实的唯一权威来源。** 各容器运行/重建命令等细节以 **仓库外** 的 `~/Desktop/system/dockerData/README.md` 为准（dockerData 不属于 owl 仓库）；仓库内相关编排：`.github/actions-runner/`（CD runner）、根目录 `docker-compose.yml`（owl 应用容器）。
+**本节固化本项目当前依赖的本机 Docker 容器/镜像——k3s、system 中间件组、actions-runner，是容器与镜像事实的唯一权威来源。** 各容器运行/重建命令等细节以 **仓库外** 的 `~/Desktop/system/dockerData/README.md` 为准（dockerData 不属于 owl 仓库）；仓库内相关编排：`.github/actions-runner/`（CD runner）、根目录 `docker-compose.yml`（owl 应用容器）。
 
 > 以下容器重启策略均为 `unless-stopped`。`k3s-net`（172.23.0.0/24，网关 172.23.0.1）承载 k3s / system 中间件，所有成员固定 IP，**Docker 重启后 IP 不变**，k3s pods 据此访问中间件。
 
 ### 1. k3s（单节点 K8s 集群）
 
-| 项       | 值                                                                                                                |
-| -------- | ----------------------------------------------------------------------------------------------------------------- |
-| 容器     | `k3s`（`--privileged`，`docker run` 直启，非 compose）                                                            |
-| 镜像     | `rancher/k3s:latest`                                                                                              |
-| 网络     | `k3s-net` 固定 IP `172.23.0.2`；node IP 必须固定，变更会导致集群无法启动                                          |
-| 宿主端口 | `6443`（API Server）、`9262`（NodePort 统一入口）、`9263`、`8443`（→ 容器 443，Traefik websecure / Rancher 面板） |
-| 数据     | containerd 运行时走命名卷（宿主机 APFS bind 跑不动）；`server/db` bind 到 `dockerData/k3s/server/db`              |
-| 说明     | 集群名 `k3s-owl-prod`，由 rancher 管理；重建必须带 `--node-ip 172.23.0.2 --disable-network-policy` 等固定参数     |
+| 项       | 值                                                                                                                    |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| 容器     | `k3s`（`--privileged`，`docker run` 直启，非 compose）                                                                |
+| 镜像     | `rancher/k3s:latest`                                                                                                  |
+| 网络     | `k3s-net` 固定 IP `172.23.0.2`；node IP 必须固定，变更会导致集群无法启动                                              |
+| 宿主端口 | `6443`（API Server）、`9262`（NodePort 统一入口）、`9263`、`8443`（→ 容器 443，Traefik websecure，现无 Ingress 使用） |
+| 数据     | containerd 运行时走命名卷（宿主机 APFS bind 跑不动）；`server/db` bind 到 `dockerData/k3s/server/db`                  |
+| 说明     | 集群名 `k3s-owl-prod`，单节点；重建必须带 `--node-ip 172.23.0.2 --disable-network-policy` 等固定参数                  |
 
-> Rancher 已不再是独立 docker 容器：2026-09-15 起以 Helm chart（v2.15.1，含 cert-manager 依赖）部署在 k3s 集群内 `cattle-system`，经 k3s 宿主端口 `8443`（→ 容器 443，Traefik websecure）访问 `https://100.99.162.82:8443`（自签证书），生产 Secret 管理见第九节。
+> **2026-09-16 起 Rancher 已从 k3s 集群卸载**（原 Helm chart v2.15.1 部署于 `cattle-system`，含 fleet/cert-manager/turtles 等依赖，常驻约 1.2 GiB 内存）。集群管理改用 `kubectl` / `k9s`，生产 Secret 改用 SOPS + age（见第九节）。卸载原因：单节点内网系统无需 Rancher 全套控制面，且其内存占用是 Mac Docker VM 的主要负担。
 
 ### 2. system 中间件组（compose project `system`）
 
