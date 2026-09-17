@@ -491,7 +491,7 @@ jobs:
             app="${entry%%:*}"
             ver="${entry##*:}"
             echo "Deploying ${app} version ${ver}..."
-            if docker save owl/${app}:${ver} | docker exec -i k3s ctr -n k8s.io images import - \
+            if docker save owl/${app}:${ver} owl/${app}:latest | docker exec -i k3s ctr -n k8s.io images import - \
                && docker exec k3s kubectl set image deployment/${app} ${app}=owl/${app}:${ver} -n owl \
                && docker exec k3s kubectl rollout status deployment/${app} -n owl --timeout=300s; then
               RESULTS="${RESULTS} ${app}=success"
