@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Toast, Textarea } from "@arco-design/mobile-react";
+import { Toast, Textarea, NavBar } from "@arco-design/mobile-react";
 import { IconSuccessCircle, IconNotice } from "@arco-design/mobile-react/esm/icon";
 import { get, put } from "../api/client";
 
@@ -160,6 +160,7 @@ export function MessagePage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
+      <NavBar title="消息" />
       <div className="px-4 pt-4 pb-20">
         <div className="mb-4 flex gap-2">
           <button

@@ -2,15 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+html {
+  font-size: 50px;
+}
+
 body {
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
   background: #f5f6f7;
+  font-size: 16px;
 }
 
 #root {
   min-height: 100dvh;
   max-width: 540px;
   margin: 0 auto;
+}
+
+.arco-nav-bar-wrapper {
+  height: 1.12rem;
+}
+
+.arco-nav-bar.arco-nav-bar-fixed {
+  height: 1.12rem;
+}
+
+.arco-nav-bar-left {
+  display: none;
+}
+
+/* 项目根字号设为 50px 用于 arco 移动端 rem 适配，会放大 Vditor 的 0.85rem 标题徽标 */
+.vditor-editor .vditor-ir .vditor-reset > h1::before,
+.vditor-editor .vditor-ir .vditor-reset > h2::before,
+.vditor-editor .vditor-ir .vditor-reset > h3::before,
+.vditor-editor .vditor-ir .vditor-reset > h4::before,
+.vditor-editor .vditor-ir .vditor-reset > h5::before,
+.vditor-editor .vditor-ir .vditor-reset > h6::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h1::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h2::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h3::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h4::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h5::before,
+.vditor-editor .vditor-wysiwyg .vditor-reset > h6::before {
+  font-size: 13.6px;
 }

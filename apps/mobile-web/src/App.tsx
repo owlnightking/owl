@@ -6,6 +6,7 @@ import { MallPage } from "./pages/MallPage";
 import { MessagePage } from "./pages/MessagePage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { CreateRecognitionPage } from "./pages/CreateRecognitionPage";
+import { FeedPage } from "./pages/FeedPage";
 import { MdDocsPage } from "./pages/MdDocsPage";
 import { MdDocEditorPage } from "./pages/MdDocEditorPage";
 import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
@@ -16,11 +17,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/create" element={<CreateRecognitionPage />} />
-        <Route path="/message" element={<MessagePage />} />
         <Route path="/mall" element={<MallPage />} />
+        <Route path="/docs" element={<MdDocsPage />} />
+        <Route path="/message" element={<MessagePage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/md-docs" element={<MdDocsPage />} />
+        <Route path="/create" element={<CreateRecognitionPage />} />
+        <Route path="/feed" element={<FeedPage />} />
         <Route path="/md-docs/new" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/edit" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />

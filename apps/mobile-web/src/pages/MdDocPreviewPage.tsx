@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Toast } from "@arco-design/mobile-react";
+import { Toast, NavBar } from "@arco-design/mobile-react";
 import { VditorPreview } from "../components/VditorPreview";
 import { get } from "../api/client";
 
@@ -32,14 +32,7 @@ export function MdDocPreviewPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-white">
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
-        <button className="text-sm text-blue-500" onClick={() => navigate("/md-docs")}>
-          返回列表
-        </button>
-        <button className="text-sm text-blue-500" onClick={() => navigate(`/md-docs/${id}/edit`)}>
-          编辑
-        </button>
-      </div>
+      <NavBar title="文档预览" />
       <div className="flex-1 overflow-auto px-4 py-3">
         <VditorPreview content={content} />
       </div>

@@ -5,7 +5,7 @@ import { FILE_SERVICE, type FileItem } from "../domain/file.ports";
 import { FileUseCase } from "../application/file.use-case";
 import { ok } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
-import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -29,8 +29,8 @@ export class FileController {
 
   @Get()
   @RequirePermission("common:file:read")
-  async list(@Query() query: FileQueryDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    const result = await this.service.listByUser(userId ?? "", {
+  async list(@Query() query: FileQueryDto, @CurrentUser() user: AuthPrincipal) {
+    const result = await this.service.listByUser(user.userId, {
       page: query.page ?? 1,
       pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
     });

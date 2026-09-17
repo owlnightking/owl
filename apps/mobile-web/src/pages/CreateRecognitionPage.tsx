@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Toast, Textarea } from "@arco-design/mobile-react";
+import { Toast, Textarea, NavBar } from "@arco-design/mobile-react";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../api/client";
 
@@ -60,6 +60,7 @@ export function CreateRecognitionPage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
+      <NavBar title="发送认可" />
       <div className="px-4 pt-4 pb-20">
         <div className="mb-4 rounded-xl bg-white p-4 shadow-sm">
           <h3 className="mb-3 text-sm font-medium text-gray-700">认可对象</h3>

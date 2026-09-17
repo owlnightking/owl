@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Notify } from "@arco-design/mobile-react";
+import { useParams } from "react-router-dom";
+import { Notify, NavBar } from "@arco-design/mobile-react";
 import { createRoot } from "react-dom/client";
 import { VditorEditor } from "../components/VditorEditor";
 import { get, post, put } from "../api/client";
@@ -10,12 +10,10 @@ const STABLE_DELAY_MS = 800;
 const NOTIFY_CONTEXT = { createRoot };
 
 export function MdDocEditorPage() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const docIdRef = useRef(id && id !== "new" ? id : "");
   const serverIdRef = useRef(id && id !== "new" ? id : "");
@@ -148,31 +146,6 @@ export function MdDocEditorPage() {
     [flushLocalDraft]
   );
 
-  const handleSave = async () => {
-    setSaving(true);
-    const ok = await flushToServer();
-    setSaving(false);
-    if (ok) {
-      Notify.success({ content: "数据已永久保存" }, NOTIFY_CONTEXT);
-      if (isNew && serverIdRef.current) {
-        navigate(`/md-docs/${serverIdRef.current}/edit`, { replace: true });
-      }
-    } else {
-      Notify.error({ content: "保存失败，请检查网络" }, NOTIFY_CONTEXT);
-    }
-  };
-
-  const handleBack = async () => {
-    if (contentRef.current.trimEnd() !== serverBaselineRef.current.trimEnd()) {
-      const ok = await flushToServer();
-      if (!ok) {
-        await flushLocalDraft();
-      }
-      Notify.success({ content: "已保存" }, NOTIFY_CONTEXT);
-    }
-    navigate("/md-docs");
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-gray-100">
@@ -183,25 +156,15 @@ export function MdDocEditorPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-white">
-      <div className="sticky top-0 z-10 border-b border-gray-100 bg-white">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button className="text-sm text-blue-500" onClick={handleBack}>
-            返回
-          </button>
-          <span className="text-sm text-gray-500">{isNew ? "新建文档" : "编辑文档"}</span>
-          <button
-            className={`text-sm ${saving ? "text-gray-400" : "text-blue-500"}`}
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "保存中..." : "保存"}
-          </button>
-        </div>
-        <div className="flex items-center justify-center gap-1 pb-1.5 text-xs">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${dirty ? "bg-red-500" : "bg-green-500"}`} />
-          <span className={dirty ? "text-red-500" : "text-green-500"}>{dirty ? "未保存" : "已保存"}</span>
-        </div>
-      </div>
+      <NavBar
+        title={isNew ? "新建文档" : "编辑文档"}
+        rightContent={
+          <div className="flex items-center text-xs">
+            <span className={`mr-2 inline-block h-2 w-2 rounded-full ${dirty ? "bg-red-500" : "bg-green-500"}`} />
+            <span className={dirty ? "text-red-500" : "text-green-500"}>{dirty ? "未保存" : "已保存"}</span>
+          </div>
+        }
+      />
       <div className="flex-1 overflow-hidden">
         <VditorEditor
           value={content}

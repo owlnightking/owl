@@ -91,7 +91,7 @@ export function VditorEditor({
       cdn: `${import.meta.env.BASE_URL}vditor`,
       cache: { enable: false },
       undoDelay: 300,
-      outline: { enable: true, position: "left" },
+      outline: { enable: false, position: "left" },
       toolbar: readOnly ? [] : undefined,
       after: () => {
         readyRef.current = true;

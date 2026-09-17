@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Toast } from "@arco-design/mobile-react";
+import { Toast, NavBar } from "@arco-design/mobile-react";
 import { get, post } from "../api/client";
 
 interface Product {
@@ -26,7 +26,7 @@ function ProductCard({
 }) {
   const canExchange = myBalance >= product.price && product.stock > 0;
   return (
-    <div className="mb-3 overflow-hidden rounded-xl bg-white shadow-sm">
+    <div className="mb-3 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
       {product.image ? (
         <img src={product.image} alt={product.name} className="h-40 w-full object-cover" />
       ) : (
@@ -90,13 +90,8 @@ export function MallPage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
+      <NavBar title="商城" />
       <div className="px-3 pt-4 pb-20">
-        <div className="mb-3 rounded-xl bg-white p-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">我的认可币</span>
-            <span className="text-lg font-semibold text-orange-500">{balance}</span>
-          </div>
-        </div>
         <div>
           {products.map((product) => (
             <ProductCard key={product.id} product={product} myBalance={balance} onExchange={handleExchange} />

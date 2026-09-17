@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Toast } from "@arco-design/mobile-react";
+import { Toast, NavBar } from "@arco-design/mobile-react";
 import { get, del } from "../api/client";
 
 interface MdDoc {
@@ -45,16 +45,8 @@ export function MdDocsPage() {
 
   return (
     <div className="min-h-dvh bg-gray-100">
-      <div className="sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 shadow-sm">
-        <button className="text-sm text-blue-500" onClick={() => navigate("/profile")}>
-          返回
-        </button>
-        <span className="font-medium text-gray-800">我的文档</span>
-        <button className="text-sm text-blue-500" onClick={() => navigate("/md-docs/new")}>
-          新建
-        </button>
-      </div>
-      <div className="px-4 py-3 pb-20">
+      <NavBar title="文档" />
+      <div className="px-4 pt-4 pb-20">
         {loading ? (
           <div className="py-8 text-center text-sm text-gray-400">加载中...</div>
         ) : docs.length === 0 ? (

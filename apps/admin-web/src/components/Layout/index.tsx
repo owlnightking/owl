@@ -29,21 +29,10 @@ export interface SiderItem {
 export const ADMIN_SIDER_ITEMS: SiderItem[] = [
   { key: "/home", label: "概览", icon: <IconHome /> },
   {
-    key: "system",
-    label: "系统管理",
-    icon: <IconSettings />,
-    children: [
-      { key: "/users", label: "用户管理", permission: "system:user:read" },
-      { key: "/roles", label: "角色与权限", permission: "system:role:read" },
-      { key: "/permissions", label: "权限配置", permission: "system:permission:read" },
-      { key: "/field-config", label: "字段配置", permission: "system:field:read" },
-    ],
-  },
-  {
-    key: "audit",
-    label: "审计",
-    icon: <IconSafe />,
-    children: [{ key: "/audit-logs", label: "操作审计", permission: "system:audit:read" }],
+    key: "docs",
+    label: "文档中心",
+    icon: <IconBook />,
+    children: [{ key: "/md-docs", label: "文档列表", permission: "md-doc:md-doc:read" }],
   },
   {
     key: "recognition",
@@ -57,10 +46,21 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
     ],
   },
   {
-    key: "docs",
-    label: "文档管理",
-    icon: <IconBook />,
-    children: [{ key: "/md-docs", label: "文档列表", permission: "md-doc:md-doc:read" }],
+    key: "system",
+    label: "系统管理",
+    icon: <IconSettings />,
+    children: [
+      { key: "/users", label: "用户管理", permission: "system:user:read" },
+      { key: "/roles", label: "角色与权限", permission: "system:role:read" },
+      { key: "/permissions", label: "权限配置", permission: "system:permission:read" },
+      { key: "/field-config", label: "字段配置", permission: "system:field:read" },
+    ],
+  },
+  {
+    key: "audit",
+    label: "日志中心",
+    icon: <IconSafe />,
+    children: [{ key: "/audit-logs", label: "操作日志", permission: "system:audit:read" }],
   },
 ];
 

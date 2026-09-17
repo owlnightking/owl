@@ -5,7 +5,7 @@ import { NOTIFICATION_SERVICE, type NotificationItem } from "../domain/notificat
 import { NotificationUseCase } from "../application/notification.use-case";
 import { ok } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
-import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -55,8 +55,8 @@ export class NotificationController {
 
   @Get()
   @RequirePermission("notification:record:read")
-  async list(@Query() query: NotificationQueryDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    const result = await this.service.listByUser(userId ?? "", {
+  async list(@Query() query: NotificationQueryDto, @CurrentUser() user: AuthPrincipal) {
+    const result = await this.service.listByUser(user.userId, {
       status: query.status,
       page: query.page ?? 1,
       pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
@@ -69,8 +69,8 @@ export class NotificationController {
 
   @Get("unread-count")
   @RequirePermission("notification:record:read")
-  async unreadCount(@Inject("CURRENT_USER_ID") userId?: string) {
-    const count = await this.service.countUnread(userId ?? "");
+  async unreadCount(@CurrentUser() user: AuthPrincipal) {
+    const count = await this.service.countUnread(user.userId);
     return ok({ count });
   }
 
@@ -90,8 +90,8 @@ export class NotificationController {
 
   @Put("read-all")
   @RequirePermission("notification:record:update")
-  async markAllRead(@Inject("CURRENT_USER_ID") userId?: string) {
-    await this.service.markAllRead(userId ?? "");
+  async markAllRead(@CurrentUser() user: AuthPrincipal) {
+    await this.service.markAllRead(user.userId);
     return ok(undefined);
   }
 

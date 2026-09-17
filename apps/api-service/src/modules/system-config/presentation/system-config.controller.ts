@@ -3,7 +3,7 @@ import { IsObject, IsOptional, IsString } from "class-validator";
 import { SYSTEM_CONFIG_SERVICE, type SystemConfigItem } from "../domain/system-config.ports";
 import { SystemConfigUseCase } from "../application/system-config.use-case";
 import { ok } from "../../../common/response/api-response";
-import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
 
 class SetConfigDto {
   @IsObject()
@@ -31,8 +31,8 @@ export class SystemConfigController {
 
   @Put(":key")
   @RequirePermission("system:config:update")
-  async set(@Param("key") key: string, @Body() dto: SetConfigDto, @Inject("CURRENT_USER_ID") userId?: string) {
-    const item = await this.service.set(key, dto.value, userId, dto.description);
+  async set(@Param("key") key: string, @Body() dto: SetConfigDto, @CurrentUser() user: AuthPrincipal) {
+    const item = await this.service.set(key, dto.value, user.userId, dto.description);
     return ok(this.toResponse(item));
   }
 
