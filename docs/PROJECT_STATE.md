@@ -33,13 +33,13 @@
 
 | app          | 类型 | 版本   | 描述 |
 | ------------ | ---- | ------ | ---- |
-| admin-web    | 前端 | 0.2.38 |      |
-| api-service  | 后端 | 0.2.39 |      |
-| cron-service | 后端 | 0.2.38 |      |
-| cron-web     | 前端 | 0.2.38 |      |
-| mobile-web   | 前端 | 0.2.38 |      |
-| owl-web      | 前端 | 0.2.38 |      |
-| portal       | 前端 | 0.2.38 |      |
+| admin-web    | 前端 | 0.2.39 |      |
+| api-service  | 后端 | 0.2.40 |      |
+| cron-service | 后端 | 0.2.39 |      |
+| cron-web     | 前端 | 0.2.39 |      |
+| mobile-web   | 前端 | 0.2.39 |      |
+| owl-web      | 前端 | 0.2.39 |      |
+| portal       | 前端 | 0.2.39 |      |
 
 <!-- AUTO-APPS-END -->
 
