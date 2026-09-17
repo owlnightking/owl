@@ -458,15 +458,9 @@ jobs:
       deploy_results: ${{ steps.update-images.outputs.deploy_results }}
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure namespace and deployments
+      - name: Ensure namespace
         run: |
           docker exec k3s kubectl get namespace owl >/dev/null 2>&1 || docker exec k3s kubectl create namespace owl
-
-          echo "Applying k8s manifests (Secrets managed by Rancher)..."
-          docker exec k3s rm -rf /tmp/k8s-base
-          docker cp k8s/base k3s:/tmp/k8s-base
-          docker exec k3s kubectl apply -k /tmp/k8s-base/
-          docker exec k3s rm -rf /tmp/k8s-base
       - name: Clean docker build cache
         run: |
           echo "Pruning docker build cache..."
