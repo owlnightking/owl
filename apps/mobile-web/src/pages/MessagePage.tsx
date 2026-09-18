@@ -161,7 +161,7 @@ export function MessagePage() {
   return (
     <div className="min-h-dvh bg-gray-100">
       <NavBar title="消息" />
-      <div className="px-4 pt-4 pb-20">
+      <div className="px-4 pt-4 pb-6">
         <div className="mb-4 flex gap-2">
           <button
             className={`flex-1 rounded-lg py-2 text-sm font-medium ${tab === "approval" ? "bg-blue-500 text-white" : "bg-white text-gray-600"}`}

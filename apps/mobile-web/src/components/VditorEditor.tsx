@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Vditor from "vditor";
 import "vditor/dist/index.css";
 
@@ -28,6 +28,9 @@ export function VditorEditor({
   const suppressInputRef = useRef(false);
   const suppressTimerRef = useRef<number | null>(null);
   const valueRef = useRef(value);
+  const [toolbarExpanded, setToolbarExpanded] = useState(false);
+  const toolbarExpandedRef = useRef(false);
+  const [editorReady, setEditorReady] = useState(false);
 
   const clearSuppressTimer = useCallback(() => {
     if (suppressTimerRef.current !== null) {
@@ -35,6 +38,39 @@ export function VditorEditor({
       suppressTimerRef.current = null;
     }
   }, []);
+
+  /**
+   * 折叠时隐藏第一行以外的工具按钮。用隐藏而非 overflow 裁剪，
+   * 否则标题/表情等下拉面板会被工具栏裁掉。
+   */
+  const applyToolbarCollapse = useCallback((collapsed: boolean) => {
+    const toolbar = hostRef.current?.querySelector<HTMLElement>(".vditor-toolbar");
+    const items = toolbar ? (Array.from(toolbar.children) as HTMLElement[]) : [];
+    if (items.length === 0) return;
+    items.forEach((item) => {
+      item.style.display = "";
+    });
+    if (!collapsed) return;
+    const firstRowTop = Math.min(...items.map((item) => Math.round(item.getBoundingClientRect().top)));
+    items.forEach((item) => {
+      if (Math.round(item.getBoundingClientRect().top) > firstRowTop) {
+        item.style.display = "none";
+      }
+    });
+  }, []);
+
+  const handleToggleToolbar = useCallback(() => {
+    setToolbarExpanded((prev) => {
+      const next = !prev;
+      toolbarExpandedRef.current = next;
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!editorReady) return;
+    applyToolbarCollapse(!toolbarExpanded);
+  }, [editorReady, toolbarExpanded, applyToolbarCollapse]);
 
   const armSuppressTimer = useCallback(() => {
     clearSuppressTimer();
@@ -54,6 +90,7 @@ export function VditorEditor({
     if (!host) return;
 
     readyRef.current = false;
+    setEditorReady(false);
     const editorEl = document.createElement("div");
     editorEl.style.height = "100%";
     host.appendChild(editorEl);
@@ -96,6 +133,7 @@ export function VditorEditor({
       after: () => {
         readyRef.current = true;
         applyLatestValue();
+        setEditorReady(true);
       },
       input: readOnly
         ? undefined
@@ -157,5 +195,33 @@ export function VditorEditor({
     }
   }, [value, armSuppressTimer]);
 
-  return <div ref={hostRef} className="vditor-editor" style={{ height: "100%" }} />;
+  useEffect(() => {
+    const handleResize = () => applyToolbarCollapse(!toolbarExpandedRef.current);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [applyToolbarCollapse]);
+
+  return (
+    <div className="vditor-editor-wrap">
+      {!readOnly && (
+        <button
+          type="button"
+          className="absolute right-0 top-0 z-10 flex h-9 w-[38px] items-center justify-center border-l border-gray-200 bg-white text-gray-500"
+          aria-label={toolbarExpanded ? "收起工具栏" : "展开工具栏"}
+          onClick={handleToggleToolbar}
+        >
+          <svg
+            className={`h-4 w-4 transition-transform ${toolbarExpanded ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      )}
+      <div ref={hostRef} className="vditor-editor" style={{ height: "100%" }} />
+    </div>
+  );
 }

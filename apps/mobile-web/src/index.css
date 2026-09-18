@@ -46,3 +46,13 @@ body {
 .vditor-editor .vditor-wysiwyg .vditor-reset > h6::before {
   font-size: 13.6px;
 }
+
+.vditor-editor-wrap {
+  position: relative;
+  height: 100%;
+}
+
+/* 工具栏右上角展开按钮的位置预留 */
+.vditor-editor .vditor-toolbar {
+  padding-right: 38px;
+}

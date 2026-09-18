@@ -60,7 +60,7 @@ export function FeedPage() {
   return (
     <div className="min-h-dvh bg-gray-100">
       <NavBar title="认可动态" />
-      <div className="px-4 pt-4 pb-20">
+      <div className="px-4 pt-4 pb-6">
         {loading ? (
           <div className="py-8 text-center text-sm text-gray-400">加载中...</div>
         ) : items.length > 0 ? (
@@ -100,7 +100,7 @@ export function FeedPage() {
         )}
       </div>
       <button
-        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg active:bg-blue-600"
+        className="fixed bottom-6 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg active:bg-blue-600"
         onClick={() => navigate("/create")}
       >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

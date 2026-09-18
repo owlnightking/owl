@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AuthGuard } from "./components/AuthGuard";
 import { TabBar } from "./components/TabBar";
 import { HomePage } from "./pages/HomePage";
@@ -11,7 +11,11 @@ import { MdDocsPage } from "./pages/MdDocsPage";
 import { MdDocEditorPage } from "./pages/MdDocEditorPage";
 import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
 
+const TAB_BAR_PATHS = new Set(["/home", "/mall", "/docs", "/profile"]);
+
 function App() {
+  const location = useLocation();
+  const showTabBar = TAB_BAR_PATHS.has(location.pathname);
   return (
     <AuthGuard>
       <Routes>
@@ -28,7 +32,7 @@ function App() {
         <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-      <TabBar />
+      {showTabBar && <TabBar />}
     </AuthGuard>
   );
 }
