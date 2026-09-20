@@ -37,10 +37,12 @@ export class ProductController {
   async list(
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
-    @Query("enabledOnly") enabledOnly?: string
+    @Query("keyword") keyword?: string,
+    @Query("enabled") enabled?: string
   ) {
     const result = await this.service.list({
-      enabledOnly: enabledOnly === "true",
+      keyword,
+      enabled: enabled !== undefined ? enabled === "true" : undefined,
       page: Number(page) || 1,
       pageSize: Number(pageSize) || DEFAULT_PAGE_SIZE,
     });
@@ -53,19 +55,19 @@ export class ProductController {
   }
 
   @Post()
-  @RequirePermission("recognition:product:create")
+  @RequirePermission("recognition:product:write")
   async create(@Body() dto: CreateProductDto) {
     return ok(this.toResponse(await this.service.create(dto)));
   }
 
   @Put(":id")
-  @RequirePermission("recognition:product:update")
+  @RequirePermission("recognition:product:write")
   async update(@Param("id") id: string, @Body() dto: UpdateProductDto) {
     return ok(this.toResponse(await this.service.update(id, dto)));
   }
 
   @Delete(":id")
-  @RequirePermission("recognition:product:delete")
+  @RequirePermission("recognition:product:write")
   async remove(@Param("id") id: string) {
     await this.service.delete(id);
     return ok(undefined);

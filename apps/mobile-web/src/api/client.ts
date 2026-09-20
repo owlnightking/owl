@@ -13,6 +13,7 @@ export const http = axios.create({
   baseURL,
   withCredentials: true,
   timeout: 15000,
+  headers: { "X-Audit-System": "mobile" },
 });
 
 http.interceptors.response.use(

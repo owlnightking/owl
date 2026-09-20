@@ -11,6 +11,7 @@ export const http = axios.create({
   baseURL: "/api",
   withCredentials: true,
   timeout: 15000,
+  headers: { "X-Audit-System": "cron" },
 });
 
 export const cronHttp = axios.create({

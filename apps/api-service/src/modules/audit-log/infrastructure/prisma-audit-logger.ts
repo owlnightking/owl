@@ -17,8 +17,11 @@ export class PrismaAuditLogger implements AuditLoggerPort {
         resourceId: record.resourceId,
         detail: record.detail as object | undefined,
         ip: record.ip,
+        ipRegion: record.ipRegion,
         requestId: record.requestId,
         result: record.result,
+        system: record.system,
+        module: record.module,
       },
     });
   }

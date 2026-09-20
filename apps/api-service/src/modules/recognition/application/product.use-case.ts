@@ -3,6 +3,7 @@ import {
   PRODUCT_REPOSITORY,
   type ProductCreateInput,
   type ProductItem,
+  type ProductListOptions,
   type ProductRepositoryPort,
   type ProductUpdateInput,
 } from "../domain/product.ports";
@@ -11,11 +12,7 @@ import {
 export class ProductUseCase {
   constructor(@Inject(PRODUCT_REPOSITORY) private readonly repo: ProductRepositoryPort) {}
 
-  async list(options?: {
-    enabledOnly?: boolean;
-    page: number;
-    pageSize: number;
-  }): Promise<{ items: ProductItem[]; total: number }> {
+  async list(options?: ProductListOptions): Promise<{ items: ProductItem[]; total: number }> {
     return this.repo.list(options);
   }
 

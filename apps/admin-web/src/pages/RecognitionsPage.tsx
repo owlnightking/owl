@@ -35,6 +35,8 @@ export function RecognitionsPage() {
       const r = await get<PageData>(`/recognition?${p}`);
       setData(r.items);
       setTotal(r.total);
+    } catch {
+      // API 请求失败时保持当前数据状态，避免白屏
     } finally {
       setLoading(false);
     }
@@ -44,24 +46,36 @@ export function RecognitionsPage() {
   }, [fetchData]);
 
   const handleApprove = async (id: string) => {
-    await put(`/recognition/${id}/approve`);
-    Notification.success({ content: "已通过" });
-    fetchData();
+    try {
+      await put(`/recognition/${id}/approve`);
+      Notification.success({ content: "已通过" });
+      fetchData();
+    } catch {
+      // 错误已在拦截器中处理
+    }
   };
   const handleReject = async (id: string) => {
     Modal.confirm({
       title: "确认驳回",
       content: "驳回后不会产币",
       onOk: async () => {
-        await put(`/recognition/${id}/reject`);
-        Notification.success({ content: "已驳回" });
-        fetchData();
+        try {
+          await put(`/recognition/${id}/reject`);
+          Notification.success({ content: "已驳回" });
+          fetchData();
+        } catch {
+          // 错误已在拦截器中处理
+        }
       },
     });
   };
   const handlePin = async (id: string) => {
-    await put(`/recognition/${id}/pin`);
-    fetchData();
+    try {
+      await put(`/recognition/${id}/pin`);
+      fetchData();
+    } catch {
+      // 错误已在拦截器中处理
+    }
   };
 
   const sc = { pending: "orange", approved: "green", rejected: "red" } as const;
@@ -82,25 +96,28 @@ export function RecognitionsPage() {
     {
       title: "操作",
       width: 200,
-      render: (r: RecognitionItem) => (
-        <Space>
-          {r.status === "pending" && (
-            <>
-              <Button size="small" type="primary" onClick={() => handleApprove(r.id)}>
-                通过
+      render: (r?: RecognitionItem) => {
+        if (!r) return null;
+        return (
+          <Space>
+            {r.status === "pending" && (
+              <>
+                <Button size="small" type="primary" onClick={() => handleApprove(r.id)}>
+                  通过
+                </Button>
+                <Button size="small" status="danger" onClick={() => handleReject(r.id)}>
+                  驳回
+                </Button>
+              </>
+            )}
+            {r.status === "approved" && (
+              <Button size="small" onClick={() => handlePin(r.id)}>
+                {r.pinned ? "取消置顶" : "置顶"}
               </Button>
-              <Button size="small" status="danger" onClick={() => handleReject(r.id)}>
-                驳回
-              </Button>
-            </>
-          )}
-          {r.status === "approved" && (
-            <Button size="small" onClick={() => handlePin(r.id)}>
-              {r.pinned ? "取消置顶" : "置顶"}
-            </Button>
-          )}
-        </Space>
-      ),
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

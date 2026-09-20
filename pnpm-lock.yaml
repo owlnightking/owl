@@ -132,6 +132,9 @@ importers:
       ioredis:
         specifier: ^6.0.0
         version: 6.0.0
+      ip2region:
+        specifier: ^2.3.0
+        version: 2.3.0(@types/node@22.20.1)
       minio:
         specifier: ^8.0.7
         version: 8.0.7
@@ -2625,6 +2628,11 @@ packages:
   ioredis@6.0.0:
     resolution: {integrity: sha512-f+Dtubxfpf6KYFq7WVXJoOLn0bk4TJrMrN9SzeE+jrWrCWj7XX3fA6vkryafhADX+GMymRxgDJDOI33COkJc0w==}
     engines: {node: '>=20.0.0'}
+
+  ip2region@2.3.0:
+    resolution: {integrity: sha512-zV5Xsadzrx9Ej6heoyhbXMsfGWWQ3C6bAIYStrHhw9kzLpGpVNlnAyRBxxPgxA1GNqr1Ti7oUxcWsMWNN3jZBg==}
+    peerDependencies:
+      '@types/node': '*'
 
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
@@ -6317,6 +6325,10 @@ snapshots:
       standard-as-callback: 2.1.0
     transitivePeerDependencies:
       - supports-color
+
+  ip2region@2.3.0(@types/node@22.20.1):
+    dependencies:
+      '@types/node': 22.20.1
 
   ipaddr.js@1.9.1: {}
 

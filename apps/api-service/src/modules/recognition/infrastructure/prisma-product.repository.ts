@@ -4,6 +4,7 @@ import type { PrismaClient } from "@owl/database";
 import type {
   ProductCreateInput,
   ProductItem,
+  ProductListOptions,
   ProductRepositoryPort,
   ProductUpdateInput,
 } from "../domain/product.ports";
@@ -36,14 +37,17 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     };
   }
 
-  async list(options?: {
-    enabledOnly?: boolean;
-    page: number;
-    pageSize: number;
-  }): Promise<{ items: ProductItem[]; total: number }> {
+  async list(options?: ProductListOptions): Promise<{ items: ProductItem[]; total: number }> {
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
-    const where = options?.enabledOnly ? { enabled: true } : {};
+
+    const where: Record<string, unknown> = {};
+    if (options?.keyword) {
+      where.name = { contains: options.keyword, mode: "insensitive" };
+    }
+    if (options?.enabled !== undefined) {
+      where.enabled = options.enabled;
+    }
 
     const [rows, total] = await Promise.all([
       this.prisma.product.findMany({

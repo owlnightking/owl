@@ -30,12 +30,15 @@ export interface ProductUpdateInput {
   sortOrder?: number;
 }
 
+export interface ProductListOptions {
+  keyword?: string;
+  enabled?: boolean;
+  page: number;
+  pageSize: number;
+}
+
 export interface ProductRepositoryPort {
-  list(options?: {
-    enabledOnly?: boolean;
-    page: number;
-    pageSize: number;
-  }): Promise<{ items: ProductItem[]; total: number }>;
+  list(options?: ProductListOptions): Promise<{ items: ProductItem[]; total: number }>;
   findById(id: string): Promise<ProductItem | null>;
   create(input: ProductCreateInput): Promise<ProductItem>;
   update(id: string, input: ProductUpdateInput): Promise<ProductItem | null>;

@@ -49,7 +49,7 @@
 
 | 模块          | app | dom | infra | pres | 状态    |
 | ------------- | --- | --- | ----- | ---- | ------- |
-| audit-log     | 1   | 1   | 1     | 1    | ✅ 完整 |
+| audit-log     | 1   | 2   | 2     | 1    | ✅ 完整 |
 | auth          | 3   | 1   | 5     | 2    | ✅ 完整 |
 | field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
 | file          | 1   | 3   | 2     | 1    | ✅ 完整 |
@@ -138,6 +138,7 @@
 | 20260904030000_add_env_to_scheduler_run              |      |
 | 20260904040000_restore_sync_log                      |      |
 | 20260908000000_add_md_doc                            |      |
+| 20260920000000_add_audit_log_system_module           |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 

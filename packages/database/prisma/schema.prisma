@@ -158,8 +158,11 @@ model AuditLog {
   resourceId String?  @map("resource_id")
   detail     Json?
   ip         String?
+  ipRegion   String?  @map("ip_region")
   requestId  String?  @map("request_id")
   result     String   @default("success")
+  system     String?
+  module     String?
   createdAt  DateTime @default(now()) @map("created_at")
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 

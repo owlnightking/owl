@@ -48,6 +48,15 @@ export class AuditLogController {
         orderBy: { createdAt: "desc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
+        include: {
+          user: {
+            select: {
+              name: true,
+              avatar72: true,
+              avatar240: true,
+            },
+          },
+        },
       }),
       this.prisma.auditLog.count({ where }),
     ]);
