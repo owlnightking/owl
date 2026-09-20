@@ -37,6 +37,13 @@ function toFileList(url: string | undefined): UploadItem[] {
   return url ? [{ uid: "current", name: "image", status: "done", url }] : [];
 }
 
+// qiankun experimentalStyleIsolation 会把子应用 CSS 限定在 div[data-qiankun] 内，
+// 而 Arco Modal 默认挂到 document.body（范围外），导致裁剪弹窗的样式/工具类丢失。
+// 生产环境下把弹窗挂回 qiankun 容器，保证作用域 CSS 生效（独立运行时回退 body）。
+function getQiankunPopupContainer(): Element {
+  return document.querySelector("[data-qiankun]") ?? document.body;
+}
+
 export function ImageUpload({
   value,
   onChange,
@@ -158,6 +165,7 @@ export function ImageUpload({
         onOk={handleConfirmCrop}
         onCancel={() => finishCrop(false)}
         okButtonProps={{ disabled: !completedCrop?.width }}
+        getPopupContainer={getQiankunPopupContainer}
         unmountOnExit
         autoFocus={false}
       >
