@@ -31,6 +31,11 @@ body {
   display: none;
 }
 
+/* 文档编辑页需要左侧「保存」按钮，覆盖全局隐藏 */
+.doc-editor-nav .arco-nav-bar-left {
+  display: flex;
+}
+
 /* 项目根字号设为 50px 用于 arco 移动端 rem 适配，会放大 Vditor 的 0.85rem 标题徽标 */
 .vditor-editor .vditor-ir .vditor-reset > h1::before,
 .vditor-editor .vditor-ir .vditor-reset > h2::before,

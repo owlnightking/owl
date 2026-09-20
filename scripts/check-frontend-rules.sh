@@ -7,6 +7,7 @@
 # 5. emoji/颜文字检测
 # 6. 操作反馈组件检测（web: Notification, mobile: Notify）
 # 7. 骨架屏加载检测
+# 8. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload）
 # 所有问题均为 ERROR 级别，存在即 exit 1（阻断提交）
 
 set -u
@@ -136,6 +137,22 @@ check_skeleton_loading() {
   done <<< "$FRONTEND_FILES"
 }
 
+# 8. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload，禁止裸 Upload / input type=file）
+check_image_upload_component() {
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [[ "$file" != apps/admin-web/src/* ]] && continue
+    [[ "$file" == apps/admin-web/src/components/ImageUpload.tsx ]] && continue
+    [[ "$file" != *.tsx && "$file" != *.ts ]] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      if echo "$line" | grep -qE '<Upload([^A-Za-z0-9_]|$)|type=["\x27]file["\x27]' 2>/dev/null; then
+        error "$file" "图片上传必须使用公共组件 ImageUpload（禁止直接使用 Upload / input type=file）"
+      fi
+    done < <(grep -nE '<Upload([^A-Za-z0-9_]|$)|type=["\x27]file["\x27]' "$file" 2>/dev/null)
+  done <<< "$FRONTEND_FILES"
+}
+
 check_page_naming
 check_ui_library_cross_import
 check_inline_style
@@ -143,7 +160,7 @@ check_hardcoded_colors
 check_emoji
 check_notification_component
 check_skeleton_loading
-
+check_image_upload_component
 echo "check-frontend-rules.sh: ERROR=$ERROR_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ]; then
   exit 1

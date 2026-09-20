@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Button, Modal, Notification, Table, Tag, Input, Space, Form } from "@arco-design/web-react";
-import { get, post, put, del } from "../api/client";
+import { Button, Form, Input, Modal, Notification, Space, Table, Tag } from "@arco-design/web-react";
+import { del, get, post, put } from "../api/client";
+import { ImageUpload } from "../components/ImageUpload";
 import type { ColumnProps } from "@arco-design/web-react/es/Table";
 
 interface BadgeItem {
@@ -20,6 +21,7 @@ export function BadgesPage() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [iconUrl, setIconUrl] = useState<string | undefined>(undefined);
   const [form] = Form.useForm();
 
   const fetchData = async () => {
@@ -38,11 +40,13 @@ export function BadgesPage() {
   const handleCreate = () => {
     setEditingId(null);
     form.resetFields();
+    setIconUrl(undefined);
     setModalVisible(true);
   };
   const handleEdit = (r: BadgeItem) => {
     setEditingId(r.id);
     form.setFieldsValue(r);
+    setIconUrl(r.icon ?? undefined);
     setModalVisible(true);
   };
   const handleDelete = (id: string) => {
@@ -58,8 +62,9 @@ export function BadgesPage() {
   };
   const handleSubmit = async () => {
     const v = await form.validate();
-    if (editingId) await put(`/recognition/badges/${editingId}`, v);
-    else await post("/recognition/badges", v);
+    const payload = { ...v, icon: iconUrl };
+    if (editingId) await put(`/recognition/badges/${editingId}`, payload);
+    else await post("/recognition/badges", payload);
     Notification.success({ content: editingId ? "更新成功" : "创建成功" });
     setModalVisible(false);
     fetchData();
@@ -81,7 +86,7 @@ export function BadgesPage() {
     {
       title: "操作",
       width: 160,
-      render: (r: BadgeItem) => (
+      render: (_: unknown, r: BadgeItem) => (
         <Space>
           <Button size="small" onClick={() => handleEdit(r)}>
             编辑
@@ -113,8 +118,8 @@ export function BadgesPage() {
           <Form.Item field="name" label="名称" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item field="icon" label="图标URL">
-            <Input />
+          <Form.Item label="图标">
+            <ImageUpload value={iconUrl} onChange={setIconUrl} />
           </Form.Item>
           <Form.Item field="description" label="描述">
             <Input.TextArea />

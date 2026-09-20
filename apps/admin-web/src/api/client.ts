@@ -60,6 +60,11 @@ export async function put<T>(url: string, body?: unknown): Promise<T> {
   return res.data.data;
 }
 
+export async function upload<T>(url: string, formData: FormData): Promise<T> {
+  const res = await http.post<ApiResponse<T>>(url, formData);
+  return res.data.data;
+}
+
 export async function del<T>(url: string): Promise<T> {
   const res = await http.delete<ApiResponse<T>>(url);
   return res.data.data;

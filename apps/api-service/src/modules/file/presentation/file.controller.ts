@@ -1,7 +1,20 @@
-import { Controller, Delete, Get, Param, Query, UseGuards } from "@nestjs/common";
+import {
+  BadRequestException,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { Type } from "class-transformer";
 import { IsOptional } from "class-validator";
 import { FILE_SERVICE, type FileItem } from "../domain/file.ports";
+import { MAX_IMAGE_BYTES } from "../domain/file-upload";
 import { FileUseCase } from "../application/file.use-case";
 import { ok } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
@@ -17,6 +30,13 @@ class FileQueryDto {
   @IsOptional()
   @Type(() => Number)
   pageSize?: number;
+}
+
+interface UploadedImageFile {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
 }
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -44,6 +64,22 @@ export class FileController {
   @RequirePermission("common:file:read")
   async findById(@Param("id") id: string) {
     const item = await this.service.findById(id);
+    return ok(this.toResponse(item));
+  }
+
+  @Post("upload")
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  async uploadImage(@UploadedFile() file: UploadedImageFile | undefined, @CurrentUser() user: AuthPrincipal) {
+    if (!file) {
+      throw new BadRequestException("未接收到上传文件");
+    }
+    const item = await this.service.uploadImage({
+      fileName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      body: file.buffer,
+      uploadedBy: user.userId,
+    });
     return ok(this.toResponse(item));
   }
 

@@ -106,6 +106,12 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-09-18: 图片上传裁剪交互增强：裁剪框支持拖拽+四角缩放，图片支持放大缩小/旋转（改 react-image-crop）
+
+- 2026-09-18: 图片上传抽为公共组件 ImageUpload（admin-web），接入 Arco beforeUpload + react-easy-crop 上传前裁剪，并纳入前端 harness 强制规则
+
+- 2026-09-18: 徽章管理新增/编辑支持 MinIO 图片上传与预览（file 模块落地图片上传接口）
+
 - 2026-09-16: S1 认可中心闭环：修复 @Inject(CURRENT_USER_ID) → @CurrentUser()，种子补充用户角色分配+币/体力账户，API 端到端验证通过（创建→审批→产币→Feed）
 
 - 2026-09-15: 前端 UI 检查全量阻断：check-frontend-rules.sh 将内联 style/硬编码颜色/缺骨架屏由 WARN 升级为 ERROR（ADR 005），存量 14 处代码待后续修复

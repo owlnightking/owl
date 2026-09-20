@@ -17,6 +17,8 @@ services:
       RABBITMQ_URL: amqp://admin:123456@host.docker.internal:5672
       MINIO_ENDPOINT: host.docker.internal
       MINIO_PORT: "9000"
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: http://localhost:9000
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: minio123456
     ports:

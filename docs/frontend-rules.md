@@ -62,6 +62,28 @@ import { IconHome, IconNotice } from "@arco-design/mobile-react/esm/icon";
 | 警告提示 | `Notification.warning({ title: '警告', content: '...' })`      | `Notify.warning({ content: '...' })`      |
 | 加载提示 | `Spin` 组件                                                    | `Toast.loading()`                         |
 
+### 图片上传（强制公共组件）
+
+Web 端图片上传统一使用 `apps/admin-web/src/components/ImageUpload.tsx`：内置「上传前裁剪」（基于 `Upload.beforeUpload` + `react-image-crop`，裁剪框可拖拽、四角缩放，图片可放大缩小/旋转），自动上传到 MinIO、回传图片地址，支持预览与删除。
+
+```tsx
+import { ImageUpload } from "../components/ImageUpload";
+
+// 方图（徽章 / 头像）
+<ImageUpload value={iconUrl} onChange={setIconUrl} />
+
+// 自定义比例（商品图 4:3）
+<ImageUpload value={coverUrl} onChange={setCoverUrl} aspect={4 / 3} />
+```
+
+**禁止**：
+
+- 在页面/业务组件中直接使用 `@arco-design/web-react` 的 `<Upload>`
+- 直接使用原生 `<input type="file">`
+- 自行实现裁剪/上传逻辑（应扩展公共组件）
+
+> 需要在新应用（cron-web / owl-web / portal / mobile-web）复用时，先把该组件下沉为共享包，再同步扩展本规则与 `scripts/check-frontend-rules.sh`。
+
 ## 四、布局规范
 
 ### Web 端（admin-web / cron-web / owl-web / portal）
@@ -274,6 +296,7 @@ AI 写完前端代码后，必须检查：
 - [ ] UI 库导入是否匹配应用类型
 - [ ] 是否使用了 package.json 中已有的 UI 组件（禁止自研）
 - [ ] 操作反馈是否使用正确的组件（web: Notification, mobile: Notify）
+- [ ] 图片上传是否使用公共组件 ImageUpload（禁止裸 Upload / input type=file）
 - [ ] 列表页布局是否符合规范（标题→筛选→操作→列表）
 - [ ] 列表操作列是否固定在右侧且使用 icon
 - [ ] 列表字段超长文本是否截断并悬浮显示

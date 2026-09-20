@@ -52,7 +52,7 @@
 | audit-log     | 1   | 1   | 1     | 1    | ✅ 完整 |
 | auth          | 3   | 1   | 5     | 2    | ✅ 完整 |
 | field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
-| file          | 1   | 1   | 1     | 1    | ✅ 完整 |
+| file          | 1   | 3   | 2     | 1    | ✅ 完整 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
 | md-doc        | 1   | 1   | 1     | 1    | ✅ 完整 |
 | notification  | 1   | 1   | 1     | 1    | ✅ 完整 |
@@ -147,8 +147,8 @@
 
 | 目录             | spec 数量 |
 | ---------------- | --------- |
-| apps/api-service | 1         |
-| **合计**         | **1**     |
+| apps/api-service | 2         |
+| **合计**         | **2**     |
 
 <!-- AUTO-TESTS-END -->
 
@@ -203,6 +203,7 @@
 | auth          | Post   | /api/auth/logout                             |
 | auth          | Post   | /api/auth/mock-login                         |
 | auth          | Post   | /api/auth/refresh                            |
+| file          | Post   | /api/files/upload                            |
 | md-doc        | Post   | /api/md-docs                                 |
 | md-doc        | Post   | /api/md-docs/upload-image                    |
 | notification  | Post   | /api/notifications                           |

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
-import { Notify, NavBar } from "@arco-design/mobile-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Toast, Notify, NavBar } from "@arco-design/mobile-react";
 import { createRoot } from "react-dom/client";
 import { VditorEditor } from "../components/VditorEditor";
 import { get, post, put } from "../api/client";
@@ -10,6 +10,7 @@ const STABLE_DELAY_MS = 800;
 const NOTIFY_CONTEXT = { createRoot };
 
 export function MdDocEditorPage() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isNew = !id || id === "new";
   const [content, setContent] = useState("");
@@ -117,6 +118,16 @@ export function MdDocEditorPage() {
     }
   }, [setDirtyState]);
 
+  const handleManualSave = useCallback(async () => {
+    const ok = await flushToServer();
+    if (ok) {
+      Toast.success({ content: "保存成功" }, NOTIFY_CONTEXT);
+      navigate("/docs");
+    } else {
+      Toast.error({ content: "保存失败" }, NOTIFY_CONTEXT);
+    }
+  }, [flushToServer, navigate]);
+
   useEffect(() => {
     return () => {
       if (!stableRef.current) return;
@@ -158,6 +169,12 @@ export function MdDocEditorPage() {
     <div className="flex h-dvh flex-col bg-white">
       <NavBar
         title={isNew ? "新建文档" : "编辑文档"}
+        wrapClass="doc-editor-nav"
+        leftContent={
+          <button className="text-sm text-blue-500" onClick={handleManualSave}>
+            保存
+          </button>
+        }
         rightContent={
           <div className="flex items-center text-xs">
             <span className={`mr-2 inline-block h-2 w-2 rounded-full ${dirty ? "bg-red-500" : "bg-green-500"}`} />
