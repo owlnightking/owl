@@ -1,11 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { ConfigProvider } from "@arco-design/web-react";
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from "vite-plugin-qiankun/dist/helper";
 import "@arco-design/web-react/es/_util/react-19-adapter";
 import "@arco-design/web-react/dist/css/arco.css";
 import "./index.css";
 import App from "./App";
+import { getQiankunPopupContainer } from "./utils/qiankun";
 
 let root: ReactDOM.Root | null = null;
 
@@ -20,9 +22,14 @@ function render(props: QiankunProps) {
   root = ReactDOM.createRoot(dom);
   root.render(
     <React.StrictMode>
-      <BrowserRouter basename="/admin">
-        <App />
-      </BrowserRouter>
+      <ConfigProvider
+        getPopupContainer={getQiankunPopupContainer}
+        componentConfig={{ Modal: { getPopupContainer: getQiankunPopupContainer } }}
+      >
+        <BrowserRouter basename="/admin">
+          <App />
+        </BrowserRouter>
+      </ConfigProvider>
     </React.StrictMode>
   );
 }
