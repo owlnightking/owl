@@ -33,7 +33,7 @@ pnpm test             # 单元测试
 - **禁止颜文字/emoji**：源码中禁止直接使用 Unicode emoji 字符（如 📢✅❤️🚀⚙️ 等）。所有图标统一使用 UI 库的 Icon 组件（`@arco-design/web-react/icon` 或 `@arco-design/mobile-react/icon`）。
 - **UI 组件库严格匹配应用类型**：`mobile-web` 必须使用 `@arco-design/mobile-react`，禁止导入 `@arco-design/web-react`；`admin-web`/`cron-web`/`owl-web`/`portal` 必须使用 `@arco-design/web-react`，禁止导入 `@arco-design/mobile-react`。
 
-以上规则由 `scripts/scan-ai-residue.sh` 扫描兜底（`--staged` 用于 pre-commit 增量扫描）。
+以上规则由 `scripts/scan-ai-residue.sh` 扫描兜底，**ERROR 与 WARN 均阻断提交/推送/发版/CD**（`--staged` 用于 pre-commit 增量扫描）。
 
 ## 三、架构（严格分层，单向依赖）
 
@@ -67,7 +67,7 @@ apps/ow/               → CLI / 脚本工具
 | check-typecheck.sh          | 逐包 tsc --noEmit，聚合退出码                                                           |
 | check-lint.sh               | 逐包 eslint，聚合退出码                                                                 |
 | check-architecture.sh       | 架构依赖方向检测（ERROR=0 才通过）                                                      |
-| scan-ai-residue.sh          | AI 残渣扫描（9 类规则，ERROR 阻断 / WARN 提示；`--staged` 用于 pre-commit 增量扫描）    |
+| scan-ai-residue.sh          | AI 残渣扫描（11 类规则，ERROR / WARN 均阻断；`--staged` 用于 pre-commit 增量扫描）      |
 | check-feature-rules.sh      | 业务特征规则检查（success 不在 vo 判断、filter 不返回 entity、id 生成放 domain 等）     |
 | smoke.sh                    | 冒烟验收（构建后启动心跳检查）                                                          |
 | release.sh                  | 版本发布（verify:quick → version bump → commit，失败自动回滚）                          |

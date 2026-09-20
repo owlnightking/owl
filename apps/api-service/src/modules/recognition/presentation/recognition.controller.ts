@@ -9,6 +9,9 @@ import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type Aut
 import { DATABASE_CLIENT } from "@owl/database/provider";
 import type { PrismaClient } from "@owl/database";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+
 class CreateRecognitionDto {
   @IsString() @IsNotEmpty() receiverId!: string;
   @IsOptional() @IsString() badgeId?: string;
@@ -33,7 +36,11 @@ export class RecognitionController {
 
   @Get("feed")
   async feed(@Query("page") page?: string, @Query("pageSize") pageSize?: string, @CurrentUser() user?: AuthPrincipal) {
-    const result = await this.service.listFeed(Number(page) || 1, Number(pageSize) || 20, user?.userId);
+    const result = await this.service.listFeed(
+      Number(page) || DEFAULT_PAGE,
+      Number(pageSize) || DEFAULT_PAGE_SIZE,
+      user?.userId
+    );
     return ok({ items: result.items.map(this.toResponse), total: result.total });
   }
 
@@ -47,7 +54,7 @@ export class RecognitionController {
   @RequirePermission("recognition:recognition:read")
   async list(@Query() query: RecognitionQueryDto, @CurrentUser() user?: AuthPrincipal) {
     const result = await this.service.list(
-      { ...query, page: query.page ?? 1, pageSize: query.pageSize ?? 20 },
+      { ...query, page: query.page ?? DEFAULT_PAGE, pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE },
       user?.userId
     );
     return ok({ items: result.items.map(this.toResponse), total: result.total });

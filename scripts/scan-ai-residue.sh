@@ -53,9 +53,9 @@ check_magic_numbers() {
     if grep -qE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null; then
       while IFS= read -r line; do
         [ -z "$line" ] && continue
-        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status\s*(>=|<=|<|>|=)\s*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
-          echo "$line" | grep -qE '^[0-9]+:\s+[A-Z][A-Z0-9_]*:' ||
-          echo "$line" | grep -qE '[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*\s*[?:,;)\]}]|^\s*[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*\s*[\??:]|avatar[0-9]+|avatar_[0-9]+|i18n' ||
+        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status[[:space:]]*(>=|<=|<|>|=)[[:space:]]*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
+          echo "$line" | grep -qE '^[0-9]+:[[:space:]]+[A-Z][A-Z0-9_]*:' ||
+          echo "$line" | grep -qE '[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|avatar[0-9]+|avatar_[0-9]+|i18n' ||
           echo "$line" | grep -qE 'description:\s*"[^"]*[0-9]+[^"]*"' ||
           echo "$line" | grep -qE 'name:\s*"[^"]*[0-9]+[^"]*"'; then
           continue
@@ -208,7 +208,8 @@ check_ui_library_cross_import() {
 check_ui_library_cross_import
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
-if [ "$ERROR_COUNT" -gt 0 ]; then
+if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
+  echo "scan-ai-residue.sh: ERROR/WARN 均阻断，请修复后重试"
   exit 1
 fi
 exit 0

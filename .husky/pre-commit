@@ -1,3 +1,5 @@
+set -e
+
 STAGED=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$STAGED" ]; then
   CODE_STAGED=$(echo "$STAGED" | grep -E '^(apps/[^/]+/src|packages/[^/]+/(src|prisma))/' || true)
