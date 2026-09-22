@@ -69,6 +69,27 @@ import { IconHome, IconNotice } from "@arco-design/mobile-react/esm/icon";
 | 警告提示 | `Notification.warning({ title: '警告', content: '...' })`      | `Notify.warning({ content: '...' })`      |
 | 加载提示 | `Spin` 组件                                                    | `Toast.loading()`                         |
 
+### 页面级小 tab（分类 / 视图切换）
+
+页面上用来切换**分类、状态等视图**的小 tab，统一用 `Tabs` 的胶囊样式——不要用 `Radio.Group type="button"`
+或自绘分段控件（那是表单控件语义，且默认不满足这里的对齐与尺寸要求）：
+
+```tsx
+<Tabs type="capsule" size="small" className="w-fit shrink-0" activeTab={category} onChange={setCategory}>
+  <Tabs.TabPane key="all" title="全部" />
+  <Tabs.TabPane key="product" title="商品" />
+</Tabs>
+```
+
+约定：
+
+- `type="capsule"` + `size="small"`：胶囊小尺寸，与同排按钮高度协调。
+- **`w-fit` 必加**：Arco 的 capsule 默认把头部右对齐（`.arco-tabs-header-nav-capsule .arco-tabs-header-wrapper{justify-content:flex-end}`），
+  加 `w-fit` 让控件收缩到内容宽度才会左对齐；放在 flex 行里同时加 `shrink-0` 防止被压缩。
+- `TabPane` 只给 `key` + `title`，不写 children：纯切换器不需要内容面板，也不会渲染空内容区。
+- 首项固定「全部」；切换后**立即生效**（不需要再点查询），并把分页重置到第 1 页。
+- 该维度已由 tab 承担时，筛选条件网格里**不要**再放同维度的条件，避免两个控件打架。
+
 ### 图片上传（强制公共组件）
 
 Web 端图片上传统一使用 `apps/admin-web/src/components/ImageUpload.tsx`：内置「上传前裁剪」（基于 `Upload.beforeUpload` + `react-image-crop`，裁剪框可拖拽、四角缩放，图片可放大缩小/旋转），自动上传到 MinIO、回传图片地址，支持预览与删除。
@@ -144,7 +165,7 @@ import { ImageUpload } from "../components/ImageUpload";
 
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
 > mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。web 端模板包含：筛选条件网格（输入框 /
-> 多选搜索 / 远程搜索 / 树形选择 / 时间选择器）、页面级 tab 状态切换、多选表格（选中后出现导出与批量删除）、
+> 多选搜索 / 远程搜索 / 树形选择 / 时间选择器）、页面级 tab 分类切换、多选表格（选中后出现导出与批量删除）、
 > 新增 / 编辑 / 详情共用的右侧抽屉、行操作（详情 / 编辑 / 删除，全部 icon + Tooltip）、列表 `Spin dot` 加载指示、
 > 操作列固定右侧、超长文本截断 + Tooltip；mobile 端为卡片列表 + 「加载更多」。
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
@@ -233,13 +254,13 @@ import { ImageUpload } from "../components/ImageUpload";
     </div>
   </div>
 
-  {/* 3. 操作行 - 左侧状态切换（页面级小 tab，可选），右侧靠最右是「新增」。
+  {/* 3. 操作行 - 左侧分类切换（页面级小 tab，可选；写法见第三节「页面级小 tab」），右侧靠最右是「新增」。
       列表选中数据后，「新增」前多出「导出 / 批量删除」；未选中时这两个按钮不显示。无卡片容器 */}
   <div className="flex items-center gap-2">
-    <Tabs type="capsule" size="small" className="w-fit shrink-0" activeTab={status} onChange={onStatusChange}>
+    <Tabs type="capsule" size="small" className="w-fit shrink-0" activeTab={category} onChange={onCategoryChange}>
       <Tabs.TabPane key="all" title="全部" />
-      <Tabs.TabPane key="enabled" title="启用" />
-      <Tabs.TabPane key="disabled" title="禁用" />
+      <Tabs.TabPane key="商品" title="商品" />
+      <Tabs.TabPane key="订单" title="订单" />
     </Tabs>
     <div className="ml-auto flex items-center gap-2">
       {selectedKeys.length > 0 && (
@@ -319,10 +340,9 @@ import { ImageUpload } from "../components/ImageUpload";
 > （`showTotal` → `共 N 条`）、可切页、可切换每页条数（`sizeCanChange` + `sizeOptions`，如 `[10, 20, 50, 100]`）。
 > 切换每页条数后回到第 1 页。每页条数本身是 state，重新请求列表时要把它带给接口。
 >
-> **操作行**：筛选区下面、列表区上面单独一行。左侧是**页面级小 tab**（可选，`Tabs type="capsule"` + `size="small"`，
-> 如 全部 / 启用 / 禁用；不参与「搜索」提交，改动立即生效并回到第 1 页）。两个坑：Arco 的 capsule 默认把头部
-> 右对齐（`.arco-tabs-header-nav-capsule .arco-tabs-header-wrapper{justify-content:flex-end}`），要靠 `w-fit`
-> 让整体收缩到内容宽度才会左对齐；`TabPane` 不写 children 时不会多出空内容区，无需额外隐藏。
+> **操作行**：筛选区下面、列表区上面单独一行。左侧是**页面级小 tab**（可选，用来切换分类 / 视图；
+> 写法与约定见第三节「页面级小 tab」——`Tabs type="capsule"` + `size="small"` + `w-fit`；不参与「搜索」提交，
+> 改动立即生效并回到第 1 页）。该维度不要在两处都放：分类由 tab 承担，筛选网格里就不要再放分类条件。
 > 这一行右侧靠最右固定放「新增」。
 > 列表支持多选后，**选中数据时**在「新增」左前方出现「导出 / 批量删除」，未选中时这两个按钮不显示、也不占位。
 > 批量删除走 `Popconfirm` 二次确认；批量按钮的 Tooltip 带上选中数量。
@@ -342,7 +362,7 @@ import { ImageUpload } from "../components/ImageUpload";
 > 破坏性操作用 `status="danger"`（删除、批量删除）。
 >
 > 完整示例（网格内 10 个条件，覆盖输入框 / 多选搜索 / 远程搜索 / 树形选择 / 时间选择器 5 类控件，另有页面级 tab
-> 状态切换、多选批量操作与右侧抽屉，含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
+> 分类切换、多选批量操作与右侧抽屉，含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
 
 ### 列表字段规范
 

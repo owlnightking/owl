@@ -12,20 +12,21 @@
  *   1. 页面标题区        h1 text-xl font-semibold
  *   2. 筛选区            条件网格（多列，条件数不限）；「搜索 / 重置」贴在最后一个条件所在行的最右，
  *                        只有该行被填满时才落到下一行最右（用 col-start-<末列号> 实现）
- *   3. 操作行            左侧状态切换（页面级小 tab：Tabs type="capsule" size="small"，即点即生效），
+ *   3. 操作行            左侧**分类切换**（页面级小 tab：Tabs type="capsule" size="small"，即点即生效；
+ *                        分类由 tab 承担，条件网格里就不再重复放分类），
  *                        右侧靠最右是「新增」；列表选中数据后，在「新增」前多出「导出 / 批量删除」，
  *                        未选中时这两个按钮不显示
  *   4. 列表区            多选表格 + 独立 Pagination
  * 新增 / 编辑 / 详情共用右侧抽屉（Drawer placement="right"）：详情为只读（取数期间骨架屏，取回后用 Descriptions 展示），
  * 新增 / 编辑为可编辑表单。行操作：详情（小眼睛 icon）/ 编辑 / 删除。
  *
- * 筛选条件演示覆盖 5 类控件（网格内 10 个）：
+ * 筛选条件演示覆盖 5 类控件（网格内 10 个 + 页面级 tab 1 个）：
  *   输入框     名称、编码、备注
- *   多选搜索   分类、负责人（Select mode="multiple"，自带输入搜索）
+ *   多选搜索   负责人（Select mode="multiple"，自带输入搜索）
  *   远程搜索   关联商品（Select showSearch + filterOption={false}，候选由服务端按关键字返回）
  *   树形选择   所属部门（TreeSelect）
  *   时间选择器 创建时间、更新时间（DatePicker.RangePicker）
- *   另有单选下拉：所属模块；单选（Radio.Group）用在新增/编辑抽屉的状态字段
+ *   另有单选下拉：状态、所属模块；单选（Radio.Group）用在新增/编辑抽屉的状态字段
  * 网格内的条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
  *
  * 形态约束：
@@ -110,7 +111,7 @@ interface SampleFilters {
   name: string;
   code: string;
   status: SampleStatus | "all";
-  categories: string[];
+  category: string;
   module: string;
   department: string;
   product: string;
@@ -123,6 +124,8 @@ interface SampleFilters {
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const DEMO_QUANTITY_STEP = 3;
+/** 分类 tab 中「全部」的取值 */
+const CATEGORY_ALL = "all";
 // 列宽合计（含多选列 50）：超过容器宽度就横向滚动，配合 fixed 列实现左右两端悬浮。增删列时同步这个值
 const TABLE_SCROLL_X = 2380;
 const DEMO_TOTAL = 46;
@@ -135,6 +138,11 @@ const STATUS_OPTIONS: { label: string; value: SampleFilters["status"] }[] = [
   { label: "禁用", value: "disabled" },
 ];
 const CATEGORY_OPTIONS = ["商品", "订单", "用户", "内容"];
+/** 页面级 tab 的分类选项：第一项固定「全部」，其余与分类字典一致 */
+const CATEGORY_TAB_OPTIONS = [
+  { label: "全部", value: CATEGORY_ALL },
+  ...CATEGORY_OPTIONS.map((item) => ({ label: item, value: item })),
+];
 const MODULE_OPTIONS = ["admin", "owl", "cron", "mobile", "portal"];
 const OWNER_OPTIONS = ["张三", "李四", "王五", "赵六"];
 const PRIORITY_OPTIONS = ["高", "中", "低"];
@@ -194,7 +202,7 @@ const EMPTY_FILTERS: SampleFilters = {
   name: "",
   code: "",
   status: "all",
-  categories: [],
+  category: CATEGORY_ALL,
   module: "",
   department: "",
   product: "",
@@ -248,7 +256,7 @@ function matchFilters(item: SampleItem, filters: SampleFilters): boolean {
     (!filters.name || item.name.includes(filters.name)) &&
     (!filters.code || item.code.includes(filters.code)) &&
     (filters.status === "all" || item.status === filters.status) &&
-    (filters.categories.length === 0 || filters.categories.includes(item.category)) &&
+    (filters.category === CATEGORY_ALL || item.category === filters.category) &&
     (!filters.module || item.module === filters.module) &&
     (!filters.department || item.department === filters.department) &&
     (!filters.product || item.product === filters.product) &&
@@ -370,10 +378,10 @@ export function SampleListPage() {
     setPage(1);
   };
 
-  // 状态切换行像标签页一样即点即生效，不需要再点「搜索」
-  const handleStatusChange = (status: SampleFilters["status"]) => {
-    setDraft((prev) => ({ ...prev, status }));
-    setApplied((prev) => ({ ...prev, status }));
+  // 分类 tab 像标签页一样即点即生效，不需要再点「搜索」
+  const handleCategoryChange = (category: string) => {
+    setDraft((prev) => ({ ...prev, category }));
+    setApplied((prev) => ({ ...prev, category }));
     setPage(1);
   };
 
@@ -551,17 +559,17 @@ export function SampleListPage() {
           onChange={(value) => patchDraft({ code: value })}
           onPressEnter={handleSearch}
         />
-        {/* 多选搜索：mode="multiple" 自带输入搜索 */}
+        {/* 单选下拉（状态筛选；分类已由页面级 tab 承担，这里不重复放） */}
         <Select
-          mode="multiple"
-          placeholder="分类"
+          allowClear
+          placeholder="状态"
           style={{ width: "100%" }}
-          value={draft.categories}
-          onChange={(value: string[]) => patchDraft({ categories: value })}
+          value={draft.status === "all" ? undefined : draft.status}
+          onChange={(value: SampleStatus | undefined) => patchDraft({ status: value ?? "all" })}
         >
-          {CATEGORY_OPTIONS.map((option) => (
-            <Select.Option key={option} value={option}>
-              {option}
+          {STATUS_OPTIONS.filter((option) => option.value !== "all").map((option) => (
+            <Select.Option key={option.value} value={option.value}>
+              {option.label}
             </Select.Option>
           ))}
         </Select>
@@ -663,10 +671,10 @@ export function SampleListPage() {
           type="capsule"
           size="small"
           className="w-fit shrink-0"
-          activeTab={applied.status}
-          onChange={(key) => handleStatusChange(key as SampleFilters["status"])}
+          activeTab={applied.category}
+          onChange={handleCategoryChange}
         >
-          {STATUS_OPTIONS.map((option) => (
+          {CATEGORY_TAB_OPTIONS.map((option) => (
             <Tabs.TabPane key={option.value} title={option.label} />
           ))}
         </Tabs>
