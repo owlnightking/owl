@@ -141,7 +141,8 @@ import { ImageUpload } from "../components/ImageUpload";
 
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
 > mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。两者是业务无关的列表页模板：
-> 三段式结构、加载骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
+> 三段式结构、筛选条件网格（输入框 / 单选 / 多选 / 多选搜索 / 时间选择器）、加载骨架屏、
+> 操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
 > `apps/admin-web/src/pages/MdDocsPage.tsx`。
 
@@ -168,10 +169,37 @@ import { ImageUpload } from "../components/ImageUpload";
     <h1 className="text-xl font-semibold">页面标题</h1>
   </div>
 
-  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐。无卡片容器 */}
-  <div className="flex items-center gap-2">
-    <Input placeholder="请输入名称" style={{ width: 240 }} value={kw} onChange={setKw} onPressEnter={onSearch} />
-    <div className="ml-auto flex items-center gap-2">
+  {/* 2. 筛选区 - 条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置 / 新增」icon 按钮。无卡片容器 */}
+  <div className="flex flex-col gap-3">
+    <div className="grid grid-cols-4 gap-3">
+      {/* 输入框（不带 label，用 placeholder 表达含义） */}
+      <Input placeholder="名称" style={{ width: "100%" }} value={kw} onChange={setKw} onPressEnter={onSearch} />
+      {/* 单选框 */}
+      <Radio.Group type="button" value={status} onChange={setStatus}>
+        <Radio value="all">全部</Radio>
+        <Radio value="enabled">启用</Radio>
+        <Radio value="disabled">禁用</Radio>
+      </Radio.Group>
+      {/* 多选搜索 */}
+      <Select mode="multiple" placeholder="分类" style={{ width: "100%" }} value={categories} onChange={setCategories}>
+        {CATEGORY_OPTIONS.map((item) => (
+          <Select.Option key={item} value={item}>
+            {item}
+          </Select.Option>
+        ))}
+      </Select>
+      {/* 时间选择器（onChange 的第一个参数就是日期字符串数组） */}
+      <DatePicker.RangePicker
+        format="YYYY-MM-DD"
+        style={{ width: "100%" }}
+        placeholder={["创建起", "创建止"]}
+        value={createdRange}
+        onChange={setCreatedRange}
+      />
+      {/* 多选框、单选下拉、更多输入框……按需继续往网格里加 */}
+    </div>
+
+    <div className="flex items-center justify-end gap-2">
       <Tooltip content="搜索">
         <Button type="primary" icon={<IconSearch />} onClick={onSearch} />
       </Tooltip>
@@ -197,8 +225,15 @@ import { ImageUpload } from "../components/ImageUpload";
 > **筛选区与列表区都不要卡片容器**：不加 `bg-white` / `rounded-*` / `shadow-*` / `p-*`，直接落在页面背景上。
 > 内容区本身已经有页面级留白（见第四节布局），再套一层卡片会多出边框感和双重内边距。
 >
-> 列表级操作（导出、批量操作等）统一放进筛选区右侧那一组 icon 按钮里，不再单独起一行操作栏。
+> **筛选条件**：一律用不带 label 的控件，靠 `placeholder` 表达含义（单选/多选这类没有 placeholder 的控件除外，
+> 但优先考虑 `Radio.Group type="button"` 或把语义写进选项文案）。控制在四列网格里按需混用输入框、单选、多选、
+> 多选搜索（`Select mode="multiple"`）、时间选择器（`DatePicker.RangePicker`），条件数不限。
+> 条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
+>
+> 列表级操作（导出、批量操作等）统一放进筛选区右下角那一组 icon 按钮里，不再单独起一行操作栏。
 > 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
+>
+> 完整示例（10 个条件、覆盖 5 类控件、含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
 
 ### 列表字段规范
 
@@ -377,7 +412,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局三段式：页面标题区 → 筛选区（左输入框 + 右对齐「搜索 / 重置 / 新增」icon 按钮）→ 列表区。
+- 列表页布局三段式：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置 / 新增」icon 按钮）→ 列表区。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
