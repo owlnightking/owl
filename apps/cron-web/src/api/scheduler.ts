@@ -49,6 +49,19 @@ export async function fetchSchedulerRuns(
   return res.data.data;
 }
 
+/** 全部运行记录（分页），供执行日志页使用 */
+export async function fetchAllRuns(params: {
+  page: number;
+  pageSize: number;
+  status?: string;
+  env?: string;
+}): Promise<{ list: SchedulerRun[]; pageNum: number; pageSize: number; total: number }> {
+  const res = await cronHttp.get<{
+    data: { list: SchedulerRun[]; pageNum: number; pageSize: number; total: number };
+  }>("/schedulers/runs", { params });
+  return res.data.data;
+}
+
 export async function triggerTask(area: string, task: string): Promise<{ runId: string }> {
   const res = await cronHttp.post<{ data: { runId: string } }>("/task-queue", { area, task });
   return res.data.data;
