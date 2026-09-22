@@ -245,7 +245,7 @@ import { ImageUpload } from "../components/ImageUpload";
           <Tooltip content="导出">
             <Button icon={<IconDownload />} onClick={onExport} />
           </Tooltip>
-          <Popconfirm title="确认批量删除？" onOk={onBulkDelete}>
+          <Popconfirm className="w-56" title="确认删除选中项？" content="共 N 项" onOk={onBulkDelete}>
             <Tooltip content="批量删除">
               <Button status="danger" icon={<IconDelete />} />
             </Tooltip>
@@ -296,6 +296,10 @@ import { ImageUpload } from "../components/ImageUpload";
 > 如 全部 / 启用 / 禁用；不参与「搜索」提交，改动立即生效并回到第 1 页），右侧靠最右固定放「新增」。
 > 列表支持多选后，**选中数据时**在「新增」左前方出现「导出 / 批量删除」，未选中时这两个按钮不显示、也不占位。
 > 批量删除走 `Popconfirm` 二次确认；批量按钮的 Tooltip 带上选中数量。
+>
+> **`Popconfirm` 挂在 icon 按钮上时要给定宽**：它的弹层宽度由标题文字撑开，而 icon 按钮触发的弹层很窄，
+> 「取消 / 确定」会被挤到换行堆叠。统一加 `className="w-56"`（Tailwind 标准宽度 14rem = 224px），
+> 让文案和按钮各占一行；多行信息（如选中项数）放 `content`，标题保持一行。
 >
 > **新增 / 编辑 / 详情**共用同一个右侧抽屉（`Drawer placement="right"`，宽度 480），只换标题与可编辑性：
 > 详情只读（`footer={null}` + 控件 `disabled`），新增与编辑可编辑。行操作固定为

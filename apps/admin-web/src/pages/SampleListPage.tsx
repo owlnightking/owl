@@ -459,7 +459,7 @@ export function SampleListPage() {
             <Button type="text" icon={<IconEdit />} onClick={() => openDrawer("edit", record)} />
           </Tooltip>
           <Tooltip content="删除">
-            <Popconfirm title="确认删除？" onOk={() => handleDelete(record.id)}>
+            <Popconfirm className="w-56" title="确认删除？" onOk={() => handleDelete(record.id)}>
               <Button type="text" status="danger" icon={<IconDelete />} />
             </Popconfirm>
           </Tooltip>
@@ -619,7 +619,12 @@ export function SampleListPage() {
               <Tooltip content={`导出选中（${selectedKeys.length}）`}>
                 <Button icon={<IconDownload />} onClick={handleExport} />
               </Tooltip>
-              <Popconfirm title={`确认删除选中的 ${selectedKeys.length} 项？`} onOk={handleBulkDelete}>
+              <Popconfirm
+                className="w-56"
+                title="确认删除选中项？"
+                content={`共 ${selectedKeys.length} 项`}
+                onOk={handleBulkDelete}
+              >
                 <Tooltip content={`批量删除（${selectedKeys.length}）`}>
                   <Button status="danger" icon={<IconDelete />} />
                 </Tooltip>

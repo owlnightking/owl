@@ -122,7 +122,7 @@ export function MdDocsPage() {
             <Button type="text" icon={<IconEye />} onClick={() => navigate(`/md-docs/${record.id}/preview`)} />
           </Tooltip>
           <Tooltip content="删除">
-            <Popconfirm title="确认删除？" onOk={() => handleDelete(record.id)}>
+            <Popconfirm className="w-56" title="确认删除？" onOk={() => handleDelete(record.id)}>
               <Button type="text" status="danger" icon={<IconDelete />} />
             </Popconfirm>
           </Tooltip>
