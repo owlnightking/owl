@@ -10,7 +10,8 @@
  *
  * 结构（筛选区与列表区都不要卡片容器：无边框、无圆角、无内边距，直接落在页面背景上）：
  *   1. 页面标题区        h1 text-xl font-semibold
- *   2. 筛选区            条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置」icon 按钮
+ *   2. 筛选区            条件网格（多列，条件数不限）；「搜索 / 重置」贴在最后一个条件所在行的最右，
+ *                        只有该行被填满时才落到下一行最右（用 col-start-<末列号> 实现）
  *   3. 操作行            左侧状态切换（Radio.Group type="button"，像标签页一样即点即生效），
  *                        右侧靠最右是「新增」；列表选中数据后，在「新增」前多出「导出 / 批量删除」，
  *                        未选中时这两个按钮不显示
@@ -479,122 +480,121 @@ export function SampleListPage() {
         <h1 className="text-xl font-semibold text-gray-800">示例资源</h1>
       </div>
 
-      {/* 2. 筛选区：条件网格 + 右下角对齐的按钮组。无卡片容器 */}
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-4 gap-3">
-          {/* 输入框 */}
-          <Input
-            placeholder="名称"
-            style={{ width: "100%" }}
-            value={draft.name}
-            onChange={(value) => patchDraft({ name: value })}
-            onPressEnter={handleSearch}
-          />
-          {/* 输入框 */}
-          <Input
-            placeholder="编码"
-            style={{ width: "100%" }}
-            value={draft.code}
-            onChange={(value) => patchDraft({ code: value })}
-            onPressEnter={handleSearch}
-          />
-          {/* 多选搜索：mode="multiple" 自带输入搜索 */}
-          <Select
-            mode="multiple"
-            placeholder="分类"
-            style={{ width: "100%" }}
-            value={draft.categories}
-            onChange={(value: string[]) => patchDraft({ categories: value })}
-          >
-            {CATEGORY_OPTIONS.map((option) => (
-              <Select.Option key={option} value={option}>
-                {option}
-              </Select.Option>
-            ))}
-          </Select>
-          {/* 单选下拉 */}
-          <Select
-            allowClear
-            placeholder="所属模块"
-            style={{ width: "100%" }}
-            value={draft.module || undefined}
-            onChange={(value: string) => patchDraft({ module: value ?? "" })}
-          >
-            {MODULE_OPTIONS.map((option) => (
-              <Select.Option key={option} value={option}>
-                {option}
-              </Select.Option>
-            ))}
-          </Select>
-          {/* 树形选择（TreeSelect） */}
-          <TreeSelect
-            allowClear
-            treeData={DEPARTMENT_TREE}
-            placeholder="所属部门"
-            style={{ width: "100%" }}
-            value={draft.department || undefined}
-            onChange={(value: string) => patchDraft({ department: value ?? "" })}
-          />
-          {/* 多选搜索：mode="multiple" 自带输入搜索 */}
-          <Select
-            mode="multiple"
-            placeholder="负责人"
-            style={{ width: "100%" }}
-            value={draft.owners}
-            onChange={(value: string[]) => patchDraft({ owners: value })}
-          >
-            {OWNER_OPTIONS.map((option) => (
-              <Select.Option key={option} value={option}>
-                {option}
-              </Select.Option>
-            ))}
-          </Select>
-          {/* 远程搜索：开启 showSearch + 关掉本地 filterOption，候选由服务端按关键字返回。
+      {/* 2. 筛选区：条件网格，搜索 / 重置 贴在最后一项那一行的最右。无卡片容器 */}
+      <div className="grid grid-cols-4 gap-3">
+        {/* 输入框 */}
+        <Input
+          placeholder="名称"
+          style={{ width: "100%" }}
+          value={draft.name}
+          onChange={(value) => patchDraft({ name: value })}
+          onPressEnter={handleSearch}
+        />
+        {/* 输入框 */}
+        <Input
+          placeholder="编码"
+          style={{ width: "100%" }}
+          value={draft.code}
+          onChange={(value) => patchDraft({ code: value })}
+          onPressEnter={handleSearch}
+        />
+        {/* 多选搜索：mode="multiple" 自带输入搜索 */}
+        <Select
+          mode="multiple"
+          placeholder="分类"
+          style={{ width: "100%" }}
+          value={draft.categories}
+          onChange={(value: string[]) => patchDraft({ categories: value })}
+        >
+          {CATEGORY_OPTIONS.map((option) => (
+            <Select.Option key={option} value={option}>
+              {option}
+            </Select.Option>
+          ))}
+        </Select>
+        {/* 单选下拉 */}
+        <Select
+          allowClear
+          placeholder="所属模块"
+          style={{ width: "100%" }}
+          value={draft.module || undefined}
+          onChange={(value: string) => patchDraft({ module: value ?? "" })}
+        >
+          {MODULE_OPTIONS.map((option) => (
+            <Select.Option key={option} value={option}>
+              {option}
+            </Select.Option>
+          ))}
+        </Select>
+        {/* 树形选择（TreeSelect） */}
+        <TreeSelect
+          allowClear
+          treeData={DEPARTMENT_TREE}
+          placeholder="所属部门"
+          style={{ width: "100%" }}
+          value={draft.department || undefined}
+          onChange={(value: string) => patchDraft({ department: value ?? "" })}
+        />
+        {/* 多选搜索：mode="multiple" 自带输入搜索 */}
+        <Select
+          mode="multiple"
+          placeholder="负责人"
+          style={{ width: "100%" }}
+          value={draft.owners}
+          onChange={(value: string[]) => patchDraft({ owners: value })}
+        >
+          {OWNER_OPTIONS.map((option) => (
+            <Select.Option key={option} value={option}>
+              {option}
+            </Select.Option>
+          ))}
+        </Select>
+        {/* 远程搜索：开启 showSearch + 关掉本地 filterOption，候选由服务端按关键字返回。
               注意已选项一旦不在候选里就只会回显原始 value，真实页面可配合 labelInValue 或把已选项留在候选中。 */}
-          <Select
-            showSearch
-            allowClear
-            filterOption={false}
-            loading={remoteLoading}
-            placeholder="关联商品"
-            style={{ width: "100%" }}
-            value={draft.product || undefined}
-            onChange={(value: string) => patchDraft({ product: value ?? "" })}
-            onSearch={(value: string) => setRemoteKeyword(value)}
-          >
-            {remoteOptions.map((option) => (
-              <Select.Option key={option} value={option}>
-                {option}
-              </Select.Option>
-            ))}
-          </Select>
-          {/* 时间选择器 */}
-          <DatePicker.RangePicker
-            format="YYYY-MM-DD"
-            style={{ width: "100%" }}
-            placeholder={["创建开始", "创建结束"]}
-            value={draft.createdRange}
-            onChange={(dateStrings: string[]) => patchDraft({ createdRange: dateStrings })}
-          />
-          {/* 时间选择器 */}
-          <DatePicker.RangePicker
-            format="YYYY-MM-DD"
-            style={{ width: "100%" }}
-            placeholder={["更新开始", "更新结束"]}
-            value={draft.updatedRange}
-            onChange={(dateStrings: string[]) => patchDraft({ updatedRange: dateStrings })}
-          />
-          {/* 输入框 */}
-          <Input
-            placeholder="备注"
-            style={{ width: "100%" }}
-            value={draft.remark}
-            onChange={(value) => patchDraft({ remark: value })}
-            onPressEnter={handleSearch}
-          />
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
+        <Select
+          showSearch
+          allowClear
+          filterOption={false}
+          loading={remoteLoading}
+          placeholder="关联商品"
+          style={{ width: "100%" }}
+          value={draft.product || undefined}
+          onChange={(value: string) => patchDraft({ product: value ?? "" })}
+          onSearch={(value: string) => setRemoteKeyword(value)}
+        >
+          {remoteOptions.map((option) => (
+            <Select.Option key={option} value={option}>
+              {option}
+            </Select.Option>
+          ))}
+        </Select>
+        {/* 时间选择器 */}
+        <DatePicker.RangePicker
+          format="YYYY-MM-DD"
+          style={{ width: "100%" }}
+          placeholder={["创建开始", "创建结束"]}
+          value={draft.createdRange}
+          onChange={(dateStrings: string[]) => patchDraft({ createdRange: dateStrings })}
+        />
+        {/* 时间选择器 */}
+        <DatePicker.RangePicker
+          format="YYYY-MM-DD"
+          style={{ width: "100%" }}
+          placeholder={["更新开始", "更新结束"]}
+          value={draft.updatedRange}
+          onChange={(dateStrings: string[]) => patchDraft({ updatedRange: dateStrings })}
+        />
+        {/* 输入框 */}
+        <Input
+          placeholder="备注"
+          style={{ width: "100%" }}
+          value={draft.remark}
+          onChange={(value) => patchDraft({ remark: value })}
+          onPressEnter={handleSearch}
+        />
+        {/* 搜索 / 重置不另起一行：col-start-4 表示落在第 4 列——
+              最后一行没填满时与最后一个条件同行、贴该行最右；刚好填满时自动落到下一行最右 */}
+        <div className="col-start-4 flex items-center justify-end gap-2">
           <Tooltip content="搜索">
             <Button type="primary" icon={<IconSearch />} onClick={handleSearch} />
           </Tooltip>

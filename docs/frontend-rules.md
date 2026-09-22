@@ -170,58 +170,57 @@ import { ImageUpload } from "../components/ImageUpload";
     <h1 className="text-xl font-semibold">页面标题</h1>
   </div>
 
-  {/* 2. 筛选区 - 条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置 / 新增」icon 按钮。无卡片容器 */}
-  <div className="flex flex-col gap-3">
-    <div className="grid grid-cols-4 gap-3">
-      {/* 输入框（不带 label，用 placeholder 表达含义） */}
-      <Input placeholder="名称" style={{ width: "100%" }} value={kw} onChange={setKw} onPressEnter={onSearch} />
-      {/* 多选搜索 */}
-      <Select mode="multiple" placeholder="分类" style={{ width: "100%" }} value={categories} onChange={setCategories}>
-        {CATEGORY_OPTIONS.map((item) => (
-          <Select.Option key={item} value={item}>
-            {item}
-          </Select.Option>
-        ))}
-      </Select>
-      {/* 时间选择器（onChange 的第一个参数就是日期字符串数组） */}
-      <DatePicker.RangePicker
-        format="YYYY-MM-DD"
-        style={{ width: "100%" }}
-        placeholder={["创建开始", "创建结束"]}
-        value={createdRange}
-        onChange={setCreatedRange}
-      />
-      {/* 树形选择 */}
-      <TreeSelect
-        allowClear
-        treeData={DEPARTMENT_TREE}
-        placeholder="所属部门"
-        style={{ width: "100%" }}
-        value={dept}
-        onChange={setDept}
-      />
-      {/* 远程搜索：showSearch 开启输入，filterOption={false} 关掉本地过滤，候选由 onSearch 的请求返回 */}
-      <Select
-        showSearch
-        allowClear
-        filterOption={false}
-        loading={remoteLoading}
-        placeholder="关联商品"
-        style={{ width: "100%" }}
-        value={product}
-        onChange={setProduct}
-        onSearch={setRemoteKeyword}
-      >
-        {remoteOptions.map((item) => (
-          <Select.Option key={item} value={item}>
-            {item}
-          </Select.Option>
-        ))}
-      </Select>
-      {/* 多选框、更多输入框……按需继续往网格里加 */}
-    </div>
-
-    <div className="flex items-center justify-end gap-2">
+  {/* 2. 筛选区 - 条件网格（多列，条件数不限），搜索 / 重置 贴在最后一项那一行的最右。无卡片容器 */}
+  <div className="grid grid-cols-4 gap-3">
+    {/* 输入框（不带 label，用 placeholder 表达含义） */}
+    <Input placeholder="名称" style={{ width: "100%" }} value={kw} onChange={setKw} onPressEnter={onSearch} />
+    {/* 多选搜索 */}
+    <Select mode="multiple" placeholder="分类" style={{ width: "100%" }} value={categories} onChange={setCategories}>
+      {CATEGORY_OPTIONS.map((item) => (
+        <Select.Option key={item} value={item}>
+          {item}
+        </Select.Option>
+      ))}
+    </Select>
+    {/* 时间选择器（onChange 的第一个参数就是日期字符串数组） */}
+    <DatePicker.RangePicker
+      format="YYYY-MM-DD"
+      style={{ width: "100%" }}
+      placeholder={["创建开始", "创建结束"]}
+      value={createdRange}
+      onChange={setCreatedRange}
+    />
+    {/* 树形选择 */}
+    <TreeSelect
+      allowClear
+      treeData={DEPARTMENT_TREE}
+      placeholder="所属部门"
+      style={{ width: "100%" }}
+      value={dept}
+      onChange={setDept}
+    />
+    {/* 远程搜索：showSearch 开启输入，filterOption={false} 关掉本地过滤，候选由 onSearch 的请求返回 */}
+    <Select
+      showSearch
+      allowClear
+      filterOption={false}
+      loading={remoteLoading}
+      placeholder="关联商品"
+      style={{ width: "100%" }}
+      value={product}
+      onChange={setProduct}
+      onSearch={setRemoteKeyword}
+    >
+      {remoteOptions.map((item) => (
+        <Select.Option key={item} value={item}>
+          {item}
+        </Select.Option>
+      ))}
+    </Select>
+    {/* 多选框、更多输入框……按需继续往网格里加 */}
+    {/* 搜索 / 重置不另起一行：col-start-4 = 落在第 4 列——最后一行没填满时与最后一个条件同行贴最右，
+        刚好填满时自动落到下一行最右 */}
+    <div className="col-start-4 flex items-center justify-end gap-2">
       <Tooltip content="搜索">
         <Button type="primary" icon={<IconSearch />} onClick={onSearch} />
       </Tooltip>
@@ -293,6 +292,10 @@ import { ImageUpload } from "../components/ImageUpload";
 > （`DatePicker.RangePicker`）。条件数不限。时间选择器的两个占位文案统一写成「<字段>开始 / <字段>结束」，
 > 例如 `placeholder={["创建开始", "创建结束"]}`。
 > 网格内的条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
+>
+> **「搜索 / 重置」不单独占一行**：把它作为网格的最后一个子元素，加 `col-start-<末列号>`（4 列即 `col-start-4`），
+> 它就会固定落在最后一列——最后一行没填满时与最后一个条件同行、贴该行最右；刚好被填满时自动落到下一行最右。
+> 这样条件增删都不用改布局。
 >
 > **操作行**：筛选区下面、列表区上面单独一行。左侧是状态切换（可选，`Radio.Group type="button"`，
 > 如 全部 / 启用 / 禁用；不参与「搜索」提交，改动立即生效并回到第 1 页），右侧靠最右固定放「新增」。
@@ -493,7 +496,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置」）→ 操作行（左侧状态切换，右侧最右为
+- 列表页布局：页面标题区 → 筛选区（条件网格，搜索 / 重置 贴最后一项那一行的最右）→ 操作行（左侧状态切换，右侧最右为
   「新增」；列表选中后在「新增」前出现「导出 / 批量删除」）→ 多选列表区。新增 / 编辑 / 详情统一走右侧抽屉。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 批量操作（含导出）必须二次确认：凡一次影响多行的按钮都包 `Popconfirm`，确认文案写明影响范围。
