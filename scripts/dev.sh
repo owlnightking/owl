@@ -10,7 +10,8 @@
 #   pnpm dev mobile    仅 mobile-web 前端
 # 启动顺序: api-service → cron-service → cron-web → admin-web → owl-web → mobile-web → gateway
 # 后端通过 /api/health 探活，前端通过端口连通性探活，就绪后才启动下一个。
-# 全部就绪后 gateway 监听 GATEWAY_PORT，按 /owl /admin /cron /m 前缀分发。
+# 全部就绪后 gateway 启动：web 监听 WEB_GATEWAY_PORT（/owl /admin /cron /portal），
+# mobile 监听 MOBILE_GATEWAY_PORT（/mobile）。
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -26,7 +27,8 @@ read_env_port() {
 
 API_PORT="$(read_env_port API_PORT 3000)"
 CRON_PORT="$(read_env_port CRON_PORT 3001)"
-GATEWAY_PORT="$(read_env_port GATEWAY_PORT 5173)"
+WEB_GATEWAY_PORT="$(read_env_port WEB_GATEWAY_PORT 5172)"
+MOBILE_GATEWAY_PORT="$(read_env_port MOBILE_GATEWAY_PORT 5173)"
 CRON_WEB_PORT="$(read_env_port CRON_WEB_PORT 5275)"
 ADMIN_WEB_PORT="$(read_env_port ADMIN_WEB_PORT 5274)"
 OWL_WEB_PORT="$(read_env_port OWL_WEB_PORT 5273)"
@@ -83,20 +85,21 @@ case "$TARGET" in
     wait_port "$PORTAL_WEB_PORT" portal
     echo "[dev] starting gateway ..."
     node scripts/gateway.mjs 2>&1 | node scripts/prefix.mjs gateway 35 &
-    wait_port "$GATEWAY_PORT" gateway
+    wait_port "$WEB_GATEWAY_PORT" gateway-web
+    wait_port "$MOBILE_GATEWAY_PORT" gateway-mobile
     echo "[dev] ==================================================="
-    echo "[dev]   访问入口（唯一）:  http://localhost:$GATEWAY_PORT"
-    echo "[dev]     工作台      :  http://localhost:$GATEWAY_PORT/  (或 /portal/)"
-    echo "[dev]     业务工作台   :  http://localhost:$GATEWAY_PORT/owl/"
-    echo "[dev]     管理台      :  http://localhost:$GATEWAY_PORT/admin/"
-    echo "[dev]     定时任务    :  http://localhost:$GATEWAY_PORT/cron/"
-    echo "[dev]   移动端      :  http://localhost:$GATEWAY_PORT/mobile/"
+    echo "[dev]   访问入口:"
+    echo "[dev]     Web       :  http://localhost:$WEB_GATEWAY_PORT/"
+    echo "[dev]       工作台      :  http://localhost:$WEB_GATEWAY_PORT/  (或 /portal/)"
+    echo "[dev]       业务工作台   :  http://localhost:$WEB_GATEWAY_PORT/owl/"
+    echo "[dev]       管理台      :  http://localhost:$WEB_GATEWAY_PORT/admin/"
+    echo "[dev]       定时任务    :  http://localhost:$WEB_GATEWAY_PORT/cron/"
+    echo "[dev]     Mobile    :  http://localhost:$MOBILE_GATEWAY_PORT/"
     echo "[dev]   局域网访问请将 localhost 换成局域网 IP（如 192.168.x.x）"
     echo "[dev]   内部端口 5270/5273/5274/5275/5276 仅本机网关代理使用，勿直接访问"
     echo "[dev]   接口调试 Swagger:"
-    echo "[dev]     api-service :  http://localhost:$GATEWAY_PORT/api/docs"
-    echo "[dev]                 :  http://localhost:$API_PORT/api/docs（直连）"
-    echo "[dev]     cron-service:  http://localhost:$CRON_PORT/cron/docs"
+    echo "[dev]     api-service :  http://localhost:$WEB_GATEWAY_PORT/api/docs"
+    echo "[dev]     cron-service:  http://localhost:$WEB_GATEWAY_PORT/cron/docs"
     echo "[dev] ==================================================="
     ;;
   api)

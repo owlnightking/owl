@@ -17,9 +17,9 @@ owl/
 ├── apps/                       # 应用（互不依赖）
 │   ├── api-service/            # 主服务（NestJS）— 认证/RBAC/审计/业务 pipeline
 │   ├── cron-service/           # 定时任务执行服务（NestJS + RabbitMQ）
-│   ├── owl-web/                # 内部业务工作台（Vite + React + TS）:5173
-│   ├── admin-web/              # 管理台（Vite + React + TS）:5174
-│   └── cron-web/               # 定时任务控制台（Vite + React + TS）:5175
+│   ├── owl-web/                # 内部业务工作台（Vite + React + TS）
+│   ├── admin-web/              # 管理台（Vite + React + TS）
+│   └── cron-web/               # 定时任务控制台（Vite + React + TS）
 ├── packages/                   # 共享包（被一切依赖的最底层）
 │   ├── shared/                 # @owl/shared — 类型/常量/错误码/纯函数
 │   └── database/               # @owl/database — Prisma schema + migrations + seeds
@@ -93,15 +93,14 @@ pnpm dev admin      # 仅 admin-web 前端
 pnpm dev cronweb    # 仅 cron-web 前端
 ```
 
-端口在根目录 `.env` 配置（`API_PORT`/`CRON_PORT`/`OWL_WEB_PORT`/`ADMIN_WEB_PORT`/`CRON_WEB_PORT`）。默认值：
+端口在根目录 `.env` 配置（`API_PORT`/`CRON_PORT`/`WEB_GATEWAY_PORT`/`MOBILE_GATEWAY_PORT` 及各前端内部端口）。默认值：
 
-| 服务         | 地址                      |
-| ------------ | ------------------------- |
-| api-service  | http://localhost:3000/api |
-| owl-web      | http://localhost:5173     |
-| admin-web    | http://localhost:5174     |
-| cron-web     | http://localhost:5175     |
-| cron-service | http://localhost:3001/api |
+| 入口 / 服务  | 地址                                                   |
+| ------------ | ------------------------------------------------------ |
+| Web 入口     | http://localhost:5172/（/portal、/owl、/admin、/cron） |
+| Mobile 入口  | http://localhost:5173/                                 |
+| api-service  | http://localhost:5100/api                              |
+| cron-service | http://localhost:5101/cron                             |
 
 ### 一条命令停止
 

@@ -9,13 +9,14 @@ cd "$(dirname "$0")/.."
 
 API_PORT="$(grep -E '^API_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 CRON_PORT="$(grep -E '^CRON_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
-GATEWAY_PORT="$(grep -E '^GATEWAY_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
+WEB_GATEWAY_PORT="$(grep -E '^WEB_GATEWAY_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
+MOBILE_GATEWAY_PORT="$(grep -E '^MOBILE_GATEWAY_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 OWL_WEB_PORT="$(grep -E '^OWL_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 ADMIN_WEB_PORT="$(grep -E '^ADMIN_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 CRON_WEB_PORT="$(grep -E '^CRON_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 PORTAL_WEB_PORT="$(grep -E '^PORTAL_WEB_PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d ' ' || true)"
 
-PORTS=("${GATEWAY_PORT:-5173}" "${API_PORT:-3000}" "${CRON_PORT:-3001}" "${OWL_WEB_PORT:-5273}" "${ADMIN_WEB_PORT:-5274}" "${CRON_WEB_PORT:-5275}" "${PORTAL_WEB_PORT:-5270}")
+PORTS=("${WEB_GATEWAY_PORT:-5172}" "${MOBILE_GATEWAY_PORT:-5173}" "${API_PORT:-3000}" "${CRON_PORT:-3001}" "${OWL_WEB_PORT:-5273}" "${ADMIN_WEB_PORT:-5274}" "${CRON_WEB_PORT:-5275}" "${PORTAL_WEB_PORT:-5270}")
 
 STOPPED=0
 

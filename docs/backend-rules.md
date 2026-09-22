@@ -186,8 +186,8 @@ export class RoleService implements RoleServicePort {
 - `pnpm dev` 终端在启动完成后需汇总打印各后端接口调试地址。
 - **JWT 鉴权**：Swagger 必须配置 Bearer 方案（`addBearerAuth` + `addSecurityRequirements("bearer")`）；`JwtAuthGuard` 必须同时支持 `Authorization: Bearer <accessToken>` 与 cookie `owl_access`。登录后在 Swagger 的 Authorize 填入 accessToken 即可调试受保护接口。
 - Swagger 地址统一 `http://localhost:<port>/<prefix>/docs`：
-  - api-service：`http://localhost:<API_PORT>/api/docs`（经网关亦可 `http://localhost:<GATEWAY_PORT>/api/docs`）
-  - cron-service：`http://localhost:<CRON_PORT>/cron/docs`
+  - api-service：`http://localhost:<API_PORT>/api/docs`（经网关亦可 `http://localhost:<WEB_GATEWAY_PORT>/api/docs`）
+  - cron-service：`http://localhost:<CRON_PORT>/cron/docs`（经网关亦可 `http://localhost:<WEB_GATEWAY_PORT>/cron/docs`）
 
 **接口注解硬性规则**（保证 Swagger UI 可读）：
 

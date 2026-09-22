@@ -3,11 +3,12 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 import { vditorPlugin } from "../../scripts/vite-plugins/vditor-serve";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const rootEnv = loadEnv(mode, resolve(__dirname, "../.."), "");
   const apiPort = rootEnv.API_PORT ?? "3000";
   return {
-    base: "/mobile/",
+    // dev 下移动端由独立网关挂在根路径，生产构建仍固定在 /mobile/
+    base: command === "serve" ? "/" : "/mobile/",
     plugins: [react(), vditorPlugin()],
     server: {
       host: "0.0.0.0",
