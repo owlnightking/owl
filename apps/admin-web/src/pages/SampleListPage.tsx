@@ -15,10 +15,9 @@
  * 另可按需在筛选区与列表区之间插一行**状态切换**（Radio.Group type="button"，像标签页一样即点即生效），
  * 本页就放了这一行。
  *
- * 筛选条件演示覆盖 5 类控件（网格内 9 个 + 状态切换行 1 个）：
+ * 筛选条件演示覆盖 4 类控件（网格内 8 个 + 状态切换行 1 个）：
  *   输入框     名称、编码、备注
  *   单选       状态（Radio.Group，在状态切换行）
- *   多选       标签（Checkbox.Group）
  *   多选搜索   分类、负责人（Select mode="multiple"）
  *   时间选择器 创建时间、更新时间（DatePicker.RangePicker）
  *   另有单选下拉：所属模块
@@ -35,7 +34,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Button,
-  Checkbox,
   DatePicker,
   Input,
   Notification,
@@ -82,7 +80,6 @@ interface SampleFilters {
   categories: string[];
   module: string;
   owners: string[];
-  tags: string[];
   createdRange: string[];
   updatedRange: string[];
   remark: string;
@@ -101,7 +98,8 @@ const STATUS_OPTIONS: { label: string; value: SampleFilters["status"] }[] = [
 const CATEGORY_OPTIONS = ["商品", "订单", "用户", "内容"];
 const MODULE_OPTIONS = ["admin", "owl", "cron", "mobile", "portal"];
 const OWNER_OPTIONS = ["张三", "李四", "王五", "赵六"];
-const TAG_OPTIONS = ["重点", "归档", "待审", "内部"];
+// 仅用于示例数据的展示（列表「标签」列），不参与筛选
+const DEMO_TAGS = ["重点", "归档", "待审", "内部"];
 
 const EMPTY_FILTERS: SampleFilters = {
   name: "",
@@ -110,7 +108,6 @@ const EMPTY_FILTERS: SampleFilters = {
   categories: [],
   module: "",
   owners: [],
-  tags: [],
   createdRange: [],
   updatedRange: [],
   remark: "",
@@ -141,7 +138,7 @@ const DEMO_ITEMS: SampleItem[] = Array.from({ length: DEMO_TOTAL }, (_, index) =
     category: CATEGORY_OPTIONS[index % CATEGORY_OPTIONS.length],
     module: MODULE_OPTIONS[index % MODULE_OPTIONS.length],
     owner: OWNER_OPTIONS[index % OWNER_OPTIONS.length],
-    tags: [TAG_OPTIONS[index % TAG_OPTIONS.length], TAG_OPTIONS[(index + 2) % TAG_OPTIONS.length]],
+    tags: [DEMO_TAGS[index % DEMO_TAGS.length], DEMO_TAGS[(index + 2) % DEMO_TAGS.length]],
     createdAt: `2026-09-${day} 10:24:00`,
     updatedAt: `2026-10-${day} 18:05:00`,
     remark: `第 ${index + 1} 条示例备注`,
@@ -160,7 +157,6 @@ function matchFilters(item: SampleItem, filters: SampleFilters): boolean {
     (filters.categories.length === 0 || filters.categories.includes(item.category)) &&
     (!filters.module || item.module === filters.module) &&
     (filters.owners.length === 0 || filters.owners.includes(item.owner)) &&
-    (filters.tags.length === 0 || filters.tags.some((tag) => item.tags.includes(tag))) &&
     (!createdFrom || createdAt >= createdFrom) &&
     (!createdTo || createdAt <= createdTo) &&
     (!updatedFrom || updatedAt >= updatedFrom) &&
@@ -389,14 +385,6 @@ export function SampleListPage() {
               </Select.Option>
             ))}
           </Select>
-          {/* 多选框 */}
-          <Checkbox.Group value={draft.tags} onChange={(value: string[]) => patchDraft({ tags: value })}>
-            {TAG_OPTIONS.map((option) => (
-              <Checkbox key={option} value={option}>
-                {option}
-              </Checkbox>
-            ))}
-          </Checkbox.Group>
           {/* 时间选择器 */}
           <DatePicker.RangePicker
             format="YYYY-MM-DD"

@@ -237,7 +237,8 @@ import { ImageUpload } from "../components/ImageUpload";
 > 列表级操作（导出、批量操作等）统一放进筛选区右下角那一组 icon 按钮里，不再单独起一行操作栏。
 > 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
 >
-> 完整示例（10 个条件、覆盖 5 类控件、含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
+> 完整示例（9 个条件 + 状态切换行，覆盖输入框 / 单选 / 多选搜索 / 时间选择器 4 类控件，含可用的过滤逻辑）
+> 见 `apps/admin-web/src/pages/SampleListPage.tsx`。
 
 ### 列表字段规范
 
