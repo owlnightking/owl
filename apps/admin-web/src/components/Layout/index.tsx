@@ -208,25 +208,25 @@ export function Layout({ siderItems, hidePermissionFilter }: LayoutProps) {
       </Sider>
 
       <Content className="flex flex-col overflow-auto bg-gray-50 p-3">
-        <div className="flex-1 overflow-auto bg-white p-6">
-          <div className="mb-4 border-b border-gray-100 pb-3">
-            <Breadcrumb className="m-0">
-              {breadcrumbItems.map((item, index) => (
-                <Breadcrumb.Item key={item.key}>
-                  {index < breadcrumbItems.length - 1 ? (
-                    <span
-                      className="cursor-pointer text-gray-400 hover:text-blue-600"
-                      onClick={() => item.path && navigate(item.path)}
-                    >
-                      {item.label}
-                    </span>
-                  ) : (
-                    <span className="text-gray-700">{item.label}</span>
-                  )}
-                </Breadcrumb.Item>
-              ))}
-            </Breadcrumb>
-          </div>
+        <div className="mb-3">
+          <Breadcrumb className="m-0">
+            {breadcrumbItems.map((item, index) => (
+              <Breadcrumb.Item key={item.key}>
+                {index < breadcrumbItems.length - 1 ? (
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-blue-600"
+                    onClick={() => item.path && navigate(item.path)}
+                  >
+                    {item.label}
+                  </span>
+                ) : (
+                  <span className="text-gray-700">{item.label}</span>
+                )}
+              </Breadcrumb.Item>
+            ))}
+          </Breadcrumb>
+        </div>
+        <div className="flex-1 overflow-auto rounded-lg bg-white p-6">
           <Outlet />
         </div>
       </Content>

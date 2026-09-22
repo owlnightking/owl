@@ -102,13 +102,19 @@ import { ImageUpload } from "../components/ImageUpload";
     <Menu theme="light">{/* 菜单项 */}</Menu>
   </Layout.Sider>
   <Layout.Content className="flex flex-col overflow-auto bg-gray-50 p-3">
-    <div className="flex-1 overflow-auto bg-white p-6">
+    {/* 面包屑区：无背景 */}
+    <div className="mb-3">
       <Breadcrumb />
+    </div>
+    {/* 页面内容区：白色背景 */}
+    <div className="flex-1 overflow-auto rounded-lg bg-white p-6">
       <Outlet />
     </div>
   </Layout.Content>
 </Layout>
 ```
+
+**右侧内容区结构（统一）**：侧边栏右侧分为两块——**导航面包屑区（无背景）** + **页面内容区（白色背景 `bg-white`）**；面包屑不单独加背景/边框，直接落在页面底色上。
 
 **禁止**：
 
