@@ -207,7 +207,9 @@ export function Layout({ siderItems, hidePermissionFilter }: LayoutProps) {
         </Menu>
       </Sider>
 
-      <Content className="flex flex-col overflow-auto bg-gray-50 p-3">
+      {/* min-w-0 必加：Content 是 ArcoLayout（flex row）的子项，默认 min-width:auto 会按内容宽度计算，
+          宽表格会把 Content 撑开、横向滚动条落到整页上而不是列表里 */}
+      <Content className="flex min-w-0 flex-col overflow-auto bg-gray-50 p-3">
         <div className="mb-3">
           <Breadcrumb className="m-0">
             {breadcrumbItems.map((item, index) => (
@@ -226,7 +228,7 @@ export function Layout({ siderItems, hidePermissionFilter }: LayoutProps) {
             ))}
           </Breadcrumb>
         </div>
-        <div className="flex-1 overflow-auto rounded-lg bg-white p-6">
+        <div className="min-w-0 flex-1 overflow-auto rounded-lg bg-white p-6">
           <Outlet />
         </div>
       </Content>

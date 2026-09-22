@@ -101,13 +101,13 @@ import { ImageUpload } from "../components/ImageUpload";
   <Layout.Sider width={200} theme="light" collapsible>
     <Menu theme="light">{/* 菜单项 */}</Menu>
   </Layout.Sider>
-  <Layout.Content className="flex flex-col overflow-auto bg-gray-50 p-3">
+  <Layout.Content className="flex min-w-0 flex-col overflow-auto bg-gray-50 p-3">
     {/* 面包屑区：无背景 */}
     <div className="mb-3">
       <Breadcrumb />
     </div>
     {/* 页面内容区：白色背景 */}
-    <div className="flex-1 overflow-auto rounded-lg bg-white p-6">
+    <div className="min-w-0 flex-1 overflow-auto rounded-lg bg-white p-6">
       <Outlet />
     </div>
   </Layout.Content>
@@ -115,6 +115,9 @@ import { ImageUpload } from "../components/ImageUpload";
 ```
 
 **右侧内容区结构（统一）**：侧边栏右侧分为两块——**导航面包屑区（无背景）** + **页面内容区（白色背景 `bg-white`）**；面包屑不单独加背景/边框，直接落在页面底色上。
+
+**`min-w-0` 必加**：`ArcoLayout` 是 `flex-direction: row` 的弹性容器，`Content` 与内容区都是它的子项，默认 `min-width: auto` 会按内容宽度计算，导致宽表格/长内容把整个布局撑宽——横向滚动条会落到页面（`body`）上，而不是留在列表内部。
+给这两层加 `min-w-0` 是唯一确定性的修法（只放宽最小宽度，不影响正常页面）。
 
 **禁止**：
 
