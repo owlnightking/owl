@@ -349,6 +349,9 @@ import { ImageUpload } from "../components/ImageUpload";
    左端固定标识列（本模板固定「编码」），右端固定操作列；多选列也要一起固定（`rowSelection={{ fixed: true }}`）。
    **固定列必须排在列的首尾**：左侧固定列只能是列表最前面那几列，所以要把要固定的列挪到第一列，
    不能只挑中间的列加 `fixed: "left"`，否则悬浮位置会错乱。
+   **滚动条常显样式统一放在各端 `src/index.css`**（`apps/admin-web/src/index.css` 已加）：macOS 默认隐藏浮层滚动条，
+   鼠标用户既看不到横向滚动条、也拖不动，宽表格后面的列就"够不到"——所以必须显式给
+   `.arco-table-content-inner` 补 `overflow-x: auto` 与 `::-webkit-scrollbar` 样式，不要每个页面各写一遍。
 
 ```tsx
 // 列表字段配置示例

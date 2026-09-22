@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 表格横向滚动条常显。
+   Arco 的内部横向滚动容器在部分打包产物里只在 .arco-table-layout-fixed 下才 overflow-x: auto；
+   更关键的是 macOS 默认隐藏浮层滚动条，鼠标用户既看不到、也拖不动，宽表格后面的列就"够不到"。
+   这里统一补齐：显式允许横向滚动 + 常显滚动条（用 Arco 主题变量取色，不写死颜色）。 */
+.arco-table-content-inner {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-fill-3) var(--color-fill-1);
+}
+
+.arco-table-content-inner::-webkit-scrollbar {
+  height: 8px;
+}
+
+.arco-table-content-inner::-webkit-scrollbar-track {
+  background-color: var(--color-fill-1);
+}
+
+.arco-table-content-inner::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: var(--color-fill-3);
+}
+
+.arco-table-content-inner::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-fill-4);
+}
