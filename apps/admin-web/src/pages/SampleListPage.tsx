@@ -1,19 +1,26 @@
 /**
  * web 端列表页样板 —— 新增列表页请以本文件为模板（规范见 docs/frontend-rules.md 第五节）。
  *
+ * 运行位置：管理台「样板页」菜单（/sample-list）。本页是**设计样张**，内置示例数据，
+ * 打开即可看到标准形态，不依赖任何后端接口。
+ *
+ * 换成真实页面时只需替换取数与删除两处（文件底部标注了 DEMO 的两个函数）：
+ * 组件的加载态、分页、搜索、删除、骨架屏结构都不用动。
+ * 真实取数与错误处理的完整写法见 apps/admin-web/src/pages/MdDocsPage.tsx。
+ *
  * 结构固定四段：
  *   1. 页面标题区        h1 text-xl font-semibold
  *   2. 筛选区            rounded-lg bg-white p-4 shadow-sm + Form layout="inline"
  *   3. 列表外操作区      右靠齐，只放 icon 按钮，文字用 Tooltip 悬浮显示
  *   4. 列表区            卡片包住表格 + 独立 Pagination
  *
- * 同时演示四条形态约束：
+ * 形态约束：
  *   - 加载中显示整页骨架屏（标题/筛选/列表三个区域各一块）
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
  *   - 反馈统一用 Notification（成功 title "成功" / 失败 title "失败"）
  *
- * 注意：设计 token（颜色/圆角/字号）来自 tailwind/web.cjs，不要在页面里写死颜色或自带 theme。
+ * 设计 token（颜色/圆角/字号）来自 tailwind/web.cjs，不要在页面里写死颜色或自带 theme。
  */
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -30,7 +37,6 @@ import {
   Tooltip,
 } from "@arco-design/web-react";
 import { IconDelete, IconEdit, IconPlus, IconRefresh } from "@arco-design/web-react/icon";
-import { del, get } from "../api/client";
 
 interface SampleItem {
   id: number;
@@ -47,6 +53,8 @@ interface SampleItemPage {
 }
 
 const PAGE_SIZE = 20;
+const DEMO_TOTAL = 46;
+const DEMO_DELAY_MS = 400;
 
 const STATUS_TEXT: Record<SampleItem["status"], string> = { enabled: "启用", disabled: "禁用" };
 
@@ -64,6 +72,31 @@ function ListPageSkeleton() {
   );
 }
 
+// ---------------------------------------------------------------- DEMO 数据源
+// 真实页面：删掉本段，改用 apps/admin-web/src/api/client 的 get / del（写法见 MdDocsPage.tsx）。
+const DEMO_ITEMS: SampleItem[] = Array.from({ length: DEMO_TOTAL }, (_, index) => ({
+  id: index + 1,
+  name: `示例资源 ${String(index + 1).padStart(2, "0")} · 一个刻意写得很长的名称用来演示截断`,
+  status: index % 3 === 0 ? "disabled" : "enabled",
+  createdAt: `2026-09-${String((index % 28) + 1).padStart(2, "0")} 10:24:00`,
+}));
+
+async function fetchPage(page: number, keyword: string): Promise<SampleItemPage> {
+  const filtered = keyword ? DEMO_ITEMS.filter((item) => item.name.includes(keyword)) : DEMO_ITEMS;
+  const list = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // 留一点延迟，方便观察骨架屏
+  await new Promise((resolve) => setTimeout(resolve, DEMO_DELAY_MS));
+  return { list, pageNum: page, pageSize: PAGE_SIZE, total: filtered.length };
+}
+
+function removeItem(id: number): void {
+  const index = DEMO_ITEMS.findIndex((item) => item.id === id);
+  if (index >= 0) {
+    DEMO_ITEMS.splice(index, 1);
+  }
+}
+// -----------------------------------------------------------------------------
+
 export function SampleListPage() {
   const [data, setData] = useState<SampleItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -74,11 +107,7 @@ export function SampleListPage() {
   const load = useCallback(async (currentPage: number, search: string) => {
     setLoading(true);
     try {
-      const result = await get<SampleItemPage>("/samples", {
-        page: currentPage,
-        pageSize: PAGE_SIZE,
-        keyword: search || undefined,
-      });
+      const result = await fetchPage(currentPage, search);
       setData(result.list);
       setTotal(result.total);
     } catch (error) {
@@ -94,7 +123,7 @@ export function SampleListPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await del(`/samples/${id}`);
+      removeItem(id);
       Notification.success({ title: "成功", content: "删除成功" });
       // 删掉本页最后一条时回退一页，避免停在空页
       if (data.length === 1 && page > 1) {

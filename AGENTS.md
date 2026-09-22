@@ -293,8 +293,8 @@ pnpm frontend:check  # 前端 UI 规则检查
 **设计 token 单一来源**：风格基线在仓库根 `tailwind/`（web 端四个应用共用 `web.cjs`、移动端用 `mobile.cjs`），
 改风格只改预设，各端同时生效。各端不得自行声明 `theme` / `plugins`。
 
-**样板页预览**：两端样板页可用 mock 数据在浏览器查看（不依赖后端）——
-按 `docs/frontend-rules.md` 第五节的命令构建后，打开仓库根 `index.html`（两端并排）。
+**样板页查看**：两端样板页是真实路由，内置示例数据、不依赖后端——`pnpm dev` 后访问
+管理台菜单「样板页」（web，`/admin/sample-list`）或 `/mobile/sample-list`（mobile）。
 
 > emoji、`any`、文件行数不属 `frontend:check`：分别由 `scan-ai-residue.sh` 与 `arch:check` 统一校验
 > （同一规则只保留一处实现）。骨架屏规则（第 6 条）的自动检测当前**漏报**，需人工确认；

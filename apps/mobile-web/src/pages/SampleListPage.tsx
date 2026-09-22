@@ -1,6 +1,11 @@
 /**
  * mobile 端列表页样板 —— 新增移动端列表页请以本文件为模板（规范见 docs/frontend-rules.md 第五、九节）。
  *
+ * 运行位置：/sample-list。本页是**设计样张**，内置示例数据，打开即可看到标准形态，不依赖任何后端接口。
+ *
+ * 换成真实页面时只需替换取数与删除两处（文件底部标注了 DEMO 的两个函数）：
+ * NavBar、搜索防抖、卡片列表、加载更多、空状态的结构都不用动。
+ *
  * 结构：
  *   NavBar（标题 + 右侧 icon 操作）
  *   SearchBar 筛选（输入即时更新，防抖后才发起请求）
@@ -16,7 +21,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Dialog, NavBar, SearchBar, Skeleton, Tag, Toast } from "@arco-design/mobile-react";
 import { IconAdd, IconDelete, IconEdit } from "@arco-design/mobile-react/esm/icon";
-import { del, get } from "../api/client";
 
 interface SampleItem {
   id: number;
@@ -33,7 +37,10 @@ interface SampleItemPage {
 }
 
 const PAGE_SIZE = 20;
+const DEMO_TOTAL = 46;
+const DEMO_DELAY_MS = 400;
 const SEARCH_DEBOUNCE_MS = 300;
+
 const STATUS_TEXT: Record<SampleItem["status"], string> = { enabled: "启用", disabled: "禁用" };
 
 function ListSkeleton() {
@@ -47,6 +54,31 @@ function ListSkeleton() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------- DEMO 数据源
+// 真实页面：删掉本段，改用 apps/mobile-web/src/api/client 的 get / del。
+const DEMO_ITEMS: SampleItem[] = Array.from({ length: DEMO_TOTAL }, (_, index) => ({
+  id: index + 1,
+  name: `示例资源 ${String(index + 1).padStart(2, "0")} · 一个刻意写得很长的名称用来演示截断`,
+  status: index % 3 === 0 ? "disabled" : "enabled",
+  createdAt: `2026-09-${String((index % 28) + 1).padStart(2, "0")} 10:24:00`,
+}));
+
+async function fetchPage(page: number, keyword: string): Promise<SampleItemPage> {
+  const filtered = keyword ? DEMO_ITEMS.filter((item) => item.name.includes(keyword)) : DEMO_ITEMS;
+  const list = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // 留一点延迟，方便观察骨架屏
+  await new Promise((resolve) => setTimeout(resolve, DEMO_DELAY_MS));
+  return { list, pageNum: page, pageSize: PAGE_SIZE, total: filtered.length };
+}
+
+function removeItem(id: number): void {
+  const index = DEMO_ITEMS.findIndex((item) => item.id === id);
+  if (index >= 0) {
+    DEMO_ITEMS.splice(index, 1);
+  }
+}
+// -----------------------------------------------------------------------------
 
 export function SampleListPage() {
   const [data, setData] = useState<SampleItem[]>([]);
@@ -64,11 +96,7 @@ export function SampleListPage() {
       setLoading(true);
     }
     try {
-      const result = await get<SampleItemPage>("/samples", {
-        page: targetPage,
-        pageSize: PAGE_SIZE,
-        keyword: search || undefined,
-      });
+      const result = await fetchPage(targetPage, search);
       setData((prev) => (append ? [...prev, ...result.list] : result.list));
       setTotal(result.total);
       setPage(targetPage);
@@ -94,7 +122,7 @@ export function SampleListPage() {
       children: `确定删除「${item.name}」？`,
       onOk: async () => {
         try {
-          await del(`/samples/${item.id}`);
+          removeItem(item.id);
           Toast.success("删除成功");
           void load(1, keyword, false);
         } catch {

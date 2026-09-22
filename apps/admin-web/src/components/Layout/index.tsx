@@ -11,6 +11,7 @@ import {
   IconMenuFold,
   IconMenuUnfold,
   IconBook,
+  IconApps,
 } from "@arco-design/web-react/icon";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
@@ -28,6 +29,8 @@ export interface SiderItem {
 
 export const ADMIN_SIDER_ITEMS: SiderItem[] = [
   { key: "/home", label: "概览", icon: <IconHome /> },
+  // 设计样张：新增列表页的模板，内置示例数据（见 docs/frontend-rules.md 第五节）
+  { key: "/sample-list", label: "样板页", icon: <IconApps /> },
   {
     key: "docs",
     label: "文档中心",

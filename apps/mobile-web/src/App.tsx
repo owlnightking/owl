@@ -10,6 +10,7 @@ import { FeedPage } from "./pages/FeedPage";
 import { MdDocsPage } from "./pages/MdDocsPage";
 import { MdDocEditorPage } from "./pages/MdDocEditorPage";
 import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
+import { SampleListPage } from "./pages/SampleListPage";
 
 const TAB_BAR_PATHS = new Set(["/home", "/mall", "/docs", "/profile"]);
 
@@ -30,6 +31,8 @@ function App() {
         <Route path="/md-docs/new" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/edit" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />
+        {/* 设计样张：新增移动端列表页的模板，内置示例数据（见 docs/frontend-rules.md 第五节） */}
+        <Route path="/sample-list" element={<SampleListPage />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
       {showTabBar && <TabBar />}

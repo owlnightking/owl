@@ -139,17 +139,17 @@ import { ImageUpload } from "../components/ImageUpload";
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
 > `apps/admin-web/src/pages/MdDocsPage.tsx`。
 
-### 样板页浏览器预览
+### 在应用内查看样板页
 
-预览用 mock 数据、不依赖后端；改完样板页重新构建即可看到效果：
+样板页是**真实路由**，跑在各自应用里，内置示例数据、不依赖后端接口：
 
-```bash
-cd apps/admin-web && npx vite build --config preview/vite.config.mts    # 产物 → preview/web
-cd apps/mobile-web && npx vite build --config preview/vite.config.mts   # 产物 → preview/mobile
-```
+| 端     | 入口                        | 地址                                                    |
+| ------ | --------------------------- | ------------------------------------------------------- |
+| web    | 管理台左侧菜单「样板页」    | `http://localhost:<ADMIN_WEB_PORT>/admin/sample-list`   |
+| mobile | 直接访问路由（未挂 TabBar） | `http://localhost:<MOBILE_WEB_PORT>/mobile/sample-list` |
 
-构建后在浏览器打开仓库根 `index.html`，左右并排显示两端样板。用 iframe 隔离是因为两端的尺寸体系不同
-（web 用 px、mobile 用 rem + `html` font-size 50px），无法共用一个 Tailwind 产物。
+`pnpm dev` 后即可访问（admin-web 需先经 dev 的 `/mock-login` 登录）。调样板页就是在真实应用里调，
+改完刷新看到效果，不需要单独的预览工程。
 
 ### 标准列表页结构
 

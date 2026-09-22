@@ -17,6 +17,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { MdDocsPage } from "./pages/MdDocsPage";
 import { MdDocEditorPage } from "./pages/MdDocEditorPage";
 import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
+import { SampleListPage } from "./pages/SampleListPage";
 
 function HomePage() {
   return (
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/md-docs/new" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/edit" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />
+        <Route path="/sample-list" element={<SampleListPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

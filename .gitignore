@@ -37,10 +37,6 @@ tmp/
 # prisma
 packages/database/prisma/*.db
 
-# 样板页预览构建产物（源码见 apps/*/preview，入口是仓库根 index.html）
-preview/web/
-preview/mobile/
-
 # k8s secrets: 明文不入库，仅提交 SOPS 加密后的 *.enc.yaml（见 .sops.yaml）
 k8s/base/*-secret.yaml
 Dockerfile.verify
