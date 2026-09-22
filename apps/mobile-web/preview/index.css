@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 复刻 apps/mobile-web/src/index.css 中影响样板页渲染的基线；那边改动时同步这里。
+   移动端 rem 刻度依赖 html 的 font-size，必须保留。 */
+html {
+  font-size: 50px;
+}
+
+#root {
+  min-height: 100dvh;
+  max-width: 540px;
+  margin: 0 auto;
+}

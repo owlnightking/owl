@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>样板页预览 · Owl</title>
+    <style>
+      /* 这个外壳只用原生 CSS：它不含业务组件，刻意不进 Tailwind，避免与两端的 rem/px 刻度互相干扰 */
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #f1f5f9;
+        color: #1f2937;
+      }
+      header {
+        padding: 16px 24px;
+        background: #fff;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      header p {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: #64748b;
+      }
+      main {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        padding: 24px;
+      }
+      section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      section h2 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+      }
+      .web {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .mobile {
+        flex: 0 0 auto;
+      }
+      iframe {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        display: block;
+      }
+      .web iframe {
+        width: 100%;
+        height: calc(100vh - 150px);
+      }
+      .mobile iframe {
+        width: 390px;
+        height: 780px;
+      }
+      code {
+        font-size: 11px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>样板页预览</h1>
+      <p>
+        左侧 web 端（<code>apps/admin-web/src/pages/SampleListPage.tsx</code>）｜右侧 mobile
+        端（<code>apps/mobile-web/src/pages/SampleListPage.tsx</code>）｜数据为预览 mock，改样板页后重新构建即同步
+      </p>
+    </header>
+    <main>
+      <section class="web">
+        <h2>Web 端 · admin-web</h2>
+        <iframe src="./preview/web/index.html" title="web 端样板页"></iframe>
+      </section>
+      <section class="mobile">
+        <h2>Mobile 端 · mobile-web</h2>
+        <iframe src="./preview/mobile/index.html" title="mobile 端样板页"></iframe>
+      </section>
+    </main>
+  </body>
+</html>

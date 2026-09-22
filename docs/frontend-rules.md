@@ -133,9 +133,23 @@ import { ImageUpload } from "../components/ImageUpload";
 
 ## 五、列表页布局规范
 
-> **标准样板（可直接复制）**：`apps/admin-web/src/pages/MdDocsPage.tsx` —— 它是当前唯一严格符合本节的页面，
-> 四段式结构、整页骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip 全部已落地。
-> 新增列表页以它为模板；改写存量页面时也以它为目标。
+> **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
+> mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。两者是业务无关的列表页模板：
+> 四段式结构、加载骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
+> 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
+> `apps/admin-web/src/pages/MdDocsPage.tsx`。
+
+### 样板页浏览器预览
+
+预览用 mock 数据、不依赖后端；改完样板页重新构建即可看到效果：
+
+```bash
+cd apps/admin-web && npx vite build --config preview/vite.config.mts    # 产物 → preview/web
+cd apps/mobile-web && npx vite build --config preview/vite.config.mts   # 产物 → preview/mobile
+```
+
+构建后在浏览器打开仓库根 `index.html`，左右并排显示两端样板。用 iframe 隔离是因为两端的尺寸体系不同
+（web 用 px、mobile 用 rem + `html` font-size 50px），无法共用一个 Tailwind 产物。
 
 ### 标准列表页结构
 
@@ -322,17 +336,17 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 ### 8.1 脚本阻断项（`pnpm frontend:check` 检出即阻断）
 
-| #   | 规则                                                                                                 | 校验实现                                             |
-| --- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                                  | `check_page_naming`                                  |
-| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                                | `check_ui_library_cross_import`                      |
-| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                                            | `check_inline_style`                                 |
-| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                                   | `check_hardcoded_colors`                             |
-| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                                             | `check_notification_component`                       |
-| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                                        | `check_skeleton_loading`（见下方说明，**当前漏报**） |
-| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web）               | `check_image_upload_component`                       |
-| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind                  | `check_style_solution`                               |
-| 9   | 设计 token 单一来源：各端 `tailwind.config` 只能 `content` + `presets`，禁止自带 `theme` / `plugins` | `check_tailwind_single_source`                       |
+| #   | 规则                                                                                                                                                            | 校验实现                                             |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                                                                                             | `check_page_naming`                                  |
+| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                                                                                           | `check_ui_library_cross_import`                      |
+| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                                                                                                       | `check_inline_style`                                 |
+| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                                                                                              | `check_hardcoded_colors`                             |
+| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                                                                                                        | `check_notification_component`                       |
+| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                                                                                                   | `check_skeleton_loading`（见下方说明，**当前漏报**） |
+| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web）                                                                          | `check_image_upload_component`                       |
+| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind（各端仅一个入口 `index.css`；预览入口 `apps/*/preview/index.css` 同样合规） | `check_style_solution`                               |
+| 9   | 设计 token 单一来源：各端 `tailwind.config` 只能 `content` + `presets`，禁止自带 `theme` / `plugins`                                                            | `check_tailwind_single_source`                       |
 
 > **第 6 条的检测缺陷（已知，勿依赖）**：`check_skeleton_loading` 用 `useState.*loading` 匹配加载状态，
 > 要求 `useState` 出现在 `loading` **之前**，因此对最常见写法 `const [loading, setLoading] = useState(false)`

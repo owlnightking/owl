@@ -273,7 +273,8 @@ kubectl -n owl get pods # 或直接用 kubectl
 ## 十二、前端 UI 规范
 
 AI Agent 在编写前端布局代码前，必须先读 `docs/frontend-rules.md`，写完后运行 `pnpm frontend:check` 验证。
-新增列表页直接以 `apps/admin-web/src/pages/MdDocsPage.tsx` 为样板（四段式 + 整页骨架屏 + 固定操作列）。
+新增列表页直接以样板为模板：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`、
+mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`（四段式 + 骨架屏 + 固定操作列；移动端为卡片列表 + 加载更多）。
 
 **检查命令**：
 
@@ -291,6 +292,9 @@ pnpm frontend:check  # 前端 UI 规则检查
 
 **设计 token 单一来源**：风格基线在仓库根 `tailwind/`（web 端四个应用共用 `web.cjs`、移动端用 `mobile.cjs`），
 改风格只改预设，各端同时生效。各端不得自行声明 `theme` / `plugins`。
+
+**样板页预览**：两端样板页可用 mock 数据在浏览器查看（不依赖后端）——
+按 `docs/frontend-rules.md` 第五节的命令构建后，打开仓库根 `index.html`（两端并排）。
 
 > emoji、`any`、文件行数不属 `frontend:check`：分别由 `scan-ai-residue.sh` 与 `arch:check` 统一校验
 > （同一规则只保留一处实现）。骨架屏规则（第 6 条）的自动检测当前**漏报**，需人工确认；
