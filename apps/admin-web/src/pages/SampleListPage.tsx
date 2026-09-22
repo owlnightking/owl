@@ -12,21 +12,20 @@
  *   1. 页面标题区        h1 text-xl font-semibold
  *   2. 筛选区            条件网格（多列，条件数不限）；「搜索 / 重置」贴在最后一个条件所在行的最右，
  *                        只有该行被填满时才落到下一行最右（用 col-start-<末列号> 实现）
- *   3. 操作行            左侧状态切换（Radio.Group type="button"，像标签页一样即点即生效），
+ *   3. 操作行            左侧状态切换（页面级小 tab：Tabs type="capsule" size="small"，即点即生效），
  *                        右侧靠最右是「新增」；列表选中数据后，在「新增」前多出「导出 / 批量删除」，
  *                        未选中时这两个按钮不显示
  *   4. 列表区            多选表格 + 独立 Pagination
  * 新增 / 编辑 / 详情共用右侧抽屉（Drawer placement="right"）：详情为只读（取数期间骨架屏，取回后用 Descriptions 展示），
  * 新增 / 编辑为可编辑表单。行操作：详情（小眼睛 icon）/ 编辑 / 删除。
  *
- * 筛选条件演示覆盖 6 类控件（网格内 10 个 + 状态切换行 1 个）：
+ * 筛选条件演示覆盖 5 类控件（网格内 10 个）：
  *   输入框     名称、编码、备注
- *   单选       状态（Radio.Group，在状态切换行）
  *   多选搜索   分类、负责人（Select mode="multiple"，自带输入搜索）
  *   远程搜索   关联商品（Select showSearch + filterOption={false}，候选由服务端按关键字返回）
  *   树形选择   所属部门（TreeSelect）
  *   时间选择器 创建时间、更新时间（DatePicker.RangePicker）
- *   另有单选下拉：所属模块
+ *   另有单选下拉：所属模块；单选（Radio.Group）用在新增/编辑抽屉的状态字段
  * 网格内的条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
  *
  * 形态约束：
@@ -58,6 +57,7 @@ import {
   Space,
   Spin,
   Table,
+  Tabs,
   Tag,
   Tooltip,
   TreeSelect,
@@ -657,15 +657,19 @@ export function SampleListPage() {
         </div>
       </div>
 
-      {/* 3. 操作行：左侧状态切换（点一下立即生效），右侧「新增」；选中列表数据后，新增前多出「导出 / 批量删除」 */}
+      {/* 3. 操作行：左侧状态切换（页面级小 tab，点一下立即生效），右侧「新增」；选中列表数据后，新增前多出「导出 / 批量删除」 */}
       <div className="flex items-center gap-2">
-        <Radio.Group type="button" value={applied.status} onChange={handleStatusChange}>
+        <Tabs
+          type="capsule"
+          size="small"
+          className="w-fit shrink-0"
+          activeTab={applied.status}
+          onChange={(key) => handleStatusChange(key as SampleFilters["status"])}
+        >
           {STATUS_OPTIONS.map((option) => (
-            <Radio key={option.value} value={option.value}>
-              {option.label}
-            </Radio>
+            <Tabs.TabPane key={option.value} title={option.label} />
           ))}
-        </Radio.Group>
+        </Tabs>
         <div className="ml-auto flex items-center gap-2">
           {selectedKeys.length > 0 && (
             <>
