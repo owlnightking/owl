@@ -263,7 +263,22 @@ import { ImageUpload } from "../components/ImageUpload";
   <div>
     <Table columns={columns} data={data} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} />
     <div className="mt-4 flex justify-end">
-      <Pagination total={total} current={current} onChange={setCurrent} />
+      <Pagination
+        showTotal={(count) => `共 ${count} 条`}
+        total={total}
+        current={current}
+        pageSize={pageSize}
+        sizeCanChange
+        sizeOptions={[10, 20, 50, 100]}
+        onChange={(p, size) => {
+          setCurrent(p);
+          setPageSize(size);
+        }}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setCurrent(1);
+        }}
+      />
     </div>
   </div>
 
@@ -296,6 +311,10 @@ import { ImageUpload } from "../components/ImageUpload";
 > **「搜索 / 重置」不单独占一行**：把它作为网格的最后一个子元素，加 `col-start-<末列号>`（4 列即 `col-start-4`），
 > 它就会固定落在最后一列——最后一行没填满时与最后一个条件同行、贴该行最右；刚好被填满时自动落到下一行最右。
 > 这样条件增删都不用改布局。
+>
+> **分页**：用独立 `Pagination`（不挂在 Table 的 `pagination` 属性上），必须做三件事——展示总数
+> （`showTotal` → `共 N 条`）、可切页、可切换每页条数（`sizeCanChange` + `sizeOptions`，如 `[10, 20, 50, 100]`）。
+> 切换每页条数后回到第 1 页。每页条数本身是 state，重新请求列表时要把它带给接口。
 >
 > **操作行**：筛选区下面、列表区上面单独一行。左侧是状态切换（可选，`Radio.Group type="button"`，
 > 如 全部 / 启用 / 禁用；不参与「搜索」提交，改动立即生效并回到第 1 页），右侧靠最右固定放「新增」。

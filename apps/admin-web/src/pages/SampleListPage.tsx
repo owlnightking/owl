@@ -32,6 +32,7 @@
  * 形态约束：
  *   - 列表加载用 `Spin dot` 指示符，不做整页骨架屏（首次进入也不显示骨架屏）；骨架屏只用于抽屉这类局部内容
  *   - 查询 / 重置 / 翻页 / 新增编辑保存后重新请求列表，都会触发列表的 Spin
+ *   - 分页展示总数（`共 N 条`）、可切页、可切换每页条数（切换每页条数后回到第 1 页）
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
  *   - 反馈统一用 Notification（成功 title "成功" / 失败 title "失败"）
@@ -115,7 +116,8 @@ interface SampleFilters {
   remark: string;
 }
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const DEMO_TOTAL = 46;
 const DEMO_DELAY_MS = 400;
 
@@ -246,12 +248,12 @@ function matchFilters(item: SampleItem, filters: SampleFilters): boolean {
   );
 }
 
-async function fetchPage(filters: SampleFilters, page: number): Promise<SampleItemPage> {
+async function fetchPage(filters: SampleFilters, page: number, pageSize: number): Promise<SampleItemPage> {
   const filtered = DEMO_ITEMS.filter((item) => matchFilters(item, filters));
-  const list = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const list = filtered.slice((page - 1) * pageSize, page * pageSize);
   // 留一点延迟，方便观察骨架屏
   await new Promise((resolve) => setTimeout(resolve, DEMO_DELAY_MS));
-  return { list, pageNum: page, pageSize: PAGE_SIZE, total: filtered.length };
+  return { list, pageNum: page, pageSize, total: filtered.length };
 }
 
 function removeItem(id: number): void {
@@ -288,11 +290,13 @@ export function SampleListPage() {
   // 详情是异步取数，取数期间抽屉里显示骨架屏
   const [detailData, setDetailData] = useState<SampleItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  // 每页条数可选，切换后回到第 1 页
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  const load = useCallback(async (currentPage: number, filters: SampleFilters) => {
+  const load = useCallback(async (currentPage: number, filters: SampleFilters, size: number) => {
     setLoading(true);
     try {
-      const result = await fetchPage(filters, currentPage);
+      const result = await fetchPage(filters, currentPage, size);
       setData(result.list);
       setTotal(result.total);
     } catch (error) {
@@ -303,8 +307,8 @@ export function SampleListPage() {
   }, []);
 
   useEffect(() => {
-    void load(page, applied);
-  }, [page, applied, load]);
+    void load(page, applied, pageSize);
+  }, [page, pageSize, applied, load]);
 
   useEffect(() => {
     let cancelled = false;
@@ -375,7 +379,7 @@ export function SampleListPage() {
       if (data.length === 1 && page > 1) {
         setPage(page - 1);
       } else {
-        void load(page, applied);
+        void load(page, applied, pageSize);
       }
     } catch (error) {
       Notification.error({ title: "失败", content: error instanceof Error ? error.message : "删除失败" });
@@ -388,7 +392,7 @@ export function SampleListPage() {
       Notification.success({ title: "成功", content: `已删除 ${selectedKeys.length} 项` });
       setSelectedKeys([]);
       setPage(1);
-      void load(1, applied);
+      void load(1, applied, pageSize);
     } catch (error) {
       Notification.error({ title: "失败", content: error instanceof Error ? error.message : "批量删除失败" });
     }
@@ -411,7 +415,7 @@ export function SampleListPage() {
   const handleDrawerOk = () => {
     Notification.success({ title: "成功", content: `已保存（${drawerMode === "create" ? "新增" : "编辑"}示例）` });
     closeDrawer();
-    void load(page, applied);
+    void load(page, applied, pageSize);
   };
 
   const columns = [
@@ -674,7 +678,23 @@ export function SampleListPage() {
           />
         </Spin>
         <div className="mt-4 flex justify-end">
-          <Pagination total={total} current={page} pageSize={PAGE_SIZE} showTotal onChange={setPage} />
+          {/* 分页：展示总数、可切页、可切换每页条数（切换后回到第 1 页） */}
+          <Pagination
+            showTotal={(count) => `共 ${count} 条`}
+            total={total}
+            current={page}
+            pageSize={pageSize}
+            sizeCanChange
+            sizeOptions={PAGE_SIZE_OPTIONS}
+            onChange={(currentPage, currentSize) => {
+              setPage(currentPage);
+              setPageSize(currentSize);
+            }}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 
