@@ -15,10 +15,12 @@
  * 另可按需在筛选区与列表区之间插一行**状态切换**（Radio.Group type="button"，像标签页一样即点即生效），
  * 本页就放了这一行。
  *
- * 筛选条件演示覆盖 4 类控件（网格内 8 个 + 状态切换行 1 个）：
+ * 筛选条件演示覆盖 6 类控件（网格内 10 个 + 状态切换行 1 个）：
  *   输入框     名称、编码、备注
  *   单选       状态（Radio.Group，在状态切换行）
- *   多选搜索   分类、负责人（Select mode="multiple"）
+ *   多选搜索   分类、负责人（Select mode="multiple"，自带输入搜索）
+ *   远程搜索   关联商品（Select showSearch + filterOption={false}，候选由服务端按关键字返回）
+ *   树形选择   所属部门（TreeSelect）
  *   时间选择器 创建时间、更新时间（DatePicker.RangePicker）
  *   另有单选下拉：所属模块
  * 网格内的条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
@@ -46,6 +48,7 @@ import {
   Table,
   Tag,
   Tooltip,
+  TreeSelect,
 } from "@arco-design/web-react";
 import { IconDelete, IconEdit, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
 
@@ -58,6 +61,8 @@ interface SampleItem {
   status: SampleStatus;
   category: string;
   module: string;
+  department: string;
+  product: string;
   owner: string;
   tags: string[];
   createdAt: string;
@@ -79,6 +84,8 @@ interface SampleFilters {
   status: SampleStatus | "all";
   categories: string[];
   module: string;
+  department: string;
+  product: string;
   owners: string[];
   createdRange: string[];
   updatedRange: string[];
@@ -101,12 +108,60 @@ const OWNER_OPTIONS = ["张三", "李四", "王五", "赵六"];
 // 仅用于示例数据的展示（列表「标签」列），不参与筛选
 const DEMO_TAGS = ["重点", "归档", "待审", "内部"];
 
+// TreeSelect 用的部门树。示例里直接把部门名当 key，真实页面一般用 id + labelInValue。
+const DEPARTMENT_TREE = [
+  {
+    key: "总部",
+    title: "总部",
+    children: [
+      {
+        key: "技术部",
+        title: "技术部",
+        children: [
+          { key: "前端组", title: "前端组" },
+          { key: "后端组", title: "后端组" },
+        ],
+      },
+      { key: "市场部", title: "市场部" },
+    ],
+  },
+  { key: "分部", title: "分部", children: [{ key: "运营组", title: "运营组" }] },
+];
+const DEPARTMENT_FLAT = ["前端组", "后端组", "市场部", "运营组"];
+
+// 远程搜索：模拟服务端按关键字返回候选（真实页面换成接口调用即可）
+const REMOTE_POOL = [
+  "云端存储包 100G",
+  "云端存储包 500G",
+  "云主机 2C4G",
+  "云主机 4C8G",
+  "云主机 8C16G",
+  "数据库实例 基础版",
+  "数据库实例 高可用版",
+  "CDN 流量包 1T",
+  "CDN 流量包 5T",
+  "对象存储归档包",
+  "短信包 1 万条",
+  "短信包 10 万条",
+];
+const REMOTE_DELAY_MS = 300;
+const REMOTE_DEBOUNCE_MS = 300;
+const REMOTE_LIMIT = 8;
+
+async function fetchRemoteOptions(keyword: string): Promise<string[]> {
+  await new Promise((resolve) => setTimeout(resolve, REMOTE_DELAY_MS));
+  const matched = keyword ? REMOTE_POOL.filter((item) => item.includes(keyword)) : REMOTE_POOL;
+  return matched.slice(0, REMOTE_LIMIT);
+}
+
 const EMPTY_FILTERS: SampleFilters = {
   name: "",
   code: "",
   status: "all",
   categories: [],
   module: "",
+  department: "",
+  product: "",
   owners: [],
   createdRange: [],
   updatedRange: [],
@@ -137,6 +192,8 @@ const DEMO_ITEMS: SampleItem[] = Array.from({ length: DEMO_TOTAL }, (_, index) =
     status: index % 3 === 0 ? "disabled" : "enabled",
     category: CATEGORY_OPTIONS[index % CATEGORY_OPTIONS.length],
     module: MODULE_OPTIONS[index % MODULE_OPTIONS.length],
+    department: DEPARTMENT_FLAT[index % DEPARTMENT_FLAT.length],
+    product: REMOTE_POOL[index % REMOTE_POOL.length],
     owner: OWNER_OPTIONS[index % OWNER_OPTIONS.length],
     tags: [DEMO_TAGS[index % DEMO_TAGS.length], DEMO_TAGS[(index + 2) % DEMO_TAGS.length]],
     createdAt: `2026-09-${day} 10:24:00`,
@@ -156,6 +213,8 @@ function matchFilters(item: SampleItem, filters: SampleFilters): boolean {
     (filters.status === "all" || item.status === filters.status) &&
     (filters.categories.length === 0 || filters.categories.includes(item.category)) &&
     (!filters.module || item.module === filters.module) &&
+    (!filters.department || item.department === filters.department) &&
+    (!filters.product || item.product === filters.product) &&
     (filters.owners.length === 0 || filters.owners.includes(item.owner)) &&
     (!createdFrom || createdAt >= createdFrom) &&
     (!createdTo || createdAt <= createdTo) &&
@@ -189,6 +248,10 @@ export function SampleListPage() {
   // draft 是正在编辑的条件，applied 是点过「搜索」后真正生效的条件
   const [draft, setDraft] = useState<SampleFilters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<SampleFilters>(EMPTY_FILTERS);
+  // 远程搜索：输入关键字 → 防抖 → 请求服务端候选（这里用 fetchRemoteOptions 模拟）
+  const [remoteKeyword, setRemoteKeyword] = useState("");
+  const [remoteOptions, setRemoteOptions] = useState<string[]>([]);
+  const [remoteLoading, setRemoteLoading] = useState(false);
 
   const load = useCallback(async (currentPage: number, filters: SampleFilters) => {
     setLoading(true);
@@ -206,6 +269,27 @@ export function SampleListPage() {
   useEffect(() => {
     void load(page, applied);
   }, [page, applied, load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setRemoteLoading(true);
+      try {
+        const options = await fetchRemoteOptions(remoteKeyword);
+        if (!cancelled) {
+          setRemoteOptions(options);
+        }
+      } finally {
+        if (!cancelled) {
+          setRemoteLoading(false);
+        }
+      }
+    }, REMOTE_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [remoteKeyword]);
 
   const patchDraft = (patch: Partial<SampleFilters>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -282,6 +366,17 @@ export function SampleListPage() {
       ),
     },
     { title: "负责人", dataIndex: "owner", width: 100 },
+    { title: "所属部门", dataIndex: "department", width: 120 },
+    {
+      title: "关联商品",
+      dataIndex: "product",
+      width: 180,
+      render: (text: string) => (
+        <Tooltip content={text}>
+          <span className="block max-w-[140px] truncate">{text}</span>
+        </Tooltip>
+      ),
+    },
     {
       title: "备注",
       dataIndex: "remark",
@@ -371,6 +466,15 @@ export function SampleListPage() {
               </Select.Option>
             ))}
           </Select>
+          {/* 树形选择（TreeSelect） */}
+          <TreeSelect
+            allowClear
+            treeData={DEPARTMENT_TREE}
+            placeholder="所属部门"
+            style={{ width: "100%" }}
+            value={draft.department || undefined}
+            onChange={(value: string) => patchDraft({ department: value ?? "" })}
+          />
           {/* 多选搜索：mode="multiple" 自带输入搜索 */}
           <Select
             mode="multiple"
@@ -380,6 +484,25 @@ export function SampleListPage() {
             onChange={(value: string[]) => patchDraft({ owners: value })}
           >
             {OWNER_OPTIONS.map((option) => (
+              <Select.Option key={option} value={option}>
+                {option}
+              </Select.Option>
+            ))}
+          </Select>
+          {/* 远程搜索：开启 showSearch + 关掉本地 filterOption，候选由服务端按关键字返回。
+              注意已选项一旦不在候选里就只会回显原始 value，真实页面可配合 labelInValue 或把已选项留在候选中。 */}
+          <Select
+            showSearch
+            allowClear
+            filterOption={false}
+            loading={remoteLoading}
+            placeholder="关联商品"
+            style={{ width: "100%" }}
+            value={draft.product || undefined}
+            onChange={(value: string) => patchDraft({ product: value ?? "" })}
+            onSearch={(value: string) => setRemoteKeyword(value)}
+          >
+            {remoteOptions.map((option) => (
               <Select.Option key={option} value={option}>
                 {option}
               </Select.Option>

@@ -190,7 +190,34 @@ import { ImageUpload } from "../components/ImageUpload";
         value={createdRange}
         onChange={setCreatedRange}
       />
-      {/* 多选框、单选下拉、更多输入框……按需继续往网格里加 */}
+      {/* 树形选择 */}
+      <TreeSelect
+        allowClear
+        treeData={DEPARTMENT_TREE}
+        placeholder="所属部门"
+        style={{ width: "100%" }}
+        value={dept}
+        onChange={setDept}
+      />
+      {/* 远程搜索：showSearch 开启输入，filterOption={false} 关掉本地过滤，候选由 onSearch 的请求返回 */}
+      <Select
+        showSearch
+        allowClear
+        filterOption={false}
+        loading={remoteLoading}
+        placeholder="关联商品"
+        style={{ width: "100%" }}
+        value={product}
+        onChange={setProduct}
+        onSearch={setRemoteKeyword}
+      >
+        {remoteOptions.map((item) => (
+          <Select.Option key={item} value={item}>
+            {item}
+          </Select.Option>
+        ))}
+      </Select>
+      {/* 多选框、更多输入框……按需继续往网格里加 */}
     </div>
 
     <div className="flex items-center justify-end gap-2">
@@ -227,8 +254,10 @@ import { ImageUpload } from "../components/ImageUpload";
 > 内容区本身已经有页面级留白（见第四节布局），再套一层卡片会多出边框感和双重内边距。
 >
 > **筛选条件**：一律用不带 label 的控件，靠 `placeholder` 表达含义（单选/多选这类没有 placeholder 的控件除外，
-> 但优先考虑 `Radio.Group type="button"` 或把语义写进选项文案）。控制在四列网格里按需混用输入框、单选、多选、
-> 多选搜索（`Select mode="multiple"`，自带输入搜索）、时间选择器（`DatePicker.RangePicker`），条件数不限。
+> 但优先考虑 `Radio.Group type="button"` 或把语义写进选项文案）。控制在四列网格里按需混用：输入框、单选、
+> 多选搜索（`Select mode="multiple"`，自带输入搜索）、**远程搜索**（`Select showSearch` + `filterOption={false}`，
+> 候选由 `onSearch` 请求返回，需自行防抖并处理竞态）、**树形选择**（`TreeSelect`）、时间选择器
+> （`DatePicker.RangePicker`）。条件数不限。
 > 网格内的条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
 >
 > **状态切换行（可选）**：需要按状态切换视图时，在筛选区与列表区之间单独放一行
@@ -237,8 +266,8 @@ import { ImageUpload } from "../components/ImageUpload";
 > 列表级操作（导出、批量操作等）统一放进筛选区右下角那一组 icon 按钮里，不再单独起一行操作栏。
 > 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
 >
-> 完整示例（9 个条件 + 状态切换行，覆盖输入框 / 单选 / 多选搜索 / 时间选择器 4 类控件，含可用的过滤逻辑）
-> 见 `apps/admin-web/src/pages/SampleListPage.tsx`。
+> 完整示例（11 个条件 + 状态切换行，覆盖输入框 / 单选 / 多选搜索 / 远程搜索 / 树形选择 / 时间选择器 6 类控件，
+> 含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
 
 ### 列表字段规范
 
