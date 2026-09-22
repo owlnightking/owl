@@ -8,11 +8,10 @@
  * 组件的加载态、分页、搜索、删除、骨架屏结构都不用动。
  * 真实取数与错误处理的完整写法见 apps/admin-web/src/pages/MdDocsPage.tsx。
  *
- * 结构固定三段：
+ * 结构固定三段（筛选区与列表区都不要卡片容器：无边框、无圆角、无内边距，直接落在页面背景上）：
  *   1. 页面标题区        h1 text-xl font-semibold
- *   2. 筛选区            rounded-lg bg-white p-4 shadow-sm
- *                        左侧输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮（右对齐）
- *   3. 列表区            卡片包住表格 + 独立 Pagination
+ *   2. 筛选区            左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮（右对齐）
+ *   3. 列表区            表格 + 独立 Pagination
  *
  * 形态约束：
  *   - 加载中显示整页骨架屏（标题/筛选/列表三个区域各一块）
@@ -60,13 +59,12 @@ const STATUS_TEXT: Record<SampleItem["status"], string> = { enabled: "启用", d
 function ListPageSkeleton() {
   return (
     <div className="flex flex-col gap-4">
+      {/* 标题区 */}
       <Skeleton text={{ rows: 1 }} />
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton text={{ rows: 2 }} />
-      </div>
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton text={{ rows: 8 }} />
-      </div>
+      {/* 筛选区 */}
+      <Skeleton text={{ rows: 1 }} />
+      {/* 列表区 */}
+      <Skeleton text={{ rows: 8 }} />
     </div>
   );
 }
@@ -197,32 +195,30 @@ export function SampleListPage() {
         <h1 className="text-xl font-semibold text-gray-800">示例资源</h1>
       </div>
 
-      {/* 2. 筛选区：左输入框（无 label、无 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐 */}
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="请输入名称"
-            style={{ width: 240 }}
-            value={inputValue}
-            onChange={setInputValue}
-            onPressEnter={handleSearch}
-          />
-          <div className="ml-auto flex items-center gap-2">
-            <Tooltip content="搜索">
-              <Button type="primary" icon={<IconSearch />} onClick={handleSearch} />
-            </Tooltip>
-            <Tooltip content="重置">
-              <Button icon={<IconRefresh />} onClick={handleReset} />
-            </Tooltip>
-            <Tooltip content="新增">
-              <Button icon={<IconPlus />} />
-            </Tooltip>
-          </div>
+      {/* 2. 筛选区：左输入框（无 label、无 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐。无卡片容器 */}
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="请输入名称"
+          style={{ width: 240 }}
+          value={inputValue}
+          onChange={setInputValue}
+          onPressEnter={handleSearch}
+        />
+        <div className="ml-auto flex items-center gap-2">
+          <Tooltip content="搜索">
+            <Button type="primary" icon={<IconSearch />} onClick={handleSearch} />
+          </Tooltip>
+          <Tooltip content="重置">
+            <Button icon={<IconRefresh />} onClick={handleReset} />
+          </Tooltip>
+          <Tooltip content="新增">
+            <Button icon={<IconPlus />} />
+          </Tooltip>
         </div>
       </div>
 
-      {/* 3. 列表区 */}
-      <div className="rounded-lg bg-white p-4 shadow-sm">
+      {/* 3. 列表区：无卡片容器 */}
+      <div>
         <Table rowKey="id" columns={columns} data={data} pagination={false} />
         <div className="mt-4 flex justify-end">
           <Pagination total={total} current={page} pageSize={PAGE_SIZE} showTotal onChange={setPage} />

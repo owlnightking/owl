@@ -168,26 +168,24 @@ import { ImageUpload } from "../components/ImageUpload";
     <h1 className="text-xl font-semibold">页面标题</h1>
   </div>
 
-  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐 */}
-  <div className="rounded-lg bg-white p-4 shadow-sm">
-    <div className="flex items-center gap-2">
-      <Input placeholder="请输入名称" style={{ width: 240 }} value={kw} onChange={setKw} onPressEnter={onSearch} />
-      <div className="ml-auto flex items-center gap-2">
-        <Tooltip content="搜索">
-          <Button type="primary" icon={<IconSearch />} onClick={onSearch} />
-        </Tooltip>
-        <Tooltip content="重置">
-          <Button icon={<IconRefresh />} onClick={onReset} />
-        </Tooltip>
-        <Tooltip content="新增">
-          <Button icon={<IconPlus />} />
-        </Tooltip>
-      </div>
+  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐。无卡片容器 */}
+  <div className="flex items-center gap-2">
+    <Input placeholder="请输入名称" style={{ width: 240 }} value={kw} onChange={setKw} onPressEnter={onSearch} />
+    <div className="ml-auto flex items-center gap-2">
+      <Tooltip content="搜索">
+        <Button type="primary" icon={<IconSearch />} onClick={onSearch} />
+      </Tooltip>
+      <Tooltip content="重置">
+        <Button icon={<IconRefresh />} onClick={onReset} />
+      </Tooltip>
+      <Tooltip content="新增">
+        <Button icon={<IconPlus />} />
+      </Tooltip>
     </div>
   </div>
 
-  {/* 3. 列表区 */}
-  <div className="rounded-lg bg-white p-4 shadow-sm">
+  {/* 3. 列表区 - 无卡片容器 */}
+  <div>
     <Table columns={columns} data={data} />
     <div className="mt-4 flex justify-end">
       <Pagination total={total} current={current} onChange={setCurrent} />
@@ -196,6 +194,9 @@ import { ImageUpload } from "../components/ImageUpload";
 </div>
 ```
 
+> **筛选区与列表区都不要卡片容器**：不加 `bg-white` / `rounded-*` / `shadow-*` / `p-*`，直接落在页面背景上。
+> 内容区本身已经有页面级留白（见第四节布局），再套一层卡片会多出边框感和双重内边距。
+>
 > 列表级操作（导出、批量操作等）统一放进筛选区右侧那一组 icon 按钮里，不再单独起一行操作栏。
 > 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
 
@@ -254,14 +255,10 @@ function ListPageSkeleton() {
       <Skeleton text={{ rows: 1 }} />
 
       {/* 筛选区骨架 */}
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton text={{ rows: 2 }} />
-      </div>
+      <Skeleton text={{ rows: 1 }} />
 
       {/* 列表区骨架 */}
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton text={{ rows: 8 }} />
-      </div>
+      <Skeleton text={{ rows: 8 }} />
     </div>
   );
 }
@@ -392,7 +389,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 | 项目       | 现状                                                   | 目标                                        |
 | ---------- | ------------------------------------------------------ | ------------------------------------------- |
 | 骨架屏     | 21/28 页面缺失，普遍用 `Table loading` 替代            | 整页骨架屏（`MdDocsPage.tsx` 已落地）       |
-| 列表页结构 | 多数页面无筛选卡片、列表未包卡片、操作散落在标题行     | 按第五节三段式结构                          |
+| 列表页结构 | 搜索框普遍放在标题行，无独立筛选区，按钮位置不统一     | 按第五节三段式结构（筛选区/列表区不套卡片） |
 | 操作列     | 未固定右侧，普遍是带文字的按钮                         | `fixed: "right"` + icon 按钮 + `Tooltip`    |
 | 超长文本   | 多数列表未截断                                         | `max-w-[Npx] truncate` + `Tooltip` 显示全文 |
 | 任意值语法 | 少量 `text-[28px]` / `h-[calc(100vh-66px)]` 等脱离刻度 | 改用设计刻度内的取值                        |
