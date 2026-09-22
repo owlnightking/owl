@@ -7,7 +7,7 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
   constructor(private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     taskRunId: string;
     area: string | null;
     taskName: string | null;
@@ -35,18 +35,19 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
   }
 
   async findByConfigId(
-    configId: string,
+    configId: number,
     options: { page: number; pageSize: number }
   ): Promise<{ items: SchedulerRunItem[]; total: number }> {
     const { page, pageSize } = options;
+    const where = { configId, deletedAt: null };
     const [rows, total] = await Promise.all([
       this.prisma.schedulerRun.findMany({
-        where: { configId },
+        where,
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.schedulerRun.count({ where: { configId } }),
+      this.prisma.schedulerRun.count({ where }),
     ]);
     return { items: rows.map((row) => this.toItem(row)), total };
   }
@@ -58,7 +59,7 @@ export class PrismaSchedulerRunRepository implements SchedulerRunRepositoryPort 
     env?: string;
   }): Promise<{ items: SchedulerRunItem[]; total: number }> {
     const { page, pageSize, status, env } = options;
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (status) {
       where.status = status;
     }

@@ -1,7 +1,7 @@
-import { get, put, del } from "./client";
+import { get, post, put, del } from "./client";
 
 export interface FieldConfigItem {
-  id: string;
+  id: number;
   category: string;
   module: string;
   label: string;
@@ -13,16 +13,26 @@ export interface FieldConfigItem {
 }
 
 export async function fetchFieldConfigs(category: string): Promise<FieldConfigItem[]> {
-  return get<FieldConfigItem[]>(`/field-config/${category}`);
+  return get<FieldConfigItem[]>("/field-config", { category });
 }
 
-export async function fetchFieldConfig(category: string, module: string): Promise<FieldConfigItem> {
-  return get<FieldConfigItem>(`/field-config/${category}/${module}`);
+export async function fetchFieldConfig(id: number): Promise<FieldConfigItem> {
+  return get<FieldConfigItem>(`/field-config/${id}`);
 }
 
-export async function upsertFieldConfig(
-  category: string,
-  module: string,
+export async function createFieldConfig(data: {
+  category: string;
+  module: string;
+  label: string;
+  options?: unknown;
+  value?: string;
+  description?: string;
+}): Promise<FieldConfigItem> {
+  return post<FieldConfigItem>("/field-config", data);
+}
+
+export async function updateFieldConfig(
+  id: number,
   data: {
     label: string;
     options?: unknown;
@@ -30,9 +40,9 @@ export async function upsertFieldConfig(
     description?: string;
   }
 ): Promise<FieldConfigItem> {
-  return put<FieldConfigItem>(`/field-config/${category}/${module}`, data);
+  return put<FieldConfigItem>(`/field-config/${id}`, data);
 }
 
-export async function deleteFieldConfig(category: string, module: string): Promise<void> {
-  await del(`/field-config/${category}/${module}`);
+export async function deleteFieldConfig(id: number): Promise<void> {
+  await del(`/field-config/${id}`);
 }

@@ -56,20 +56,20 @@ export function HomePage() {
         // silent
       }
       try {
-        const pRes = await get<{ items: PendingItem[] }>("/recognition", { status: "pending", pageSize: "50" });
-        setPending(pRes.items);
+        const pRes = await get<{ list: PendingItem[] }>("/recognition", { status: "pending", pageSize: "50" });
+        setPending(pRes.list);
       } catch {
         // silent
       }
       try {
-        const nRes = await get<{ items: NotificationItem[] }>("/notifications", { pageSize: "50" });
-        setNotifications(nRes.items);
+        const nRes = await get<{ list: NotificationItem[] }>("/notifications", { pageSize: "50" });
+        setNotifications(nRes.list);
       } catch {
         // silent
       }
       try {
-        const fRes = await get<{ items: FeedItem[] }>("/recognition/feed", { pageSize: "20" });
-        setFeed(fRes.items);
+        const fRes = await get<{ list: FeedItem[] }>("/recognition/feed", { pageSize: "20" });
+        setFeed(fRes.list);
       } catch {
         // silent
       }

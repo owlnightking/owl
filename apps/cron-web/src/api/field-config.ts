@@ -1,7 +1,7 @@
 import { get } from "./client";
 
 export interface FieldConfigItem {
-  id: string;
+  id: number;
   category: string;
   module: string;
   label: string;
@@ -11,5 +11,5 @@ export interface FieldConfigItem {
 }
 
 export async function fetchFieldConfigs(category: string): Promise<FieldConfigItem[]> {
-  return get<FieldConfigItem[]>(`/field-config/${category}`);
+  return get<FieldConfigItem[]>("/field-config", { category });
 }

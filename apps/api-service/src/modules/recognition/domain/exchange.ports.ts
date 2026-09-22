@@ -1,14 +1,14 @@
 export interface ExchangeOrderItem {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   userName?: string;
-  productId: string;
+  productId: number;
   productName?: string;
   productImage?: string;
   quantity: number;
   totalCost: number;
   status: "pending" | "approved" | "rejected" | "fulfilled";
-  approverId: string | null;
+  approverId: number | null;
   approvedAt: Date | null;
   rejectReason: string | null;
   fulfilledAt: Date | null;
@@ -16,24 +16,24 @@ export interface ExchangeOrderItem {
 }
 
 export interface ExchangeCreateInput {
-  productId: string;
+  productId: number;
   quantity?: number;
 }
 
 export interface ExchangeListQuery {
   status?: "pending" | "approved" | "rejected" | "fulfilled";
-  userId?: string;
+  userId?: number;
   page: number;
   pageSize: number;
 }
 
 export interface ExchangeRepositoryPort {
-  findById(id: string): Promise<ExchangeOrderItem | null>;
+  findById(id: number): Promise<ExchangeOrderItem | null>;
   list(query: ExchangeListQuery): Promise<{ items: ExchangeOrderItem[]; total: number }>;
-  create(userId: string, input: ExchangeCreateInput): Promise<ExchangeOrderItem>;
-  approve(id: string, approverId: string): Promise<void>;
-  reject(id: string, approverId: string, reason?: string): Promise<void>;
-  fulfill(id: string): Promise<void>;
+  create(userId: number, input: ExchangeCreateInput): Promise<ExchangeOrderItem>;
+  approve(id: number, approverId: number): Promise<void>;
+  reject(id: number, approverId: number, reason?: string): Promise<void>;
+  fulfill(id: number): Promise<void>;
   countPending(): Promise<number>;
 }
 

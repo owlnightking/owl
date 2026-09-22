@@ -44,9 +44,9 @@ export interface UserSyncRepositoryPort {
 }
 
 export interface SyncLogRepositoryPort {
-  create(type: string): Promise<string>;
+  create(type: string): Promise<number>;
   update(
-    id: string,
+    id: number,
     data: { status: string; total?: number; created?: number; updated?: number; errorMsg?: string }
   ): Promise<void>;
 }

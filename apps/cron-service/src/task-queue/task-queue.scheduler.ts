@@ -26,7 +26,7 @@ export class TaskQueueScheduler {
 
     const now = new Date();
     const configs = await this.prisma.schedulerConfig.findMany({
-      where: { enabled: true },
+      where: { enabled: true, deletedAt: null },
     });
 
     for (const config of configs) {

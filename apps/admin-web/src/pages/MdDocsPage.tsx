@@ -30,12 +30,12 @@ export function MdDocsPage() {
   const fetchData = useCallback(async (p: number, q?: string) => {
     setLoading(true);
     try {
-      const res = await get<{ items: MdDoc[]; total: number }>("/md-docs", {
+      const res = await get<{ list: MdDoc[]; pageNum: number; pageSize: number; total: number }>("/md-docs", {
         page: p,
         pageSize: 20,
         ...(q ? { q } : {}),
       });
-      setData(res.items);
+      setData(res.list);
       setTotal(res.total);
     } catch {
       Notification.error({ content: "加载失败" });

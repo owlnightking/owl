@@ -1,5 +1,5 @@
 export interface FieldConfigItem {
-  id: string;
+  id: number;
   category: string;
   module: string;
   label: string;
@@ -10,32 +10,37 @@ export interface FieldConfigItem {
   updatedAt: Date;
 }
 
-export interface FieldConfigRepositoryPort {
-  findByCategory(category: string): Promise<FieldConfigItem[]>;
-  findByCategoryAndModule(category: string, module: string): Promise<FieldConfigItem | null>;
-  upsert(data: {
-    category: string;
-    module: string;
-    label: string;
-    options?: unknown;
-    value?: string;
-    description?: string;
-  }): Promise<FieldConfigItem>;
-  deleteByKey(category: string, module: string): Promise<void>;
+export interface FieldConfigUpsertInput {
+  category: string;
+  module: string;
+  label: string;
+  options?: unknown;
+  value?: string;
+  description?: string;
 }
 
-export interface FieldConfigService {
+export interface FieldConfigUpdateInput {
+  label: string;
+  options?: unknown;
+  value?: string;
+  description?: string;
+}
+
+export interface FieldConfigRepositoryPort {
+  findById(id: number): Promise<FieldConfigItem | null>;
+  findByCategory(category: string): Promise<FieldConfigItem[]>;
+  findByCategoryAndModule(category: string, module: string): Promise<FieldConfigItem | null>;
+  upsert(data: FieldConfigUpsertInput): Promise<FieldConfigItem>;
+  updateById(id: number, data: FieldConfigUpdateInput): Promise<FieldConfigItem>;
+  deleteById(id: number): Promise<void>;
+}
+
+export interface FieldConfigServicePort {
   listByCategory(category: string): Promise<FieldConfigItem[]>;
-  getByCategoryAndModule(category: string, module: string): Promise<FieldConfigItem | null>;
-  upsert(data: {
-    category: string;
-    module: string;
-    label: string;
-    options?: unknown;
-    value?: string;
-    description?: string;
-  }): Promise<FieldConfigItem>;
-  deleteByKey(category: string, module: string): Promise<void>;
+  getById(id: number): Promise<FieldConfigItem>;
+  upsert(data: FieldConfigUpsertInput): Promise<FieldConfigItem>;
+  updateById(id: number, data: FieldConfigUpdateInput): Promise<FieldConfigItem>;
+  deleteById(id: number): Promise<void>;
 }
 
 export const FIELD_CONFIG_REPOSITORY = Symbol("FIELD_CONFIG_REPOSITORY");

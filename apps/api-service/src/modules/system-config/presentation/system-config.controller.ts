@@ -1,50 +1,65 @@
-import { Body, Controller, Delete, Get, Inject, Param, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Put, UseGuards } from "@nestjs/common";
+import { ApiOkResponse, ApiOperation, ApiParam, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
 import { IsObject, IsOptional, IsString } from "class-validator";
 import { SYSTEM_CONFIG_SERVICE, type SystemConfigItem } from "../domain/system-config.ports";
-import { SystemConfigUseCase } from "../application/system-config.use-case";
+import { SystemConfigService } from "../application/system-config.service";
 import { ok } from "../../../common/response/api-response";
 import { JwtAuthGuard, PermissionGuard, RequirePermission, CurrentUser, type AuthPrincipal } from "../../auth/index";
+import { SystemConfigVo } from "./system-config.vo";
 
 class SetConfigDto {
+  @ApiProperty({ description: "配置值", type: Object, example: { enabled: true } })
   @IsObject()
   value!: unknown;
 
+  @ApiPropertyOptional({ description: "配置说明", example: "订单自动取消时长（分钟）" })
   @IsOptional()
   @IsString()
   description?: string;
 }
 
+@ApiTags("系统配置")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller("system-config")
 export class SystemConfigController {
   constructor(
     @Inject(SYSTEM_CONFIG_SERVICE)
-    private readonly service: SystemConfigUseCase
+    private readonly service: SystemConfigService
   ) {}
 
-  @Get(":key")
+  @Get(":id")
   @RequirePermission("system:config:read")
-  async get(@Param("key") key: string) {
-    const item = await this.service.getOrThrow(key);
+  @ApiOperation({ summary: "配置详情" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "配置详情", type: SystemConfigVo })
+  async get(@Param("id", ParseIntPipe) id: number) {
+    const item = await this.service.getByIdOrThrow(id);
     return ok(this.toResponse(item));
   }
 
-  @Put(":key")
+  @Put(":id")
   @RequirePermission("system:config:update")
-  async set(@Param("key") key: string, @Body() dto: SetConfigDto, @CurrentUser() user: AuthPrincipal) {
-    const item = await this.service.set(key, dto.value, user.userId, dto.description);
+  @ApiOperation({ summary: "更新配置" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "更新成功", type: SystemConfigVo })
+  async set(@Param("id", ParseIntPipe) id: number, @Body() dto: SetConfigDto, @CurrentUser() user: AuthPrincipal) {
+    const item = await this.service.updateById(id, dto.value, Number(user.userId), dto.description);
     return ok(this.toResponse(item));
   }
 
-  @Delete(":key")
+  @Delete(":id")
   @RequirePermission("system:config:delete")
-  async remove(@Param("key") key: string) {
-    await this.service.remove(key);
+  @ApiOperation({ summary: "删除配置" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "删除成功" })
+  async remove(@Param("id", ParseIntPipe) id: number) {
+    await this.service.deleteById(id);
     return ok(undefined);
   }
 
   private toResponse(item: SystemConfigItem) {
     return {
+      id: item.id,
       key: item.key,
       value: item.value,
       description: item.description,

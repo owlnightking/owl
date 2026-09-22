@@ -9,7 +9,7 @@ export interface FeishuUserInfo {
 }
 
 export interface StoredUser {
-  id: string;
+  id: number;
   unionId: string;
   openId: string;
   name: string;
@@ -20,13 +20,13 @@ export interface StoredUser {
 }
 
 export interface UserRepository {
-  findById(id: string): Promise<StoredUser | null>;
+  findById(id: number): Promise<StoredUser | null>;
   findByUnionId(unionId: string): Promise<StoredUser | null>;
   upsertFromFeishu(info: FeishuUserInfo): Promise<StoredUser>;
   list(options: { keyword?: string; page: number; pageSize: number }): Promise<{ items: StoredUser[]; total: number }>;
-  assignRoles(userId: string, roleIds: string[]): Promise<void>;
-  updateLoginTime(userId: string): Promise<void>;
-  findPermissionCodes(userId: string): Promise<string[]>;
+  assignRoles(userId: number, roleIds: number[]): Promise<void>;
+  updateLoginTime(userId: number): Promise<void>;
+  findPermissionCodes(userId: number): Promise<string[]>;
 }
 
 export interface AuthTokens {
@@ -37,7 +37,7 @@ export interface AuthTokens {
 
 export interface SessionRecord {
   jti: string;
-  userId: string;
+  userId: number;
   unionId: string;
   clientName: string;
   expiresAt: number;
@@ -72,7 +72,7 @@ export interface SessionStorePort {
   save(session: SessionRecord): Promise<void>;
   find(jti: string): Promise<SessionRecord | null>;
   revoke(jti: string): Promise<void>;
-  revokeByUser(userId: string): Promise<void>;
+  revokeByUser(userId: number): Promise<void>;
   extend(jti: string, expiresAt: number): Promise<void>;
 }
 
@@ -83,7 +83,7 @@ export interface TokenPort {
   verifyRefresh(token: string): Promise<JwtPayload>;
 }
 
-export interface AuthService {
+export interface AuthServicePort {
   buildAuthorizeUrl(redirectPath: string, redirectUri: string): Promise<string>;
   handleCallback(code: string, state: string): Promise<{ tokens: AuthTokens; redirectPath: string }>;
   loginUser(user: { unionId: string }, clientName: string): Promise<LoginResult>;

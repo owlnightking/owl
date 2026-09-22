@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { UserUseCase, USER_SERVICE } from "./application/user.use-case";
+import { UserService, USER_SERVICE } from "./application/user.service";
 import { UserController } from "./presentation/user.controller";
 import { PrismaUserRepository } from "./infrastructure/prisma-user.repository";
 import { USER_REPOSITORY } from "./domain/user.ports";
@@ -11,7 +11,7 @@ import { AuthModule } from "../auth/auth.module";
   controllers: [UserController],
   providers: [
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
-    { provide: USER_SERVICE, useClass: UserUseCase },
+    { provide: USER_SERVICE, useClass: UserService },
   ],
   exports: [USER_SERVICE, USER_REPOSITORY],
 })

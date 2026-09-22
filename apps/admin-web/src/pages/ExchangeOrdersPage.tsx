@@ -14,7 +14,9 @@ interface ExchangeOrderItem {
   createdAt: string;
 }
 interface PageData {
-  items: ExchangeOrderItem[];
+  list: ExchangeOrderItem[];
+  pageNum: number;
+  pageSize: number;
   total: number;
 }
 
@@ -31,7 +33,7 @@ export function ExchangeOrdersPage() {
       const p = new URLSearchParams({ page: String(page), pageSize: "20" });
       if (tab !== "all") p.set("status", tab);
       const r = await get<PageData>(`/recognition/exchange/orders?${p}`);
-      setData(r.items);
+      setData(r.list);
       setTotal(r.total);
     } finally {
       setLoading(false);

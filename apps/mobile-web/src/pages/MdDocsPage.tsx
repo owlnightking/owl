@@ -20,8 +20,11 @@ export function MdDocsPage() {
   const fetchDocs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await get<{ items: MdDoc[]; total: number }>("/md-docs", { page: 1, pageSize: 50 });
-      setDocs(res.items);
+      const res = await get<{ list: MdDoc[]; pageNum: number; pageSize: number; total: number }>("/md-docs", {
+        page: 1,
+        pageSize: 50,
+      });
+      setDocs(res.list);
     } catch {
       Toast.info({ content: "加载失败" });
     } finally {

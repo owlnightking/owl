@@ -8,23 +8,29 @@ export class PrismaDepartmentRepository implements DepartmentRepositoryPort {
 
   async replaceAll(depts: FeishuDepartment[]): Promise<void> {
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.department.deleteMany();
+      const feishuIds = depts.map((dept) => dept.feishuId);
+      await tx.department.updateMany({
+        where: { feishuDepartmentId: { notIn: feishuIds }, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
 
       for (const dept of depts) {
-        await tx.department.create({
-          data: {
-            feishuDepartmentId: dept.feishuId,
-            openDepartmentId: dept.openDepartmentId,
-            name: dept.name,
-            i18nName: dept.i18nName ?? undefined,
-            parentId: dept.parentId,
-            order: dept.order,
-            leaderUserId: dept.leaderUserId,
-            leaders: dept.leaders ?? undefined,
-            memberCount: dept.memberCount,
-            primaryMemberCount: dept.primaryMemberCount,
-            isDeleted: dept.isDeleted ?? false,
-          },
+        const data = {
+          openDepartmentId: dept.openDepartmentId,
+          name: dept.name,
+          i18nName: dept.i18nName ?? undefined,
+          parentId: dept.parentId,
+          order: dept.order,
+          leaderUserId: dept.leaderUserId,
+          leaders: dept.leaders ?? undefined,
+          memberCount: dept.memberCount,
+          primaryMemberCount: dept.primaryMemberCount,
+          isDeleted: dept.isDeleted ?? false,
+        };
+        await tx.department.upsert({
+          where: { feishuDepartmentId: dept.feishuId },
+          create: { feishuDepartmentId: dept.feishuId, ...data },
+          update: { ...data, deletedAt: null },
         });
       }
     });

@@ -8,7 +8,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     unionId: string;
     openId: string;
     name: string;
@@ -17,7 +17,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
     status: string;
     lastLoginAt: Date | null;
     createdAt: Date;
-    roles: { role: { id: string; code: string; name: string } }[];
+    roles: { role: { id: number; code: string; name: string } }[];
   }): UserListItem {
     return {
       id: raw.id,
@@ -34,13 +34,14 @@ export class PrismaUserRepository implements UserRepositoryPort {
   }
 
   async list(query: UserQuery): Promise<{ items: UserListItem[]; total: number }> {
-    const where = query.keyword
-      ? { OR: [{ name: { contains: query.keyword } }, { email: { contains: query.keyword } }] }
-      : undefined;
+    const where = {
+      deletedAt: null,
+      ...(query.keyword ? { OR: [{ name: { contains: query.keyword } }, { email: { contains: query.keyword } }] } : {}),
+    };
     const [rows, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
-        include: { roles: { include: { role: true } } },
+        include: { roles: { where: { deletedAt: null, role: { deletedAt: null } }, include: { role: true } } },
         orderBy: { createdAt: "desc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -50,30 +51,33 @@ export class PrismaUserRepository implements UserRepositoryPort {
     return { items: rows.map((r) => this.toItem(r)), total };
   }
 
-  async findById(id: string): Promise<UserListItem | null> {
+  async findById(id: number): Promise<UserListItem | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: { roles: { include: { role: true } } },
+      where: { id, deletedAt: null },
+      include: { roles: { where: { deletedAt: null, role: { deletedAt: null } }, include: { role: true } } },
     });
     return user ? this.toItem(user) : null;
   }
 
-  async assignRoles(userId: string, roleIds: string[]): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.userRole.deleteMany({ where: { userId } }),
-      this.prisma.userRole.createMany({
-        data: roleIds.map((roleId) => ({ userId, roleId })),
-        skipDuplicates: true,
-      }),
-    ]);
+  async assignRoles(userId: number, roleIds: number[]): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userRole.updateMany({ where: { userId }, data: { deletedAt: new Date() } });
+      for (const roleId of roleIds) {
+        await tx.userRole.upsert({
+          where: { userId_roleId: { userId, roleId } },
+          update: { deletedAt: null },
+          create: { userId, roleId },
+        });
+      }
+    });
   }
 
-  async updateStatus(userId: string, status: string): Promise<void> {
-    await this.prisma.user.update({ where: { id: userId }, data: { status } });
+  async updateStatus(userId: number, status: string): Promise<void> {
+    await this.prisma.user.update({ where: { id: userId, deletedAt: null }, data: { status } });
   }
 
-  async listRoles(): Promise<{ id: string; code: string; name: string; isSystem: boolean }[]> {
-    const rows = await this.prisma.role.findMany({ orderBy: { createdAt: "asc" } });
+  async listRoles(): Promise<{ id: number; code: string; name: string; isSystem: boolean }[]> {
+    const rows = await this.prisma.role.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "asc" } });
     return rows.map((r) => ({ id: r.id, code: r.code, name: r.name, isSystem: r.isSystem }));
   }
 }

@@ -22,8 +22,8 @@ export function LogsPage() {
       if (statusFilter) params.set("status", statusFilter);
       params.set("env", activeEnv);
       const result = await fetch(`/cron/schedulers/runs?${params.toString()}`);
-      const json = (await result.json()) as { data: { items: SchedulerRun[] } };
-      setData(json.data?.items ?? []);
+      const json = (await result.json()) as { data: { list: SchedulerRun[] } };
+      setData(json.data?.list ?? []);
     } finally {
       setLoading(false);
     }

@@ -71,14 +71,14 @@ export class TaskQueueConsumer {
     }
   }
 
-  private async updateRunStatus(runId: string, status: string, error?: string) {
+  private async updateRunStatus(runId: number, status: string, error?: string) {
     const data: Record<string, unknown> = { status };
     if (status === "running") data.startedAt = new Date();
     if (status === "success" || status === "failed") data.finishedAt = new Date();
     if (error) data.lastError = error;
 
     await this.prisma.schedulerRun.update({
-      where: { id: runId },
+      where: { id: runId, deletedAt: null },
       data,
     });
   }

@@ -27,10 +27,10 @@ export function CreateRecognitionPage() {
       try {
         const [bRes, uRes] = await Promise.all([
           get<Badge[]>("/recognition/badges"),
-          get<{ items: User[] }>("/users", { pageSize: "100" }),
+          get<{ list: User[] }>("/users", { pageSize: "100" }),
         ]);
         setBadges(bRes);
-        setUsers(uRes.items);
+        setUsers(uRes.list);
       } catch {
         Toast.info("加载失败");
       }

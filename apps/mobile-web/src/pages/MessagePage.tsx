@@ -125,11 +125,11 @@ export function MessagePage() {
   const fetchData = async () => {
     try {
       const [pRes, nRes] = await Promise.all([
-        get<{ items: PendingItem[] }>("/recognition", { status: "pending", pageSize: "50" }),
-        get<{ items: NotificationItem[] }>("/notifications", { pageSize: "50" }),
+        get<{ list: PendingItem[] }>("/recognition", { status: "pending", pageSize: "50" }),
+        get<{ list: NotificationItem[] }>("/notifications", { pageSize: "50" }),
       ]);
-      setPending(pRes.items);
-      setNotifications(nRes.items);
+      setPending(pRes.list);
+      setNotifications(nRes.list);
     } catch {
       Toast.info("加载失败");
     }

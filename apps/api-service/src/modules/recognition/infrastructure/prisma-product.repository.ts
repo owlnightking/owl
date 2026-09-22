@@ -14,7 +14,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     name: string;
     description: string | null;
     image: string | null;
@@ -41,7 +41,7 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (options?.keyword) {
       where.name = { contains: options.keyword, mode: "insensitive" };
     }
@@ -62,8 +62,8 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return { items: rows.map(this.toItem), total };
   }
 
-  async findById(id: string): Promise<ProductItem | null> {
-    const row = await this.prisma.product.findUnique({ where: { id } });
+  async findById(id: number): Promise<ProductItem | null> {
+    const row = await this.prisma.product.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
@@ -72,24 +72,24 @@ export class PrismaProductRepository implements ProductRepositoryPort {
     return this.toItem(row);
   }
 
-  async update(id: string, input: ProductUpdateInput): Promise<ProductItem | null> {
-    const row = await this.prisma.product.update({ where: { id }, data: input }).catch(() => null);
+  async update(id: number, input: ProductUpdateInput): Promise<ProductItem | null> {
+    const row = await this.prisma.product.update({ where: { id, deletedAt: null }, data: input }).catch(() => null);
     return row ? this.toItem(row) : null;
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.product.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.product.update({ where: { id, deletedAt: null }, data: { deletedAt: new Date() } });
   }
 
-  async decrementStock(id: string, quantity: number): Promise<boolean> {
+  async decrementStock(id: number, quantity: number): Promise<boolean> {
     const result = await this.prisma.product.updateMany({
-      where: { id, stock: { gte: quantity } },
+      where: { id, deletedAt: null, stock: { gte: quantity } },
       data: { stock: { decrement: quantity } },
     });
     return result.count > 0;
   }
 
-  async incrementStock(id: string, quantity: number): Promise<void> {
-    await this.prisma.product.update({ where: { id }, data: { stock: { increment: quantity } } });
+  async incrementStock(id: number, quantity: number): Promise<void> {
+    await this.prisma.product.update({ where: { id, deletedAt: null }, data: { stock: { increment: quantity } } });
   }
 }

@@ -20,7 +20,9 @@ interface UserItem {
 }
 
 interface PageData {
-  items: UserItem[];
+  list: UserItem[];
+  pageNum: number;
+  pageSize: number;
   total: number;
 }
 
@@ -47,7 +49,7 @@ export function UsersPage() {
       setLoading(true);
       try {
         const result = await get<PageData>("/users", { page: p, pageSize: ps, keyword: kw || undefined });
-        setData(result.items);
+        setData(result.list);
         setTotal(result.total);
       } finally {
         setLoading(false);

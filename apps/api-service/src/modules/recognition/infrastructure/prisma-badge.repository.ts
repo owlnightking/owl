@@ -8,7 +8,7 @@ export class PrismaBadgeRepository implements BadgeRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     name: string;
     icon: string | null;
     description: string | null;
@@ -32,12 +32,12 @@ export class PrismaBadgeRepository implements BadgeRepositoryPort {
   }
 
   async list(): Promise<BadgeItem[]> {
-    const rows = await this.prisma.badge.findMany({ orderBy: { sortOrder: "asc" } });
+    const rows = await this.prisma.badge.findMany({ where: { deletedAt: null }, orderBy: { sortOrder: "asc" } });
     return rows.map(this.toItem);
   }
 
-  async findById(id: string): Promise<BadgeItem | null> {
-    const row = await this.prisma.badge.findUnique({ where: { id } });
+  async findById(id: number): Promise<BadgeItem | null> {
+    const row = await this.prisma.badge.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
@@ -46,12 +46,12 @@ export class PrismaBadgeRepository implements BadgeRepositoryPort {
     return this.toItem(row);
   }
 
-  async update(id: string, input: BadgeUpdateInput): Promise<BadgeItem | null> {
-    const row = await this.prisma.badge.update({ where: { id }, data: input }).catch(() => null);
+  async update(id: number, input: BadgeUpdateInput): Promise<BadgeItem | null> {
+    const row = await this.prisma.badge.update({ where: { id, deletedAt: null }, data: input }).catch(() => null);
     return row ? this.toItem(row) : null;
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.badge.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.badge.update({ where: { id, deletedAt: null }, data: { deletedAt: new Date() } });
   }
 }

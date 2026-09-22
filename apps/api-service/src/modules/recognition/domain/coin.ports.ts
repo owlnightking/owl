@@ -1,13 +1,13 @@
 export interface CoinAccountItem {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   balance: number;
   totalEarned: number;
   totalSpent: number;
 }
 
 export interface CoinTransactionItem {
-  id: string;
+  id: number;
   type: "earn" | "spend" | "adjust";
   amount: number;
   balance: number;
@@ -18,19 +18,19 @@ export interface CoinTransactionItem {
 }
 
 export interface CoinRepositoryPort {
-  getAccount(userId: string): Promise<CoinAccountItem>;
+  getAccount(userId: number): Promise<CoinAccountItem>;
   addBalance(
-    userId: string,
+    userId: number,
     amount: number,
     source: string,
     referenceId?: string,
     remark?: string,
-    operatorId?: string
+    operatorId?: number
   ): Promise<void>;
-  deductBalance(userId: string, amount: number, source: string, referenceId?: string, remark?: string): Promise<void>;
-  adjustBalance(userId: string, amount: number, operatorId: string, remark?: string): Promise<void>;
+  deductBalance(userId: number, amount: number, source: string, referenceId?: string, remark?: string): Promise<void>;
+  adjustBalance(userId: number, amount: number, operatorId: number, remark?: string): Promise<void>;
   listTransactions(
-    userId: string,
+    userId: number,
     page: number,
     pageSize: number
   ): Promise<{ items: CoinTransactionItem[]; total: number }>;

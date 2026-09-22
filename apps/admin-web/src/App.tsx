@@ -7,6 +7,7 @@ import { UsersPage } from "./pages/UsersPage";
 import { RolesPage } from "./pages/RolesPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
+import { SystemLogsPage } from "./pages/SystemLogsPage";
 import { FieldConfigPage } from "./pages/FieldConfigPage";
 import { MockLoginPage } from "./pages/MockLoginPage";
 import { BadgesPage } from "./pages/BadgesPage";
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="/roles" element={<RolesPage />} />
         <Route path="/permissions" element={<PermissionsPage />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
+        <Route path="/system-logs" element={<SystemLogsPage />} />
         <Route path="/field-config" element={<FieldConfigPage />} />
         <Route path="/recognition/badges" element={<BadgesPage />} />
         <Route path="/recognition/list" element={<RecognitionsPage />} />

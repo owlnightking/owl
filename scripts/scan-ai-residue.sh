@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# scan-ai-residue.sh — AI 残渣扫描（11 类）
+# scan-ai-residue.sh — AI 残渣扫描（10 类）
 # 用法: bash scripts/scan-ai-residue.sh [--staged]
 # 存在 ERROR 或 WARN 时 exit 1
+#
+# 实现说明：每条规则只跑一次 grep（结果写入临时文件后用 while read 迭代），
+# 避免「每文件一次进程替换」在 macOS bash 3.2 上因进程数过多而段错误/挂起。
 
 set -uo pipefail
 
@@ -18,7 +21,7 @@ warn() { printf "[WARN] %s - %s\n" "$1" "$2"; WARN_COUNT=$((WARN_COUNT + 1)); }
 if [ "$MODE" = "--staged" ]; then
   TS_FILES="$(git diff --cached --name-only --diff-filter=ACM -- '*.ts' '*.tsx')"
 else
-  TS_FILES="$(git ls-files -cmo --exclude-standard '*.ts' '*.tsx' 2>/dev/null || find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v generated)"
+  TS_FILES="$(git ls-files -cmo --exclude-standard '*.ts' '*.tsx' 2>/dev/null | sort -u || find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v generated)"
 fi
 
 if [ -z "$TS_FILES" ]; then
@@ -26,186 +29,188 @@ if [ -z "$TS_FILES" ]; then
   exit 0
 fi
 
+LIST_FILE="$(mktemp)"
+MATCH_FILE="$(mktemp)"
+printf '%s\n' "$TS_FILES" > "$LIST_FILE"
+trap 'rm -f "$LIST_FILE" "$MATCH_FILE"' EXIT
+
+FILES="$(cat "$LIST_FILE")"
+
+strip_lineno() { echo "$1" | sed 's/^[0-9]*: *//'; }
+
 # 1. 无类型 any 泄漏
 check_any() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if echo "$line" | grep -qE ': *any\b|\bas any\b|<any>'; then
-        error "$file" "any 泄漏: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      fi
-    done < <(grep -nE ': *any\b|\bas any\b|<any>' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  grep -nE ': *any\b|\bas any\b|<any>' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    error "$file" "any 泄漏: $(strip_lineno "$rest")"
+  done < "$MATCH_FILE"
 }
 check_any
 
 # 2. 魔法数字（非 0/1/2 且非常量上下文；跳过 tsx 样式类、端口声明、mock 数据、描述文本中的数字）
 check_magic_numbers() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
+  grep -nE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
     case "$file" in
       *.tsx) continue ;;
       */mock*|*/fake*|*/stub*|*/fixture*) continue ;;
       */data/*) continue ;;
       */seed.ts) continue ;;
     esac
-    if grep -qE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null; then
-      while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status[[:space:]]*(>=|<=|<|>|=)[[:space:]]*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
-          echo "$line" | grep -qE '^[0-9]+:[[:space:]]+[A-Z][A-Z0-9_]*:' ||
-          echo "$line" | grep -qE '[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|avatar[0-9]+|avatar_[0-9]+|i18n' ||
-          echo "$line" | grep -qE 'description:\s*"[^"]*[0-9]+[^"]*"' ||
-          echo "$line" | grep -qE 'name:\s*"[^"]*[0-9]+[^"]*"'; then
-          continue
-        fi
-        warn "$file" "疑似魔法数字: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      done < <(grep -nE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' "$file" 2>/dev/null | head -20)
+    local line="$(strip_lineno "$rest")"
+    if echo "$line" | grep -qE '(const |= 3|= 4|node_modules|@nestjs|version|: [0-9]+,?$|//|status[[:space:]]*(>=|<=|<|>|=)[[:space:]]*[0-9]{3}|Number\(.*\?\?|port:|host:|@Max|@Min|@Length|@MaxLength|@MinLength|@Api|example:|TTL|timeout|maxAge|expiresIn|1000|60 \* 60|24 \* 60|times \*|times >|pageSize.*=|slice\(|getEntry)' ||
+      echo "$line" | grep -qE '^[0-9]+:[[:space:]]+[A-Z][A-Z0-9_]*:' ||
+      echo "$line" | grep -qE '[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[0-9]+[a-zA-Z0-9_]*[[:space:]]*[]?:,;)}]|avatar[0-9]+|avatar_[0-9]+|i18n' ||
+      echo "$line" | grep -qE 'description:\s*"[^"]*[0-9]+[^"]*"' ||
+      echo "$line" | grep -qE 'name:\s*"[^"]*[0-9]+[^"]*"'; then
+      continue
     fi
-  done <<< "$TS_FILES"
+    warn "$file" "疑似魔法数字: $line"
+  done < "$MATCH_FILE"
 }
 check_magic_numbers
 
 # 3. 注释只写"做了什么"（以设置/调用/赋值/打印开头且未解释为什么）
 check_comment_quality() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if echo "$line" | grep -qE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s'; then
-        warn "$file" "注释只写做了什么未解释为什么: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      fi
-    done < <(grep -nE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  grep -nE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    warn "$file" "注释只写做了什么未解释为什么: $(strip_lineno "$rest")"
+  done < "$MATCH_FILE"
 }
 check_comment_quality
 
 # 4. 无意义命名（仅占位符 a/b/tmp/xxx/yyy，data/res 为通用合法名）
 check_naming() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if echo "$line" | grep -qE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]'; then
-        error "$file" "无意义命名: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      fi
-    done < <(grep -nE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  grep -nE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    error "$file" "无意义命名: $(strip_lineno "$rest")"
+  done < "$MATCH_FILE"
 }
 check_naming
 
 # 5. TODO/FIXME 无责任人
 check_todo() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if echo "$line" | grep -qE 'TODO|FIXME' && ! echo "$line" | grep -qE '@[A-Za-z0-9_]+'; then
-        warn "$file" "TODO/FIXME 无 @责任人: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      fi
-    done < <(grep -nE 'TODO|FIXME' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  grep -nE 'TODO|FIXME' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    local line="$(strip_lineno "$rest")"
+    if ! echo "$line" | grep -qE '@[A-Za-z0-9_]+'; then
+      warn "$file" "TODO/FIXME 无 @责任人: $line"
+    fi
+  done < "$MATCH_FILE"
 }
 check_todo
 
 # 6. 重复代码块（同文件 ≥4 处相似行块，跳过测试文件、mock 数据、Prisma include、装饰器、CSS类名）
 check_duplicate_blocks() {
-  while IFS= read -r file; do
+  awk '
+    length($0) > 0 {
+      line = $0
+      gsub(/[[:space:]]+/, " ", line)
+      key = FILENAME SUBSEP line
+      count[key]++
+      text[key] = line
+      file[key] = FILENAME
+    }
+    END {
+      for (k in count) {
+        if (count[k] >= 4) {
+          split(k, parts, SUBSEP)
+          f = parts[1]
+          ln = text[k]
+          if (f ~ /\.spec\.ts$|\.test\.ts$/ || f ~ /\/mock|\/fake|\/stub|\/fixture|\/data\//) continue
+          if (length(ln) >= 50 && ln !~ /include:|roles:|permissions:|@RequirePermission|@Api|className=|className /) {
+            print f "\t" ln " (x" count[k] ")"
+          }
+        }
+      }
+    }
+  ' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS=$'\t' read -r file dupe; do
     [ -z "$file" ] && continue
-    case "$file" in
-      *.spec.ts|*.test.ts) continue ;;
-      */mock*|*/fake*|*/stub*|*/fixture*) continue ;;
-      */data/*) continue ;;
-    esac
-    dupes=$(awk 'length($0)>0 { gsub(/[[:space:]]+/, " ", $0); lines[NR]=$0 } END {
-      for (i=1; i<=NR; i++) { count[lines[i]]++ }
-      for (k in count) if (count[k] >= 4 && length(k) >= 50 && k !~ /include:|roles:|permissions:|@RequirePermission|className=|className /) print k " (x" count[k] ")"
-    }' "$file" 2>/dev/null | head -3)
-    if [ -n "$dupes" ]; then
-      warn "$file" "疑似重复代码块: $dupes"
-    fi
-  done <<< "$TS_FILES"
+    warn "$file" "疑似重复代码块: $dupe"
+  done < "$MATCH_FILE"
 }
 check_duplicate_blocks
 
 # 7. console.log 残留（非入口文件）
 check_console_log() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
+  grep -nE 'console\.log' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
     if [[ "$file" != */main.ts && "$file" != */prisma/seed.ts ]]; then
-      while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        error "$file" "console.log 残留: $(echo "$line" | sed 's/^[0-9]*: *//')"
-      done < <(grep -nE 'console\.log' "$file" 2>/dev/null)
+      error "$file" "console.log 残留: $(strip_lineno "$rest")"
     fi
-  done <<< "$TS_FILES"
+  done < "$MATCH_FILE"
 }
 check_console_log
 
 # 8. 空 catch 吞异常
 check_empty_catch() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      if echo "$line" | grep -qE 'catch\s*(\([^)]*\))?\s*\{\s*\}'; then
-        error "$file" "空 catch 吞异常"
-      fi
-    done < <(grep -nE 'catch\s*(\([^)]*\))?\s*\{\s*\}' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  grep -nE 'catch\s*(\([^)]*\))?\s*\{\s*\}' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    error "$file" "空 catch 吞异常"
+  done < "$MATCH_FILE"
 }
 check_empty_catch
 
 # 9. 未校验外部输入（直接使用 req.body/query/params 未过 DTO）
 check_unvalidated_input() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    if [[ "$file" == */presentation/* || "$file" == */controllers/* ]]; then
-      while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        if echo "$line" | grep -qE '@Body\(\)\s*(body|dto|[a-z]+)\s*:?\s*(any|unknown)?\s*$' && ! echo "$line" | grep -qE 'Dto|DTO'; then
-          warn "$file" "外部输入未过 DTO 校验: $(echo "$line" | sed 's/^[0-9]*: *//')"
-        fi
-      done < <(grep -nE '@Body\(\)' "$file" 2>/dev/null)
+  grep -nE '@Body\(\)' $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    case "$file" in
+      */presentation/*|*/controllers/*) ;;
+      *) continue ;;
+    esac
+    local line="$(strip_lineno "$rest")"
+    if echo "$line" | grep -qE '@Body\(\)\s*(body|dto|[a-z]+)\s*:?\s*(any|unknown)?\s*$' && ! echo "$line" | grep -qE 'Dto|DTO'; then
+      warn "$file" "外部输入未过 DTO 校验: $line"
     fi
-  done <<< "$TS_FILES"
+  done < "$MATCH_FILE"
 }
 check_unvalidated_input
 
 # 10. 禁止颜文字/emoji（图标应使用 UI 库 Icon 组件）
+# 实现走 scripts/lib/find-emoji.mjs：grep -P 在 macOS BSD grep 与 Alpine BusyBox grep 上均不受支持，
+# 原先配 2>/dev/null 会让本检查静默失效（本地与 CI 都测不出 emoji）。
 check_emoji() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      error "$file" "禁止使用颜文字/emoji，应使用 UI 库 Icon 组件: $(echo "$line" | sed 's/^[0-9]*: *//')"
-    done < <(grep -Pn '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}]' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  if ! command -v node >/dev/null 2>&1; then
+    error "scripts/lib/find-emoji.mjs" "node 不可用，emoji 检查无法执行，不得静默跳过"
+    return
+  fi
+  node scripts/lib/find-emoji.mjs $FILES 2>/dev/null > "$MATCH_FILE"
+  while IFS= read -r match; do
+    [ -z "$match" ] && continue
+    local file="${match%%:*}"
+    local rest="${match#*:}"
+    error "$file" "禁止使用颜文字/emoji，应使用 UI 库 Icon 组件: $(strip_lineno "$rest")"
+  done < "$MATCH_FILE"
 }
 check_emoji
 
-# 11. UI 组件库交叉导入（mobile-web 禁用 web-react，web 应用禁用 mobile-react）
-check_ui_library_cross_import() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    case "$file" in
-      */mobile-web/*)
-        while IFS= read -r line; do
-          [ -z "$line" ] && continue
-          error "$file" "mobile-web 禁止导入 @arco-design/web-react，应使用 @arco-design/mobile-react: $(echo "$line" | sed 's/^[0-9]*: *//')"
-        done < <(grep -nE "from ['\"]@arco-design/web-react" "$file" 2>/dev/null)
-        ;;
-      */admin-web/*|*/cron-web/*|*/owl-web/*|*/portal/*)
-        while IFS= read -r line; do
-          [ -z "$line" ] && continue
-          error "$file" "web 应用禁止导入 @arco-design/mobile-react，应使用 @arco-design/web-react: $(echo "$line" | sed 's/^[0-9]*: *//')"
-        done < <(grep -nE "from ['\"]@arco-design/mobile-react" "$file" 2>/dev/null)
-        ;;
-    esac
-  done <<< "$TS_FILES"
-}
-check_ui_library_cross_import
+# 11. UI 组件库交叉导入检查已移出本脚本
+# 该规则属前端 UI 规范，唯一实现收敛到 check-frontend-rules.sh 第 2 条，避免两处实现漂移。
 
 echo "scan-ai-residue.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then

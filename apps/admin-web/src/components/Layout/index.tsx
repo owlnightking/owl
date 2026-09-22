@@ -60,7 +60,10 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
     key: "audit",
     label: "日志中心",
     icon: <IconSafe />,
-    children: [{ key: "/audit-logs", label: "操作日志", permission: "system:audit:read" }],
+    children: [
+      { key: "/audit-logs", label: "操作日志", permission: "system:audit:read" },
+      { key: "/system-logs", label: "系统日志", permission: "system:audit:read" },
+    ],
   },
 ];
 

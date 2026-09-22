@@ -1,6 +1,6 @@
 export interface NotificationItem {
-  id: string;
-  userId: string | null;
+  id: number;
+  userId: number | null;
   title: string;
   content: string;
   type: string;
@@ -11,7 +11,7 @@ export interface NotificationItem {
 }
 
 export interface NotificationCreateInput {
-  userId?: string;
+  userId?: number;
   title: string;
   content: string;
   type?: string;
@@ -20,14 +20,14 @@ export interface NotificationCreateInput {
 
 export interface NotificationRepositoryPort {
   listByUser(
-    userId: string,
+    userId: number,
     options?: { status?: string; page: number; pageSize: number }
   ): Promise<{ items: NotificationItem[]; total: number }>;
-  countUnread(userId: string): Promise<number>;
-  findById(id: string): Promise<NotificationItem | null>;
+  countUnread(userId: number): Promise<number>;
+  findById(id: number): Promise<NotificationItem | null>;
   create(input: NotificationCreateInput): Promise<NotificationItem>;
-  markRead(id: string): Promise<void>;
-  markAllRead(userId: string): Promise<void>;
+  markRead(id: number): Promise<void>;
+  markAllRead(userId: number): Promise<void>;
 }
 
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");

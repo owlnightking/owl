@@ -3,11 +3,16 @@
 # 1. 组件命名规范
 # 2. UI 库跨端导入
 # 3. 内联 style 检测
-# 4. 硬编码颜色值检测
-# 5. emoji/颜文字检测
-# 6. 操作反馈组件检测（web: Notification, mobile: Notify）
-# 7. 骨架屏加载检测
-# 8. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload）
+# 4. 硬编码颜色值检测（HEX）
+# 5. 操作反馈组件检测（web: Notification, mobile: Notify）
+# 6. 骨架屏加载检测
+# 7. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload）
+# 8. 样式方案检测（禁用 CSS Modules / styled-components / 业务自建 .css）
+#
+# 已移出本脚本、唯一实现见括号（避免同一规则多份实现漂移）：
+#   - emoji / 颜文字 → scripts/scan-ai-residue.sh 第 10 条（scripts/lib/find-emoji.mjs）
+#   - 单文件 1500 行上限 → scripts/check-architecture.sh 第 5 条（全仓统一，含 >1000 行预警）
+#
 # 所有问题均为 ERROR 级别，存在即 exit 1（阻断提交）
 
 set -u
@@ -69,7 +74,7 @@ check_inline_style() {
   done <<< "$FRONTEND_FILES"
 }
 
-# 4. 硬编码颜色值检测（HEX/RGB）
+# 4. 硬编码颜色值检测（HEX，引号内）
 check_hardcoded_colors() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -86,22 +91,11 @@ check_hardcoded_colors() {
   done <<< "$FRONTEND_FILES"
 }
 
-# 5. emoji/颜文字检测
-check_emoji() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    [[ "$file" != *.tsx && "$file" != *.ts ]] && continue
-    while IFS= read -r line; do
-      [ -z "$line" ] && continue
-      # 检测 Unicode emoji
-      if echo "$line" | grep -qP '[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]' 2>/dev/null; then
-        error "$file" "源码中禁止直接使用 Unicode emoji，请使用 UI 库 Icon 组件"
-      fi
-    done < <(grep -nP '[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]' "$file" 2>/dev/null)
-  done <<< "$FRONTEND_FILES"
-}
+# 说明：emoji/颜文字检测已移出本脚本（非检查项）
+# 原实现用 grep -qP，而 macOS BSD grep 与 Alpine BusyBox grep 都不支持 -P，检查实际从未生效。
+# 现唯一实现见 scripts/scan-ai-residue.sh 第 10 条（scripts/lib/find-emoji.mjs）。
 
-# 6. 操作反馈组件检测（web: Notification, mobile: Notify）
+# 5. 操作反馈组件检测（web: Notification, mobile: Notify）
 check_notification_component() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -123,7 +117,7 @@ check_notification_component() {
   done <<< "$FRONTEND_FILES"
 }
 
-# 7. 骨架屏加载检测（列表页必须有骨架屏）
+# 6. 骨架屏加载检测（列表页必须有骨架屏）
 check_skeleton_loading() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -137,7 +131,7 @@ check_skeleton_loading() {
   done <<< "$FRONTEND_FILES"
 }
 
-# 8. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload，禁止裸 Upload / input type=file）
+# 7. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload，禁止裸 Upload / input type=file）
 check_image_upload_component() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -153,14 +147,47 @@ check_image_upload_component() {
   done <<< "$FRONTEND_FILES"
 }
 
+# 8. 样式方案检测（统一 Tailwind：禁止 CSS Modules / styled-components / 业务自建 .css）
+check_style_solution() {
+  local dirs="apps/admin-web/src apps/mobile-web/src apps/owl-web/src apps/cron-web/src apps/portal/src"
+  local file line
+
+  # 8.1 禁止 CSS Modules 与 styled 文件（Tailwind 之外的第二套样式方案）
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    error "$file" "禁止 CSS Modules / styled 文件，样式统一使用 Tailwind（docs/frontend-rules.md 第七节）"
+  done < <(find $dirs \( -name '*.module.css' -o -name '*.module.scss' -o -name '*.module.less' -o -name '*.module.styl' \) 2>/dev/null)
+
+  # 8.2 禁止 styled-components / emotion
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [[ "$file" != *.tsx && "$file" != *.ts ]] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      error "$file" "禁止 styled-components / emotion，样式统一使用 Tailwind: $(echo "$line" | sed 's/^[0-9]*: *//')"
+    done < <(grep -nE "from [\"'](styled-components|@emotion/[a-z-]+)[\"']" "$file" 2>/dev/null)
+  done <<< "$FRONTEND_FILES"
+
+  # 8.3 禁止业务自建 .css（各前端只允许唯一的 Tailwind 入口 src/index.css；第三方包 css 不受限）
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [[ "$file" != *.tsx && "$file" != *.ts ]] && continue
+    while IFS= read -r line; do
+      [ -z "$line" ] && continue
+      echo "$line" | grep -qE "[\"']\.\.?/index\.css[\"']" && continue
+      error "$file" "禁止自建 .css（仅允许各端唯一 Tailwind 入口 ./index.css）: $(echo "$line" | sed 's/^[0-9]*: *//')"
+    done < <(grep -nE "[\"'](\./|\.\./)[^\"']*\.css[\"']" "$file" 2>/dev/null)
+  done <<< "$FRONTEND_FILES"
+}
+
 check_page_naming
 check_ui_library_cross_import
 check_inline_style
 check_hardcoded_colors
-check_emoji
 check_notification_component
 check_skeleton_loading
 check_image_upload_component
+check_style_solution
 echo "check-frontend-rules.sh: ERROR=$ERROR_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ]; then
   exit 1

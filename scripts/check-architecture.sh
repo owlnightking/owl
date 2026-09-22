@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check-architecture.sh — Owl 架构护栏（16 项）
+# check-architecture.sh — Owl 架构护栏（14 项）
 # 用法: bash scripts/check-architecture.sh [--staged]
 # 存在 ERROR 时 exit 1；--staged 只查 git 暂存文件
 
@@ -187,27 +187,11 @@ check_frontend_boundary() {
 }
 check_frontend_boundary
 
-# ---------- 11. 前端代码规范检查 ----------
-check_frontend_code_standards() {
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    case "$file" in
-      apps/owl-web/*|apps/admin-web/*|apps/cron-web/*|apps/mobile-web/*|apps/portal/*)
-        if grep -qE ': *any\b|\bas any\b|<any>' "$file" 2>/dev/null; then
-          error "$file" "前端禁止 any"
-        fi
-        if grep -Pq '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{FE00}-\x{FE0F}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{200D}\x{20E3}\x{E0020}-\x{E007F}]' "$file" 2>/dev/null; then
-          error "$file" "前端禁止使用颜文字/emoji，应使用 UI 库 Icon 组件"
-        fi
-        ;;
-    esac
-  done <<< "$TS_FILES"
-}
-check_frontend_code_standards
+# ---------- 说明：前端 any / emoji 已收敛（非检查项） ----------
+# 本脚本不再重复检查这两项：any 由 scan-ai-residue.sh 第 1 条（全仓）覆盖，
+# emoji 由 scan-ai-residue.sh 第 10 条（scripts/lib/find-emoji.mjs）覆盖，避免同一规则多份实现互相漂移。
 
-# ---------- 12. 旧前端页面冻结检查（新仓库，无冻结清单 → pass） ----------
-
-# ---------- 13. 路由去重检查 ----------
+# ---------- 11. 路由去重检查 ----------
 check_route_dedup() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -224,7 +208,7 @@ check_route_dedup() {
 }
 check_route_dedup
 
-# ---------- 14. 裸装饰器检查 ----------
+# ---------- 12. 裸装饰器检查 ----------
 check_bare_decorators() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -238,7 +222,7 @@ check_bare_decorators() {
 }
 check_bare_decorators
 
-# ---------- 15. 菜单路由死链检查 ----------
+# ---------- 13. 菜单路由死链检查 ----------
 check_menu_route_deadlinks() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -253,7 +237,7 @@ check_menu_route_deadlinks() {
 }
 check_menu_route_deadlinks
 
-# ---------- 16. 模块隔离检查 ----------
+# ---------- 14. 模块隔离检查 ----------
 check_module_isolation() {
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -271,7 +255,10 @@ check_module_isolation
 
 # ---------- 汇总 ----------
 echo "check-architecture.sh: ERROR=$ERROR_COUNT WARN=$WARN_COUNT"
-if [ "$ERROR_COUNT" -gt 0 ]; then
+# AGENTS.md 第二节：ERROR 与 WARN 均阻断提交/推送/发版/CD。
+# 本脚本原有 WARN（文件 >1000 行）曾被漏放，与 scan-ai-residue / check-feature-rules 语义不一致，此处对齐。
+if [ "$ERROR_COUNT" -gt 0 ] || [ "$WARN_COUNT" -gt 0 ]; then
+  echo "check-architecture.sh: ERROR/WARN 均阻断，请修复后重试"
   exit 1
 fi
 exit 0

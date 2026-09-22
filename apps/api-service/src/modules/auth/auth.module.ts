@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
-import { AuthUseCase } from "./application/auth.use-case";
+import { AuthService } from "./application/auth.service";
 import { AuthController } from "./presentation/auth.controller";
 import { FeishuAuthClient } from "./infrastructure/feishu-auth.client";
 import { JwtTokenService } from "./infrastructure/jwt-token.service";
@@ -28,7 +28,7 @@ import {
     { provide: OAUTH_STATE_STORE_PORT, useClass: RedisOAuthStateStore },
     { provide: TOKEN_PORT, useClass: JwtTokenService },
     { provide: USER_REPOSITORY_PORT, useClass: PrismaUserRepository },
-    { provide: AUTH_SERVICE, useClass: AuthUseCase },
+    { provide: AUTH_SERVICE, useClass: AuthService },
     JwtAuthGuard,
     PermissionGuard,
   ],

@@ -1,5 +1,6 @@
 import axios, { type AxiosResponse, type AxiosError } from "axios";
 import { Notification } from "@arco-design/web-react";
+import { ApiErrorCode } from "@owl/shared";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -22,7 +23,7 @@ export const cronHttp = axios.create({
 
 const responseInterceptor = (response: AxiosResponse<ApiResponse>) => {
   const body = response.data;
-  if (body && typeof body.code === "number" && body.code !== 0) {
+  if (body && typeof body.code === "number" && body.code !== ApiErrorCode.OK) {
     return Promise.reject(new Error(body.message ?? "request failed"));
   }
   return response;

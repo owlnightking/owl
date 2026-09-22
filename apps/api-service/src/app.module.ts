@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { APP_FILTER } from "@nestjs/core";
 import { resolve } from "node:path";
 import { DatabaseModule } from "./database.module";
 import { HealthController } from "./health.controller";
+import { ApiExceptionFilter } from "./common/response/api-exception.filter";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UserModule } from "./modules/user/user.module";
 import { RoleModule } from "./modules/role/role.module";
@@ -16,6 +18,7 @@ import { McpModule } from "./modules/mcp/mcp.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { RecognitionModule } from "./modules/recognition/recognition.module";
 import { MdDocModule } from "./modules/md-doc/md-doc.module";
+import { SystemLogModule } from "./modules/system-log/system-log.module";
 
 @Module({
   imports: [
@@ -37,7 +40,9 @@ import { MdDocModule } from "./modules/md-doc/md-doc.module";
     ProjectModule,
     RecognitionModule,
     MdDocModule,
+    SystemLogModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })
 export class AppModule {}

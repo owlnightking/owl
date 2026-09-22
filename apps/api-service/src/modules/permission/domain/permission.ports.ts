@@ -1,5 +1,5 @@
 export interface PermissionItem {
-  id: string;
+  id: number;
   code: string;
   name: string;
   resource: string;
@@ -25,11 +25,11 @@ export interface PermissionUpdateInput {
 
 export interface PermissionRepositoryPort {
   list(): Promise<PermissionItem[]>;
-  findById(id: string): Promise<PermissionItem | null>;
+  findById(id: number): Promise<PermissionItem | null>;
   findByCode(code: string): Promise<PermissionItem | null>;
   create(input: PermissionCreateInput): Promise<PermissionItem>;
-  update(id: string, input: PermissionUpdateInput): Promise<PermissionItem | null>;
-  delete(id: string): Promise<void>;
+  update(id: number, input: PermissionUpdateInput): Promise<PermissionItem | null>;
+  delete(id: number): Promise<void>;
 }
 
 export const PERMISSION_REPOSITORY = Symbol("PERMISSION_REPOSITORY");

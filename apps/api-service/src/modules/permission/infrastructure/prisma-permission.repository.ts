@@ -13,7 +13,7 @@ export class PrismaPermissionRepository implements PermissionRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     code: string;
     name: string;
     resource: string;
@@ -33,31 +33,37 @@ export class PrismaPermissionRepository implements PermissionRepositoryPort {
   }
 
   async list(): Promise<PermissionItem[]> {
-    const rows = await this.prisma.permission.findMany({ orderBy: { code: "asc" } });
+    const rows = await this.prisma.permission.findMany({ where: { deletedAt: null }, orderBy: { code: "asc" } });
     return rows.map(this.toItem);
   }
 
-  async findById(id: string): Promise<PermissionItem | null> {
-    const row = await this.prisma.permission.findUnique({ where: { id } });
+  async findById(id: number): Promise<PermissionItem | null> {
+    const row = await this.prisma.permission.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
   async findByCode(code: string): Promise<PermissionItem | null> {
-    const row = await this.prisma.permission.findUnique({ where: { code } });
+    const row = await this.prisma.permission.findUnique({ where: { code, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
   async create(input: PermissionCreateInput): Promise<PermissionItem> {
-    const row = await this.prisma.permission.create({ data: input });
+    const existing = await this.prisma.permission.findUnique({ where: { code: input.code } });
+    const row = existing
+      ? await this.prisma.permission.update({ where: { id: existing.id }, data: { ...input, deletedAt: null } })
+      : await this.prisma.permission.create({ data: input });
     return this.toItem(row);
   }
 
-  async update(id: string, input: PermissionUpdateInput): Promise<PermissionItem | null> {
-    const row = await this.prisma.permission.update({ where: { id }, data: input }).catch(() => null);
+  async update(id: number, input: PermissionUpdateInput): Promise<PermissionItem | null> {
+    const row = await this.prisma.permission.update({ where: { id, deletedAt: null }, data: input }).catch(() => null);
     return row ? this.toItem(row) : null;
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.permission.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.permission.update({ where: { id }, data: { deletedAt: new Date() } }),
+      this.prisma.rolePermission.updateMany({ where: { permissionId: id }, data: { deletedAt: new Date() } }),
+    ]);
   }
 }

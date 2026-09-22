@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -12,18 +13,27 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Type } from "class-transformer";
 import { MD_DOC_SERVICE, type MdDocItem } from "../domain/md-doc.ports";
-import { MdDocUseCase } from "../application/md-doc.use-case";
-import { ok } from "../../../common/response/api-response";
+import { MdDocService } from "../application/md-doc.service";
+import { ok, page } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
 import { CurrentUser, JwtAuthGuard, PermissionGuard, type AuthPrincipal } from "../../auth/index";
-import { DATABASE_CLIENT } from "@owl/database/provider";
-import type { PrismaClient } from "@owl/database";
+import { MdDocPageVo, MdDocVo, UploadImageVo } from "./md-doc.vo";
 
 const DEFAULT_PAGE_SIZE = 20;
-const ADMIN_ROLE_CODES = new Set(["super_admin", "admin"]);
 
 interface MulterFile {
   fieldname: string;
@@ -38,98 +48,110 @@ interface MulterFile {
 }
 
 class CreateMdDocDto {
-  @IsString() @IsNotEmpty() content!: string;
+  @ApiProperty({ description: "文档内容（Markdown）", example: "# 标题" })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
 }
 
 class UpdateMdDocDto {
-  @IsString() @IsNotEmpty() content!: string;
+  @ApiProperty({ description: "文档内容（Markdown）", example: "# 标题" })
+  @IsString()
+  @IsNotEmpty()
+  content!: string;
 }
 
 class MdDocQueryDto {
-  @IsOptional() @Type(() => Number) page?: number;
-  @IsOptional() @Type(() => Number) pageSize?: number;
-  @IsOptional() @IsString() q?: string;
+  @ApiPropertyOptional({ description: "页码", example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  page?: number;
+
+  @ApiPropertyOptional({ description: "每页条数", example: 20, default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ description: "内容关键字", example: "标题" })
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
 
+@ApiTags("付费知识文档")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller("md-docs")
 export class MdDocController {
-  constructor(
-    @Inject(MD_DOC_SERVICE) private readonly service: MdDocUseCase,
-    @Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient
-  ) {}
+  constructor(@Inject(MD_DOC_SERVICE) private readonly service: MdDocService) {}
 
   @Get()
+  @ApiOperation({ summary: "文档分页列表" })
+  @ApiOkResponse({ description: "文档分页列表", type: MdDocPageVo })
   async list(@Query() query: MdDocQueryDto, @CurrentUser() user: AuthPrincipal) {
-    const isAdmin = await this.isAdmin(user.userId);
-    const result = await this.service.list(user.userId, isAdmin, {
-      page: query.page ?? 1,
-      pageSize: query.pageSize ?? DEFAULT_PAGE_SIZE,
-      q: query.q,
-    });
-    return ok({ items: result.items.map((i) => this.toResponse(i)), total: result.total });
+    const pageNum = query.page ?? 1;
+    const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+    const result = await this.service.list(Number(user.userId), { page: pageNum, pageSize, q: query.q });
+    return page(
+      result.items.map((i) => this.toResponse(i)),
+      pageNum,
+      pageSize,
+      result.total
+    );
   }
 
   @Get(":id")
-  async findById(@Param("id") id: string, @CurrentUser() user: AuthPrincipal) {
-    const isAdmin = await this.isAdmin(user.userId);
-    const doc = await this.service.findById(id, user.userId, isAdmin);
+  @ApiOperation({ summary: "文档详情" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "文档详情", type: MdDocVo })
+  async findById(@Param("id", ParseIntPipe) id: number, @CurrentUser() user: AuthPrincipal) {
+    const doc = await this.service.findById(id, Number(user.userId));
     return ok(this.toResponse(doc));
   }
 
   @Post()
+  @ApiOperation({ summary: "新建文档" })
+  @ApiCreatedResponse({ description: "新建成功", type: MdDocVo })
   async create(@Body() dto: CreateMdDocDto, @CurrentUser() user: AuthPrincipal) {
-    const doc = await this.service.create(user.userId, dto);
+    const doc = await this.service.create(Number(user.userId), dto);
     return ok(this.toResponse(doc));
   }
 
   @Put(":id")
-  async update(@Param("id") id: string, @Body() dto: UpdateMdDocDto, @CurrentUser() user: AuthPrincipal) {
-    const isAdmin = await this.isAdmin(user.userId);
-    await this.service.update(id, user.userId, isAdmin, dto);
+  @ApiOperation({ summary: "编辑文档" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "更新成功" })
+  async update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateMdDocDto, @CurrentUser() user: AuthPrincipal) {
+    await this.service.update(id, Number(user.userId), dto);
     return ok(undefined);
   }
 
   @Delete(":id")
-  async remove(@Param("id") id: string, @CurrentUser() user: AuthPrincipal) {
-    const isAdmin = await this.isAdmin(user.userId);
-    await this.service.delete(id, user.userId, isAdmin);
+  @ApiOperation({ summary: "删除文档" })
+  @ApiParam({ name: "id", description: "主键 id", example: 1 })
+  @ApiOkResponse({ description: "删除成功" })
+  async remove(@Param("id", ParseIntPipe) id: number, @CurrentUser() user: AuthPrincipal) {
+    await this.service.delete(id, Number(user.userId));
     return ok(undefined);
   }
 
   @Post("upload-image")
+  @ApiOperation({ summary: "上传文档图片" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        file: { type: "string", format: "binary", description: "图片文件" },
+      },
+      required: ["file"],
+    },
+  })
+  @ApiCreatedResponse({ description: "上传成功", type: UploadImageVo })
   @UseInterceptors(FileInterceptor("file"))
   async uploadImage(@UploadedFile() file: MulterFile | undefined, @CurrentUser() user: AuthPrincipal) {
     if (!file) return ok({ url: "" });
-    const ext = file.originalname.split(".").pop() ?? "png";
-    const objectKey = `md-docs/${user.userId}/${Date.now()}.${ext}`;
-
-    const bucket = process.env.MINIO_BUCKET ?? "owl";
-    const host = process.env.MINIO_HOST ?? "localhost";
-    const port = process.env.MINIO_PORT ?? "9000";
-    const url = `http://${host}:${port}/${bucket}/${objectKey}`;
-
-    const fileRecord = await this.prisma.file.create({
-      data: {
-        name: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
-        bucket,
-        objectKey,
-        url,
-        uploadedBy: user.userId,
-      },
-    });
-
-    return ok({ url, fileId: fileRecord.id });
-  }
-
-  private async isAdmin(userId: string): Promise<boolean> {
-    const roles = await this.prisma.userRole.findMany({
-      where: { userId },
-      select: { role: { select: { code: true } } },
-    });
-    return roles.some(({ role }) => ADMIN_ROLE_CODES.has(role.code));
+    const result = await this.service.uploadImage(Number(user.userId), file);
+    return ok(result);
   }
 
   private toResponse(item: MdDocItem) {

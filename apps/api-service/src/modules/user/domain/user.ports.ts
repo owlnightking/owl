@@ -1,5 +1,5 @@
 export interface UserListItem {
-  id: string;
+  id: number;
   unionId: string;
   openId: string;
   name: string;
@@ -8,7 +8,7 @@ export interface UserListItem {
   status: string;
   lastLoginAt: Date | null;
   createdAt: Date;
-  roles: { id: string; code: string; name: string }[];
+  roles: { id: number; code: string; name: string }[];
 }
 
 export interface UserQuery {
@@ -19,10 +19,10 @@ export interface UserQuery {
 
 export interface UserRepositoryPort {
   list(query: UserQuery): Promise<{ items: UserListItem[]; total: number }>;
-  findById(id: string): Promise<UserListItem | null>;
-  assignRoles(userId: string, roleIds: string[]): Promise<void>;
-  updateStatus(userId: string, status: string): Promise<void>;
-  listRoles(): Promise<{ id: string; code: string; name: string; isSystem: boolean }[]>;
+  findById(id: number): Promise<UserListItem | null>;
+  assignRoles(userId: number, roleIds: number[]): Promise<void>;
+  updateStatus(userId: number, status: string): Promise<void>;
+  listRoles(): Promise<{ id: number; code: string; name: string; isSystem: boolean }[]>;
 }
 
 export const USER_REPOSITORY = Symbol("USER_REPOSITORY");

@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { FileUseCase } from "./application/file.use-case";
+import { FileService } from "./application/file.service";
 import { FileController } from "./presentation/file.controller";
 import { PrismaFileRepository } from "./infrastructure/prisma-file.repository";
 import { MinioObjectStorage } from "./infrastructure/minio-object-storage";
@@ -13,7 +13,7 @@ import { AuthModule } from "../auth/auth.module";
   providers: [
     { provide: FILE_REPOSITORY, useClass: PrismaFileRepository },
     { provide: OBJECT_STORAGE, useClass: MinioObjectStorage },
-    { provide: FILE_SERVICE, useClass: FileUseCase },
+    { provide: FILE_SERVICE, useClass: FileService },
   ],
   exports: [FILE_SERVICE],
 })

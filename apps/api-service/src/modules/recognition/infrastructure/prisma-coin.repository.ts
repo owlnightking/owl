@@ -7,10 +7,14 @@ import type { CoinAccountItem, CoinRepositoryPort, CoinTransactionItem } from ".
 export class PrismaCoinRepository implements CoinRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
-  async getAccount(userId: string): Promise<CoinAccountItem> {
-    let account = await this.prisma.coinAccount.findUnique({ where: { userId } });
+  async getAccount(userId: number): Promise<CoinAccountItem> {
+    let account = await this.prisma.coinAccount.findUnique({ where: { userId, deletedAt: null } });
     if (!account) {
-      account = await this.prisma.coinAccount.create({ data: { userId } });
+      account = await this.prisma.coinAccount.upsert({
+        where: { userId },
+        create: { userId },
+        update: { deletedAt: null },
+      });
     }
     return {
       id: account.id,
@@ -22,18 +26,18 @@ export class PrismaCoinRepository implements CoinRepositoryPort {
   }
 
   async addBalance(
-    userId: string,
+    userId: number,
     amount: number,
     source: string,
     referenceId?: string,
     remark?: string,
-    operatorId?: string
+    operatorId?: number
   ): Promise<void> {
     const account = await this.getAccount(userId);
     const newBalance = account.balance + amount;
     await this.prisma.$transaction([
       this.prisma.coinAccount.update({
-        where: { userId },
+        where: { userId, deletedAt: null },
         data: { balance: newBalance, totalEarned: { increment: amount } },
       }),
       this.prisma.coinTransaction.create({
@@ -52,7 +56,7 @@ export class PrismaCoinRepository implements CoinRepositoryPort {
   }
 
   async deductBalance(
-    userId: string,
+    userId: number,
     amount: number,
     source: string,
     referenceId?: string,
@@ -63,7 +67,7 @@ export class PrismaCoinRepository implements CoinRepositoryPort {
     const newBalance = account.balance - amount;
     await this.prisma.$transaction([
       this.prisma.coinAccount.update({
-        where: { userId },
+        where: { userId, deletedAt: null },
         data: { balance: newBalance, totalSpent: { increment: amount } },
       }),
       this.prisma.coinTransaction.create({
@@ -72,13 +76,13 @@ export class PrismaCoinRepository implements CoinRepositoryPort {
     ]);
   }
 
-  async adjustBalance(userId: string, amount: number, operatorId: string, remark?: string): Promise<void> {
+  async adjustBalance(userId: number, amount: number, operatorId: number, remark?: string): Promise<void> {
     const account = await this.getAccount(userId);
     const newBalance = account.balance + amount;
     const type = amount >= 0 ? "earn" : "spend";
     await this.prisma.$transaction([
       this.prisma.coinAccount.update({
-        where: { userId },
+        where: { userId, deletedAt: null },
         data: {
           balance: newBalance,
           ...(amount >= 0
@@ -101,14 +105,14 @@ export class PrismaCoinRepository implements CoinRepositoryPort {
   }
 
   async listTransactions(
-    userId: string,
+    userId: number,
     page: number,
     pageSize: number
   ): Promise<{ items: CoinTransactionItem[]; total: number }> {
-    const account = await this.prisma.coinAccount.findUnique({ where: { userId } });
+    const account = await this.prisma.coinAccount.findUnique({ where: { userId, deletedAt: null } });
     if (!account) return { items: [], total: 0 };
 
-    const where = { accountId: account.id };
+    const where = { accountId: account.id, deletedAt: null };
     const [rows, total] = await Promise.all([
       this.prisma.coinTransaction.findMany({
         where,

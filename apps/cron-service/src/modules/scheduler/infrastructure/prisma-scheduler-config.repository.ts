@@ -10,7 +10,7 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
   constructor(private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     name: string;
     area: string;
     cron: string;
@@ -40,12 +40,15 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
   }
 
   async findAll(): Promise<SchedulerConfigItem[]> {
-    const rows = await this.prisma.schedulerConfig.findMany({ orderBy: { updatedAt: "desc" } });
+    const rows = await this.prisma.schedulerConfig.findMany({
+      where: { deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+    });
     return rows.map((row) => this.toItem(row));
   }
 
-  async findById(id: string): Promise<SchedulerConfigItem | null> {
-    const row = await this.prisma.schedulerConfig.findUnique({ where: { id } });
+  async findById(id: number): Promise<SchedulerConfigItem | null> {
+    const row = await this.prisma.schedulerConfig.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
@@ -78,15 +81,18 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
   }
 
   async update(
-    id: string,
+    id: number,
     data: Partial<
       Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "tags" | "module" | "env">
     >
   ): Promise<void> {
-    await this.prisma.schedulerConfig.update({ where: { id }, data });
+    await this.prisma.schedulerConfig.update({ where: { id, deletedAt: null }, data });
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.schedulerConfig.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.schedulerConfig.update({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
   }
 }

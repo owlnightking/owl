@@ -32,6 +32,55 @@ export class PrismaSystemConfigRepository implements SystemConfigRepositoryPort 
     return `${CACHE_PREFIX}${key}`;
   }
 
+  private toItem(row: {
+    id: number;
+    key: string;
+    value: Prisma.JsonValue;
+    description: string | null;
+    updatedAt: Date;
+    updatedBy: number | null;
+  }): SystemConfigItem {
+    return {
+      id: row.id,
+      key: row.key,
+      value: row.value,
+      description: row.description,
+      updatedAt: row.updatedAt,
+      updatedBy: row.updatedBy,
+    };
+  }
+
+  private async cacheItem(item: SystemConfigItem): Promise<void> {
+    try {
+      await this.redis.setex(
+        this.cacheKey(item.key),
+        CACHE_TTL_SECONDS,
+        JSON.stringify({ ...item, value: JSON.stringify(item.value) })
+      );
+    } catch (err) {
+      this.logger.warn(`redis cache set failed: ${(err as Error).message}`);
+    }
+  }
+
+  private async evict(key: string): Promise<void> {
+    try {
+      await this.redis.del(this.cacheKey(key));
+    } catch (err) {
+      this.logger.warn(`redis cache del failed: ${(err as Error).message}`);
+    }
+  }
+
+  async findById(id: number): Promise<SystemConfigItem | null> {
+    const row = await this.prisma.systemConfig.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!row) return null;
+
+    const item = this.toItem(row);
+    await this.cacheItem(item);
+    return item;
+  }
+
   async findByKey(key: string): Promise<SystemConfigItem | null> {
     const cached = await this.redis.get(this.cacheKey(key));
     if (cached) {
@@ -45,63 +94,51 @@ export class PrismaSystemConfigRepository implements SystemConfigRepositoryPort 
     }
 
     const row = await this.prisma.systemConfig.findUnique({
-      where: { key },
+      where: { key, deletedAt: null },
     });
     if (!row) return null;
 
-    const item: SystemConfigItem = {
-      key: row.key,
-      value: row.value,
-      description: row.description,
-      updatedAt: row.updatedAt,
-      updatedBy: row.updatedBy,
-    };
-
-    try {
-      await this.redis.setex(
-        this.cacheKey(key),
-        CACHE_TTL_SECONDS,
-        JSON.stringify({ ...item, value: JSON.stringify(item.value) })
-      );
-    } catch (err) {
-      this.logger.warn(`redis cache set failed: ${(err as Error).message}`);
-    }
-
+    const item = this.toItem(row);
+    await this.cacheItem(item);
     return item;
   }
 
-  async upsert(key: string, value: unknown, updatedBy?: string, description?: string): Promise<SystemConfigItem> {
+  async upsert(key: string, value: unknown, updatedBy?: number, description?: string): Promise<SystemConfigItem> {
     const row = await this.prisma.systemConfig.upsert({
       where: { key },
       create: { key, value: value as Prisma.InputJsonValue, updatedBy, description },
       update: {
         value: value as Prisma.InputJsonValue,
-        ...(updatedBy ? { updatedBy } : {}),
+        deletedAt: null,
+        ...(updatedBy !== undefined ? { updatedBy } : {}),
         ...(description !== undefined ? { description } : {}),
       },
     });
 
-    try {
-      await this.redis.del(this.cacheKey(key));
-    } catch (err) {
-      this.logger.warn(`redis cache del failed: ${(err as Error).message}`);
-    }
-
-    return {
-      key: row.key,
-      value: row.value,
-      description: row.description,
-      updatedAt: row.updatedAt,
-      updatedBy: row.updatedBy,
-    };
+    await this.evict(row.key);
+    return this.toItem(row);
   }
 
-  async delete(key: string): Promise<void> {
-    await this.prisma.systemConfig.delete({ where: { key } });
-    try {
-      await this.redis.del(this.cacheKey(key));
-    } catch (err) {
-      this.logger.warn(`redis cache del failed: ${(err as Error).message}`);
-    }
+  async updateById(id: number, value: unknown, updatedBy?: number, description?: string): Promise<SystemConfigItem> {
+    const row = await this.prisma.systemConfig.update({
+      where: { id, deletedAt: null },
+      data: {
+        value: value as Prisma.InputJsonValue,
+        ...(updatedBy !== undefined ? { updatedBy } : {}),
+        ...(description !== undefined ? { description } : {}),
+      },
+    });
+
+    await this.evict(row.key);
+    return this.toItem(row);
+  }
+
+  async deleteById(id: number): Promise<void> {
+    const row = await this.prisma.systemConfig.update({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+
+    await this.evict(row.key);
   }
 }

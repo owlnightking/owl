@@ -37,8 +37,8 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   const [configs, runsPage] = await Promise.all([
     fetchSchedulers(),
     fetch("/cron/schedulers/runs?pageSize=200&env=prod")
-      .then((r) => r.json() as Promise<{ data: { items: SchedulerRun[] } }>)
-      .then((j) => j.data?.items ?? []),
+      .then((r) => r.json() as Promise<{ data: { list: SchedulerRun[] } }>)
+      .then((j) => j.data?.list ?? []),
   ]);
 
   const totalConfigs = configs.length;

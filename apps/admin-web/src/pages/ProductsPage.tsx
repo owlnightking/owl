@@ -16,7 +16,9 @@ interface ProductItem {
   createdAt: string;
 }
 interface PageData {
-  items: ProductItem[];
+  list: ProductItem[];
+  pageNum: number;
+  pageSize: number;
   total: number;
 }
 
@@ -43,7 +45,7 @@ export function ProductsPage() {
       if (keyword) params.set("keyword", keyword);
       if (enabledFilter !== "all") params.set("enabled", enabledFilter);
       const r = await get<PageData>(`/recognition/products?${params.toString()}`);
-      setData(r.items);
+      setData(r.list);
       setTotal(r.total);
     } finally {
       setLoading(false);

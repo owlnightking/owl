@@ -3,6 +3,7 @@ import { DATABASE_CLIENT } from "@owl/database/provider";
 import type { PrismaClient } from "@owl/database";
 import type {
   MdDocCreateInput,
+  MdDocFileInput,
   MdDocItem,
   MdDocListQuery,
   MdDocRepositoryPort,
@@ -24,8 +25,8 @@ function extractExcerpt(content: string): string | null {
 export class PrismaMdDocRepository implements MdDocRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
-  async findById(id: string): Promise<MdDocItem | null> {
-    const row = await this.prisma.mdDoc.findUnique({ where: { id } });
+  async findById(id: number): Promise<MdDocItem | null> {
+    const row = await this.prisma.mdDoc.findUnique({ where: { id, deletedAt: null } });
     return row
       ? {
           id: row.id,
@@ -38,8 +39,8 @@ export class PrismaMdDocRepository implements MdDocRepositoryPort {
       : null;
   }
 
-  async listByAuthor(authorId: string, query: MdDocListQuery): Promise<{ items: MdDocItem[]; total: number }> {
-    const where: Record<string, unknown> = { authorId };
+  async listByAuthor(authorId: number, query: MdDocListQuery): Promise<{ items: MdDocItem[]; total: number }> {
+    const where: Record<string, unknown> = { authorId, deletedAt: null };
     if (query.q) {
       where.OR = [
         { content: { contains: query.q, mode: "insensitive" } },
@@ -69,7 +70,7 @@ export class PrismaMdDocRepository implements MdDocRepositoryPort {
   }
 
   async listAll(query: MdDocListQuery): Promise<{ items: MdDocItem[]; total: number }> {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (query.q) {
       where.OR = [
         { content: { contains: query.q, mode: "insensitive" } },
@@ -98,7 +99,7 @@ export class PrismaMdDocRepository implements MdDocRepositoryPort {
     };
   }
 
-  async create(authorId: string, input: MdDocCreateInput): Promise<MdDocItem> {
+  async create(authorId: number, input: MdDocCreateInput): Promise<MdDocItem> {
     const row = await this.prisma.mdDoc.create({
       data: { authorId, content: input.content, excerpt: extractExcerpt(input.content) },
     });
@@ -112,14 +113,30 @@ export class PrismaMdDocRepository implements MdDocRepositoryPort {
     };
   }
 
-  async update(id: string, input: MdDocUpdateInput): Promise<void> {
+  async update(id: number, input: MdDocUpdateInput): Promise<void> {
     await this.prisma.mdDoc.update({
       where: { id },
       data: { content: input.content, excerpt: extractExcerpt(input.content) },
     });
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.mdDoc.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.mdDoc.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  async listRoleCodes(userId: number): Promise<string[]> {
+    const rows = await this.prisma.userRole.findMany({
+      where: { userId, deletedAt: null, role: { deletedAt: null } },
+      select: { role: { select: { code: true } } },
+    });
+    return rows.map((row) => row.role.code);
+  }
+
+  async createFileRecord(input: MdDocFileInput): Promise<number> {
+    const row = await this.prisma.file.create({ data: input });
+    return row.id;
   }
 }

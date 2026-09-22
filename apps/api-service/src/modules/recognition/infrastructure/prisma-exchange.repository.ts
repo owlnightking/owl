@@ -13,13 +13,13 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private async toItem(raw: {
-    id: string;
-    userId: string;
-    productId: string;
+    id: number;
+    userId: number;
+    productId: number;
     quantity: number;
     totalCost: number;
     status: string;
-    approverId: string | null;
+    approverId: number | null;
     approvedAt: Date | null;
     rejectReason: string | null;
     fulfilledAt: Date | null;
@@ -45,16 +45,16 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
     };
   }
 
-  async findById(id: string): Promise<ExchangeOrderItem | null> {
+  async findById(id: number): Promise<ExchangeOrderItem | null> {
     const row = await this.prisma.exchangeOrder.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: { user: { select: { name: true } }, product: { select: { name: true, image: true } } },
     });
     return row ? this.toItem(row) : null;
   }
 
   async list(query: ExchangeListQuery): Promise<{ items: ExchangeOrderItem[]; total: number }> {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { deletedAt: null };
     if (query.status) where.status = query.status;
     if (query.userId) where.userId = query.userId;
 
@@ -73,14 +73,17 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
     return { items, total };
   }
 
-  async create(userId: string, input: ExchangeCreateInput): Promise<ExchangeOrderItem> {
+  async create(userId: number, input: ExchangeCreateInput): Promise<ExchangeOrderItem> {
     const quantity = input.quantity ?? 1;
-    const product = await this.prisma.product.findUnique({ where: { id: input.productId } });
+    const product = await this.prisma.product.findUnique({ where: { id: input.productId, deletedAt: null } });
     if (!product) throw new Error("product not found");
     if (product.stock < quantity) throw new Error("insufficient stock");
 
     const row = await this.prisma.$transaction(async (tx) => {
-      await tx.product.update({ where: { id: input.productId }, data: { stock: { decrement: quantity } } });
+      await tx.product.update({
+        where: { id: input.productId, deletedAt: null },
+        data: { stock: { decrement: quantity } },
+      });
       return tx.exchangeOrder.create({
         data: { userId, productId: input.productId, quantity, totalCost: product.price * quantity },
         include: { user: { select: { name: true } }, product: { select: { name: true, image: true } } },
@@ -90,28 +93,37 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
     return this.toItem(row);
   }
 
-  async approve(id: string, approverId: string): Promise<void> {
+  async approve(id: number, approverId: number): Promise<void> {
     await this.prisma.exchangeOrder.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { status: "approved", approverId, approvedAt: new Date() },
     });
   }
 
-  async reject(id: string, approverId: string, reason?: string): Promise<void> {
-    const order = await this.prisma.exchangeOrder.findUnique({ where: { id } });
+  async reject(id: number, approverId: number, reason?: string): Promise<void> {
+    const order = await this.prisma.exchangeOrder.findUnique({ where: { id, deletedAt: null } });
     if (!order) throw new Error("order not found");
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.product.update({ where: { id: order.productId }, data: { stock: { increment: order.quantity } } });
-      await tx.exchangeOrder.update({ where: { id }, data: { status: "rejected", approverId, rejectReason: reason } });
+      await tx.product.update({
+        where: { id: order.productId, deletedAt: null },
+        data: { stock: { increment: order.quantity } },
+      });
+      await tx.exchangeOrder.update({
+        where: { id, deletedAt: null },
+        data: { status: "rejected", approverId, rejectReason: reason },
+      });
     });
   }
 
-  async fulfill(id: string): Promise<void> {
-    await this.prisma.exchangeOrder.update({ where: { id }, data: { status: "fulfilled", fulfilledAt: new Date() } });
+  async fulfill(id: number): Promise<void> {
+    await this.prisma.exchangeOrder.update({
+      where: { id, deletedAt: null },
+      data: { status: "fulfilled", fulfilledAt: new Date() },
+    });
   }
 
   async countPending(): Promise<number> {
-    return this.prisma.exchangeOrder.count({ where: { status: "pending" } });
+    return this.prisma.exchangeOrder.count({ where: { status: "pending", deletedAt: null } });
   }
 }

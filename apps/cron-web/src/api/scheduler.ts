@@ -40,8 +40,10 @@ export async function fetchSchedulerRuns(
   configId: string,
   page: number,
   pageSize: number
-): Promise<{ items: SchedulerRun[]; total: number }> {
-  const res = await cronHttp.get<{ data: { items: SchedulerRun[]; total: number } }>(`/schedulers/${configId}/runs`, {
+): Promise<{ list: SchedulerRun[]; pageNum: number; pageSize: number; total: number }> {
+  const res = await cronHttp.get<{
+    data: { list: SchedulerRun[]; pageNum: number; pageSize: number; total: number };
+  }>(`/schedulers/${configId}/runs`, {
     params: { page, pageSize },
   });
   return res.data.data;

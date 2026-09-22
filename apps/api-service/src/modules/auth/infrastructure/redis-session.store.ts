@@ -44,7 +44,7 @@ export class RedisSessionStore implements SessionStorePort {
     await this.client.del(this.key(jti));
   }
 
-  async revokeByUser(userId: string): Promise<void> {
+  async revokeByUser(userId: number): Promise<void> {
     const keys = await this.client.keys(`${this.keyPrefix}*`);
     if (keys.length === 0) {
       return;

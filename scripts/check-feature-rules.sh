@@ -10,7 +10,11 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-TS_FILES="$(git ls-files -cmo --exclude-standard '*.ts' 2>/dev/null || find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v generated)"
+TS_FILES="$(git ls-files -cmo --exclude-standard '*.ts' 2>/dev/null | sort -u || find . -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v generated)"
+
+LIST_FILE="$(mktemp)"
+printf '%s\n' "$TS_FILES" > "$LIST_FILE"
+trap 'rm -f "$LIST_FILE"' EXIT
 
 ERROR_COUNT=0
 WARN_COUNT=0
@@ -29,7 +33,7 @@ check_vo_success() {
         error "$file" "vo 中不应以 success 做条件分支: $(echo "$line" | sed 's/^[0-9]*: *//')"
       fi
     done < <(grep -nE '\bsuccess\b' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  done < "$LIST_FILE"
 }
 
 # 2. filter / guard 不应返回 entity 类型
@@ -40,7 +44,7 @@ check_filter_entity() {
     if grep -qE ':\\s*(Prisma|\w+)\s*\[\]' "$file" 2>/dev/null; then
       warn "$file" "filter 疑似返回底层类型，确认是否应为 VO/DTO"
     fi
-  done <<< "$TS_FILES"
+  done < "$LIST_FILE"
 }
 
 # 3. 业务 id 应由 domain 生成，presentation 层禁止直接生成
@@ -54,7 +58,7 @@ check_id_generation() {
         error "$file" "presentation 直接生成业务 id: $(echo "$line" | sed 's/^[0-9]*: *//')"
       fi
     done < <(grep -nE '(randomUUID|nanoid|crypto\.randomBytes)' "$file" 2>/dev/null)
-  done <<< "$TS_FILES"
+  done < "$LIST_FILE"
 }
 
 check_vo_success

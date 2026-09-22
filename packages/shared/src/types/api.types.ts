@@ -7,10 +7,10 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface PageResult<T> {
-  items: T[];
-  total: number;
-  page: number;
+  list: T[];
+  pageNum: number;
   pageSize: number;
+  total: number;
 }
 
 export interface PageQuery {
@@ -28,7 +28,7 @@ export interface ErrorResponse {
 }
 
 export const ApiErrorCode = {
-  OK: 0,
+  OK: 200,
   BAD_REQUEST: 40000,
   UNAUTHORIZED: 40100,
   SESSION_EXPIRED: 40101,

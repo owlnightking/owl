@@ -106,6 +106,18 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-09-21: 日志中心新增系统日志页（ADR 010）
+
+- 2026-09-21: 日志中心新增系统日志页：后端异常统一持久化到 system_log 并提供分页查询，admin-web 新增系统日志页
+
+- 2026-09-20: 后端统一返回格式：code 200 + data + message，分页 data.list/pageNum/pageSize/total，所有接口走 ok()/page()
+
+- 2026-09-20: 后端严格 NestJS 三层：use-case 改名 service、Controller 依赖注入去 Prisma 直连、新增三层检查
+
+- 2026-09-20: 全表统一 createdAt/updatedAt 时间戳，精确到秒
+
+- 2026-09-20: 全表主键改为自增 id、全表软删除、新增后端规则 Harness 与 dev Swagger
+
 - 2026-09-18: 图片上传裁剪交互增强：裁剪框支持拖拽+四角缩放，图片支持放大缩小/旋转（改 react-image-crop）
 
 - 2026-09-18: 图片上传抽为公共组件 ImageUpload（admin-web），接入 Arco beforeUpload + react-easy-crop 上传前裁剪，并纳入前端 harness 强制规则

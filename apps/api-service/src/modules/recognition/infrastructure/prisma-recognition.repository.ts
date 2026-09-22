@@ -13,14 +13,14 @@ export class PrismaRecognitionRepository implements RecognitionRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private async toItem(raw: {
-    id: string;
-    senderId: string;
-    receiverId: string;
-    badgeId: string | null;
+    id: number;
+    senderId: number;
+    receiverId: number;
+    badgeId: number | null;
     message: string;
     status: string;
     pinned: boolean;
-    approverId: string | null;
+    approverId: number | null;
     approvedAt: Date | null;
     rejectReason: string | null;
     createdAt: Date;
@@ -52,21 +52,21 @@ export class PrismaRecognitionRepository implements RecognitionRepositoryPort {
     };
   }
 
-  async findById(id: string): Promise<RecognitionItem | null> {
+  async findById(id: number): Promise<RecognitionItem | null> {
     const row = await this.prisma.recognition.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         sender: { select: { name: true, avatar72: true } },
         receiver: { select: { name: true, avatar72: true } },
         badge: { select: { name: true, icon: true } },
-        _count: { select: { likes: true } },
+        _count: { select: { likes: { where: { deletedAt: null } } } },
       },
     });
     return row ? this.toItem(row) : null;
   }
 
-  async list(query: RecognitionListQuery, userId?: string): Promise<{ items: RecognitionItem[]; total: number }> {
-    const where: Record<string, unknown> = {};
+  async list(query: RecognitionListQuery, userId?: number): Promise<{ items: RecognitionItem[]; total: number }> {
+    const where: Record<string, unknown> = { deletedAt: null };
     if (query.status) where.status = query.status;
     if (query.receiverId) where.receiverId = query.receiverId;
     if (query.senderId) where.senderId = query.senderId;
@@ -81,18 +81,18 @@ export class PrismaRecognitionRepository implements RecognitionRepositoryPort {
           sender: { select: { name: true, avatar72: true } },
           receiver: { select: { name: true, avatar72: true } },
           badge: { select: { name: true, icon: true } },
-          _count: { select: { likes: true } },
+          _count: { select: { likes: { where: { deletedAt: null } } } },
         },
       }),
       this.prisma.recognition.count({ where }),
     ]);
 
-    let likedIds = new Set<string>();
+    let likedIds = new Set<number>();
     if (userId) {
       const ids = rows.map((r) => r.id);
       if (ids.length > 0) {
         const likes = await this.prisma.recognitionLike.findMany({
-          where: { userId, recognitionId: { in: ids } },
+          where: { userId, recognitionId: { in: ids }, deletedAt: null },
           select: { recognitionId: true },
         });
         likedIds = new Set(likes.map((l) => l.recognitionId));
@@ -112,12 +112,12 @@ export class PrismaRecognitionRepository implements RecognitionRepositoryPort {
   async listFeed(
     page: number,
     pageSize: number,
-    userId?: string
+    userId?: number
   ): Promise<{ items: RecognitionItem[]; total: number }> {
     return this.list({ status: "approved", page, pageSize }, userId);
   }
 
-  async create(senderId: string, input: RecognitionCreateInput): Promise<RecognitionItem> {
+  async create(senderId: number, input: RecognitionCreateInput): Promise<RecognitionItem> {
     const row = await this.prisma.recognition.create({
       data: {
         senderId,
@@ -129,53 +129,81 @@ export class PrismaRecognitionRepository implements RecognitionRepositoryPort {
         sender: { select: { name: true, avatar72: true } },
         receiver: { select: { name: true, avatar72: true } },
         badge: { select: { name: true, icon: true } },
-        _count: { select: { likes: true } },
+        _count: { select: { likes: { where: { deletedAt: null } } } },
       },
     });
     return this.toItem(row);
   }
 
-  async approve(id: string, approverId: string): Promise<void> {
+  async approve(id: number, approverId: number): Promise<void> {
     await this.prisma.recognition.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { status: "approved", approverId, approvedAt: new Date() },
     });
   }
 
-  async reject(id: string, approverId: string, reason?: string): Promise<void> {
+  async reject(id: number, approverId: number, reason?: string): Promise<void> {
     await this.prisma.recognition.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { status: "rejected", approverId, rejectReason: reason },
     });
   }
 
-  async togglePin(id: string): Promise<void> {
-    const item = await this.prisma.recognition.findUnique({ where: { id }, select: { pinned: true } });
+  async togglePin(id: number): Promise<void> {
+    const item = await this.prisma.recognition.findUnique({
+      where: { id, deletedAt: null },
+      select: { pinned: true },
+    });
     if (item) {
-      await this.prisma.recognition.update({ where: { id }, data: { pinned: !item.pinned } });
+      await this.prisma.recognition.update({ where: { id, deletedAt: null }, data: { pinned: !item.pinned } });
     }
   }
 
-  async toggleLike(id: string, userId: string): Promise<boolean> {
+  async toggleLike(id: number, userId: number): Promise<boolean> {
     const existing = await this.prisma.recognitionLike.findUnique({
       where: { recognitionId_userId: { recognitionId: id, userId } },
     });
-    if (existing) {
-      await this.prisma.recognitionLike.delete({ where: { id: existing.id } });
+    if (existing && !existing.deletedAt) {
+      await this.prisma.recognitionLike.update({ where: { id: existing.id }, data: { deletedAt: new Date() } });
       return false;
+    }
+    if (existing) {
+      await this.prisma.recognitionLike.update({ where: { id: existing.id }, data: { deletedAt: null } });
+      return true;
     }
     await this.prisma.recognitionLike.create({ data: { recognitionId: id, userId } });
     return true;
   }
 
-  async hasLiked(id: string, userId: string): Promise<boolean> {
+  async hasLiked(id: number, userId: number): Promise<boolean> {
     const like = await this.prisma.recognitionLike.findUnique({
-      where: { recognitionId_userId: { recognitionId: id, userId } },
+      where: { recognitionId_userId: { recognitionId: id, userId }, deletedAt: null },
     });
     return !!like;
   }
 
   async countPending(): Promise<number> {
-    return this.prisma.recognition.count({ where: { status: "pending" } });
+    return this.prisma.recognition.count({ where: { status: "pending", deletedAt: null } });
+  }
+
+  async getUserCreatedAt(userId: number): Promise<Date | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, deletedAt: null },
+      select: { createdAt: true },
+    });
+    return user?.createdAt ?? null;
+  }
+
+  async getRecognitionExp(userId: number): Promise<number> {
+    const account = await this.prisma.coinAccount.findUnique({
+      where: { userId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!account) return 0;
+    const result = await this.prisma.coinTransaction.aggregate({
+      where: { accountId: account.id, source: "recognition", deletedAt: null },
+      _sum: { amount: true },
+    });
+    return result._sum?.amount ?? 0;
   }
 }

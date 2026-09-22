@@ -12,7 +12,13 @@ import {
   Tabs,
   Tag,
 } from "@arco-design/web-react";
-import { fetchFieldConfigs, upsertFieldConfig, deleteFieldConfig, type FieldConfigItem } from "../api/field-config";
+import {
+  fetchFieldConfigs,
+  createFieldConfig,
+  updateFieldConfig,
+  deleteFieldConfig,
+  type FieldConfigItem,
+} from "../api/field-config";
 
 const CATEGORY_TABS = [
   { key: "scheduler", title: "定时任务" },
@@ -206,11 +212,21 @@ export function FieldConfigPage() {
   const handleSave = async () => {
     const values = await form.validate();
     try {
-      await upsertFieldConfig(category, values.module, {
-        label: values.label,
-        options: options,
-        description: values.description,
-      });
+      if (editing) {
+        await updateFieldConfig(editing.id, {
+          label: values.label,
+          options: options,
+          description: values.description,
+        });
+      } else {
+        await createFieldConfig({
+          category,
+          module: values.module,
+          label: values.label,
+          options: options,
+          description: values.description,
+        });
+      }
       Notification.success({ title: "操作成功", content: editing ? "已更新" : "已创建" });
       setModalVisible(false);
       setEditing(null);
@@ -222,7 +238,7 @@ export function FieldConfigPage() {
 
   const handleDelete = async (item: FieldConfigItem) => {
     try {
-      await deleteFieldConfig(item.category, item.module);
+      await deleteFieldConfig(item.id);
       Notification.success({ title: "操作成功", content: "已删除" });
       void load();
     } catch (error) {

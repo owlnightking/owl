@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Notification } from "@arco-design/web-react";
+import { ApiErrorCode } from "@owl/shared";
 
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -19,7 +20,7 @@ export const http = axios.create({
 http.interceptors.response.use(
   (response) => {
     const body = response.data as ApiResponse;
-    if (body && typeof body.code === "number" && body.code !== 0) {
+    if (body && typeof body.code === "number" && body.code !== ApiErrorCode.OK) {
       return Promise.reject(new Error(body.message ?? "request failed"));
     }
     return response;

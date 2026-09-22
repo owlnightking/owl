@@ -27,7 +27,9 @@ interface AuditLogItem {
 }
 
 interface PageData {
-  items: AuditLogItem[];
+  list: AuditLogItem[];
+  pageNum: number;
+  pageSize: number;
   total: number;
 }
 
@@ -55,7 +57,7 @@ export function AuditLogsPage() {
     setLoading(true);
     try {
       const result = await get<PageData>("/audit-logs", { page: p, pageSize: ps });
-      setData(result.items);
+      setData(result.list);
       setTotal(result.total);
     } finally {
       setLoading(false);

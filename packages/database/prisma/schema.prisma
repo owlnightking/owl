@@ -1,5 +1,7 @@
 // Owl 基础数据模型（底座）
 // 命名规范：下划线分隔，无 deprecated/backup 前后缀，表名复数语义
+// 主键规范：所有表使用 Int 自增 id；删除规范：所有表软删除（deletedAt）
+// 时间规范：所有表统一 createdAt / updatedAt
 
 generator client {
   provider = "prisma-client-js"
@@ -12,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id             String       @id @default(uuid())
+  id             Int          @id @default(autoincrement())
   unionId        String       @unique @map("union_id")
   openId         String       @map("open_id")
   name           String
@@ -28,9 +30,10 @@ model User {
   departmentIds  Json?        @map("department_ids")
   status         String       @default("active")
   departmentId   String?      @map("department_id")
-  lastLoginAt    DateTime?    @map("last_login_at")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  lastLoginAt    DateTime? @db.Timestamp(0)    @map("last_login_at")
+  createdAt      DateTime @db.Timestamp(0)     @default(now()) @map("created_at")
+  updatedAt      DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime? @db.Timestamp(0)    @map("deleted_at")
   department     Department?  @relation(fields: [departmentId], references: [feishuDepartmentId], onDelete: SetNull)
   roles          UserRole[]
   sessions       AuthSession[]
@@ -51,7 +54,7 @@ model User {
 }
 
 model Department {
-  id                 String       @id @default(uuid())
+  id                 Int          @id @default(autoincrement())
   feishuDepartmentId String       @unique @map("feishu_department_id")
   openDepartmentId   String?      @unique @map("open_department_id")
   name               String
@@ -63,8 +66,9 @@ model Department {
   memberCount        Int?         @map("member_count")
   primaryMemberCount Int?         @map("primary_member_count")
   isDeleted          Boolean?     @default(false) @map("is_deleted")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  updatedAt          DateTime     @updatedAt @map("updated_at")
+  createdAt          DateTime @db.Timestamp(0)     @default(now()) @map("created_at")
+  updatedAt          DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
+  deletedAt          DateTime? @db.Timestamp(0)    @map("deleted_at")
   parent             Department?  @relation("DeptTree", fields: [parentId], references: [feishuDepartmentId])
   children           Department[] @relation("DeptTree")
   users              User[]
@@ -73,28 +77,31 @@ model Department {
 }
 
 model SyncLog {
-  id         String    @id @default(uuid())
+  id         Int       @id @default(autoincrement())
   type       String
   status     String    @default("running")
-  startedAt  DateTime  @map("started_at")
-  finishedAt DateTime? @map("finished_at")
+  startedAt  DateTime @db.Timestamp(0)  @map("started_at")
+  finishedAt DateTime? @db.Timestamp(0) @map("finished_at")
   total      Int       @default(0)
   created    Int       @default(0)
   updated    Int       @default(0)
   errorMsg   String?   @map("error_msg")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  createdAt  DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt  DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt  DateTime? @db.Timestamp(0) @map("deleted_at")
 
   @@map("sync_log")
 }
 
 model Role {
-  id          String   @id @default(uuid())
-  code        String   @unique
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
   name        String
   description String?
-  isSystem    Boolean  @default(false) @map("is_system")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isSystem    Boolean          @default(false) @map("is_system")
+  createdAt   DateTime @db.Timestamp(0)         @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)         @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)        @map("deleted_at")
   users       UserRole[]
   permissions RolePermission[]
 
@@ -102,47 +109,59 @@ model Role {
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  code        String   @unique
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
   name        String
   resource    String
   action      String
   description String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @db.Timestamp(0)         @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)         @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)        @map("deleted_at")
   roles       RolePermission[]
 
   @@map("permission")
 }
 
 model RolePermission {
-  roleId       String     @map("role_id")
-  permissionId String     @map("permission_id")
+  id           Int        @id @default(autoincrement())
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  createdAt    DateTime @db.Timestamp(0)   @default(now()) @map("created_at")
+  updatedAt    DateTime @db.Timestamp(0)   @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @db.Timestamp(0)  @map("deleted_at")
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@id([roleId, permissionId])
+  @@unique([roleId, permissionId])
   @@map("role_permission")
 }
 
 model UserRole {
-  userId String @map("user_id")
-  roleId String @map("role_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  roleId    Int       @map("role_id")
+  createdAt DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@id([userId, roleId])
+  @@unique([userId, roleId])
   @@map("user_role")
 }
 
 model AuthSession {
-  id         String    @id @default(uuid())
+  id         Int       @id @default(autoincrement())
   jti        String    @unique
-  userId     String    @map("user_id")
+  userId     Int       @map("user_id")
   clientName String    @map("client_name")
   status     String    @default("active")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  expiresAt  DateTime  @map("expires_at")
-  lastUsedAt DateTime  @default(now()) @map("last_used_at")
+  createdAt  DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt  DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  expiresAt  DateTime @db.Timestamp(0)  @map("expires_at")
+  lastUsedAt DateTime @db.Timestamp(0)  @default(now()) @map("last_used_at")
+  deletedAt  DateTime? @db.Timestamp(0) @map("deleted_at")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
@@ -150,36 +169,40 @@ model AuthSession {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?  @map("user_id")
+  id         Int       @id @default(autoincrement())
+  userId     Int?      @map("user_id")
   unionId    String?
   action     String
   resource   String
-  resourceId String?  @map("resource_id")
+  resourceId String?   @map("resource_id")
   detail     Json?
   ip         String?
-  ipRegion   String?  @map("ip_region")
-  requestId  String?  @map("request_id")
-  result     String   @default("success")
+  ipRegion   String?   @map("ip_region")
+  requestId  String?   @map("request_id")
+  result     String    @default("success")
   system     String?
   module     String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt  DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt  DateTime? @db.Timestamp(0) @map("deleted_at")
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@map("audit_log")
 }
 
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String?   @map("user_id")
+  id        Int       @id @default(autoincrement())
+  userId    Int?      @map("user_id")
   title     String
   content   String
   type      String    @default("system")
   channel   String    @default("webhook")
   status    String    @default("unread")
-  sentAt    DateTime? @map("sent_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  sentAt    DateTime? @db.Timestamp(0) @map("sent_at")
+  createdAt DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
@@ -187,72 +210,80 @@ model Notification {
 }
 
 model File {
-  id         String   @id @default(uuid())
-  name       String
-  mimeType   String   @map("mime_type")
-  size       Int
-  bucket     String
-  objectKey  String   @map("object_key")
-  url        String?
-  uploadedBy String   @map("uploaded_by")
-  user       User     @relation(fields: [uploadedBy], references: [id])
+  id          Int          @id @default(autoincrement())
+  name        String
+  mimeType    String       @map("mime_type")
+  size        Int
+  bucket      String
+  objectKey   String       @map("object_key")
+  url         String?
+  uploadedBy  Int          @map("uploaded_by")
+  createdAt   DateTime @db.Timestamp(0)     @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)    @map("deleted_at")
+  user        User         @relation(fields: [uploadedBy], references: [id])
   mdDocImages MdDocImage[]
-  createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([bucket, objectKey])
   @@map("file")
 }
 
 model SystemConfig {
-  id          String   @id @default(uuid())
-  key         String   @unique
+  id          Int       @id @default(autoincrement())
+  key         String    @unique
   value       Json
   description String?
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  updatedBy   String?  @map("updated_by")
+  updatedBy   Int?      @map("updated_by")
+  createdAt   DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0) @map("deleted_at")
 
   @@map("system_config")
 }
 
 model FieldConfig {
-  id          String   @id @default(uuid())
+  id          Int       @id @default(autoincrement())
   category    String
   module      String
   label       String
   options     Json?
   value       String?
   description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0) @map("deleted_at")
 
   @@unique([category, module])
   @@map("field_config")
 }
 
 model McpTool {
-  id                String   @id @default(uuid())
-  name              String   @unique
+  id                Int       @id @default(autoincrement())
+  name              String    @unique
   description       String
-  inputSchema       Json     @map("input_schema")
+  inputSchema       Json      @map("input_schema")
   bundle            String
-  targetDomain      String   @map("target_domain")
-  enabled           Boolean  @default(true)
-  requirePermission Boolean  @default(true) @map("require_permission")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  targetDomain      String    @map("target_domain")
+  enabled           Boolean   @default(true)
+  requirePermission Boolean   @default(true) @map("require_permission")
+  createdAt         DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt         DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt         DateTime? @db.Timestamp(0) @map("deleted_at")
 
   @@map("mcp_tool")
 }
 
 model McpSession {
-  id         String    @id @default(uuid())
+  id         Int       @id @default(autoincrement())
   sessionId  String    @unique @map("session_id")
-  userId     String    @map("user_id")
+  userId     Int       @map("user_id")
   clientName String    @map("client_name")
   status     String    @default("active")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  expiresAt  DateTime  @map("expires_at")
-  lastUsedAt DateTime  @default(now()) @map("last_used_at")
+  createdAt  DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt  DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  expiresAt  DateTime @db.Timestamp(0)  @map("expires_at")
+  lastUsedAt DateTime @db.Timestamp(0)  @default(now()) @map("last_used_at")
+  deletedAt  DateTime? @db.Timestamp(0) @map("deleted_at")
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, clientName, status])
@@ -260,56 +291,62 @@ model McpSession {
 }
 
 model McpToolLog {
-  id         String   @id @default(uuid())
-  toolName   String   @map("tool_name")
-  userId     String   @map("user_id")
+  id         Int       @id @default(autoincrement())
+  toolName   String    @map("tool_name")
+  userId     Int       @map("user_id")
   unionId    String?
   arguments  Json?
-  durationMs Int?     @map("duration_ms")
-  resultCode String   @map("result_code")
-  requestId  String?  @map("request_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  durationMs Int?      @map("duration_ms")
+  resultCode String    @map("result_code")
+  requestId  String?   @map("request_id")
+  createdAt  DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt  DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt  DateTime? @db.Timestamp(0) @map("deleted_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([toolName, createdAt])
   @@map("mcp_tool_log")
 }
 
 model SchedulerConfig {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          Int            @id @default(autoincrement())
+  name        String         @unique
   area        String
   cron        String
   queue       String
   handler     String
   tags        String[]
   module      String?
-  env         String   @default("all")  // dev: 仅开发环境, prod: 仅生产环境, all: 所有环境
-  retryPolicy Json     @map("retry_policy")
-  timeoutMs   Int      @map("timeout_ms")
-  enabled     Boolean  @default(true)
+  env         String         @default("all") // dev: 仅开发环境, prod: 仅生产环境, all: 所有环境
+  retryPolicy Json           @map("retry_policy")
+  timeoutMs   Int            @map("timeout_ms")
+  enabled     Boolean        @default(true)
   description String?
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @db.Timestamp(0)       @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)       @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)      @map("deleted_at")
   runs        SchedulerRun[]
 
   @@map("scheduler_config")
 }
 
 model SchedulerRun {
-  id          String    @id @default(uuid())
-  taskRunId   String    @unique @map("task_run_id")
-  configId    String?   @map("config_id")
+  id          Int              @id @default(autoincrement())
+  taskRunId   String           @unique @map("task_run_id")
+  configId    Int?             @map("config_id")
   area        String?
-  taskName    String?   @map("task_name")
-  env         String    @default("all")
-  scheduledAt DateTime  @map("scheduled_at")
-  startedAt   DateTime? @map("started_at")
-  finishedAt  DateTime? @map("finished_at")
-  status      String    @default("PENDING")
-  attempts    Int       @default(0)
-  lastError   String?   @map("last_error")
-  businessKey String?   @map("business_key")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  taskName    String?          @map("task_name")
+  env         String           @default("all")
+  scheduledAt DateTime @db.Timestamp(0)         @map("scheduled_at")
+  startedAt   DateTime? @db.Timestamp(0)        @map("started_at")
+  finishedAt  DateTime? @db.Timestamp(0)        @map("finished_at")
+  status      String           @default("PENDING")
+  attempts    Int              @default(0)
+  lastError   String?          @map("last_error")
+  businessKey String?          @map("business_key")
+  createdAt   DateTime @db.Timestamp(0)         @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)         @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)        @map("deleted_at")
   config      SchedulerConfig? @relation(fields: [configId], references: [id], onDelete: SetNull)
 
   @@index([configId, status, scheduledAt])
@@ -319,37 +356,39 @@ model SchedulerRun {
 // ========== 认可中心 ==========
 
 model Badge {
-  id          String   @id @default(uuid())
-  name        String
-  icon        String?
-  description String?
-  coinReward  Int      @default(0) @map("coin_reward")
-  expReward   Int      @default(0) @map("exp_reward")
-  enabled     Boolean  @default(true)
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           Int           @id @default(autoincrement())
+  name         String
+  icon         String?
+  description  String?
+  coinReward   Int           @default(0) @map("coin_reward")
+  expReward    Int           @default(0) @map("exp_reward")
+  enabled      Boolean       @default(true)
+  sortOrder    Int           @default(0) @map("sort_order")
+  createdAt    DateTime @db.Timestamp(0)      @default(now()) @map("created_at")
+  updatedAt    DateTime @db.Timestamp(0)      @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @db.Timestamp(0)     @map("deleted_at")
   recognitions Recognition[]
 
   @@map("badge")
 }
 
 model Recognition {
-  id           String   @id @default(uuid())
-  senderId     String   @map("sender_id")
-  receiverId   String   @map("receiver_id")
-  badgeId      String?  @map("badge_id")
+  id           Int               @id @default(autoincrement())
+  senderId     Int               @map("sender_id")
+  receiverId   Int               @map("receiver_id")
+  badgeId      Int?              @map("badge_id")
   message      String
-  status       String   @default("pending") // pending / approved / rejected
-  pinned       Boolean  @default(false)
-  approverId   String?  @map("approver_id")
-  approvedAt   DateTime? @map("approved_at")
-  rejectReason String?  @map("reject_reason")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  sender       User     @relation("RecognitionSender", fields: [senderId], references: [id])
-  receiver     User     @relation("RecognitionReceiver", fields: [receiverId], references: [id])
-  badge        Badge?   @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  status       String            @default("pending") // pending / approved / rejected
+  pinned       Boolean           @default(false)
+  approverId   Int?              @map("approver_id")
+  approvedAt   DateTime? @db.Timestamp(0)         @map("approved_at")
+  rejectReason String?           @map("reject_reason")
+  createdAt    DateTime @db.Timestamp(0)          @default(now()) @map("created_at")
+  updatedAt    DateTime @db.Timestamp(0)          @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @db.Timestamp(0)         @map("deleted_at")
+  sender       User              @relation("RecognitionSender", fields: [senderId], references: [id])
+  receiver     User              @relation("RecognitionReceiver", fields: [receiverId], references: [id])
+  badge        Badge?            @relation(fields: [badgeId], references: [id], onDelete: SetNull)
   likes        RecognitionLike[]
 
   @@index([receiverId, status])
@@ -358,41 +397,47 @@ model Recognition {
 }
 
 model RecognitionLike {
-  id             String   @id @default(uuid())
-  recognitionId  String   @map("recognition_id")
-  userId         String   @map("user_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-  recognition    Recognition @relation(fields: [recognitionId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int         @id @default(autoincrement())
+  recognitionId Int         @map("recognition_id")
+  userId        Int         @map("user_id")
+  createdAt     DateTime @db.Timestamp(0)    @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0)    @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0)   @map("deleted_at")
+  recognition   Recognition @relation(fields: [recognitionId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([recognitionId, userId])
   @@map("recognition_like")
 }
 
 model CoinAccount {
-  id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  balance   Int      @default(0)
-  totalEarned Int    @default(0) @map("total_earned")
-  totalSpent  Int    @default(0) @map("total_spent")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id])
+  id          Int               @id @default(autoincrement())
+  userId      Int               @unique @map("user_id")
+  balance     Int               @default(0)
+  totalEarned Int               @default(0) @map("total_earned")
+  totalSpent  Int               @default(0) @map("total_spent")
+  createdAt   DateTime @db.Timestamp(0)          @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)          @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)         @map("deleted_at")
+  user        User              @relation(fields: [userId], references: [id])
   transactions CoinTransaction[]
 
   @@map("coin_account")
 }
 
 model CoinTransaction {
-  id          String   @id @default(uuid())
-  accountId   String   @map("account_id")
-  type        String   // earn / spend / adjust
+  id          Int         @id @default(autoincrement())
+  accountId   Int         @map("account_id")
+  type        String // earn / spend / adjust
   amount      Int
-  balance     Int      // 交易后余额
-  source      String   // recognition / exchange / admin_adjust
-  referenceId String?  @map("reference_id")
+  balance     Int // 交易后余额
+  source      String // recognition / exchange / admin_adjust
+  referenceId String?     @map("reference_id")
   remark      String?
-  operatorId  String?  @map("operator_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  operatorId  Int?        @map("operator_id")
+  createdAt   DateTime @db.Timestamp(0)    @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)    @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)   @map("deleted_at")
   account     CoinAccount @relation(fields: [accountId], references: [id])
 
   @@index([accountId, createdAt])
@@ -400,49 +445,53 @@ model CoinTransaction {
 }
 
 model StaminaAccount {
-  id           String   @id @default(uuid())
-  userId       String   @unique @map("user_id")
-  current      Int      @default(50)
-  maxStamina   Int      @default(50) @map("max_stamina")
-  month        String   // YYYY-MM
-  lastResetAt  DateTime? @map("last_reset_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id])
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique @map("user_id")
+  current     Int       @default(50)
+  maxStamina  Int       @default(50) @map("max_stamina")
+  month       String // YYYY-MM
+  lastResetAt DateTime? @db.Timestamp(0) @map("last_reset_at")
+  createdAt   DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0) @map("deleted_at")
+  user        User      @relation(fields: [userId], references: [id])
 
   @@map("stamina_account")
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  image       String?
-  price       Int      // 币价格
-  stock       Int      @default(0)
-  enabled     Boolean  @default(true)
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             Int             @id @default(autoincrement())
+  name           String
+  description    String?
+  image          String?
+  price          Int // 币价格
+  stock          Int             @default(0)
+  enabled        Boolean         @default(true)
+  sortOrder      Int             @default(0) @map("sort_order")
+  createdAt      DateTime @db.Timestamp(0)        @default(now()) @map("created_at")
+  updatedAt      DateTime @db.Timestamp(0)        @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime? @db.Timestamp(0)       @map("deleted_at")
   exchangeOrders ExchangeOrder[]
 
   @@map("product")
 }
 
 model ExchangeOrder {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  productId   String   @map("product_id")
-  quantity    Int      @default(1)
-  totalCost   Int      @map("total_cost")
-  status      String   @default("pending") // pending / approved / rejected / fulfilled
-  approverId  String?  @map("approver_id")
-  approvedAt  DateTime? @map("approved_at")
-  rejectReason String? @map("reject_reason")
-  fulfilledAt DateTime? @map("fulfilled_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  user        User     @relation(fields: [userId], references: [id])
-  product     Product  @relation(fields: [productId], references: [id])
+  id           Int       @id @default(autoincrement())
+  userId       Int       @map("user_id")
+  productId    Int       @map("product_id")
+  quantity     Int       @default(1)
+  totalCost    Int       @map("total_cost")
+  status       String    @default("pending") // pending / approved / rejected / fulfilled
+  approverId   Int?      @map("approver_id")
+  approvedAt   DateTime? @db.Timestamp(0) @map("approved_at")
+  rejectReason String?   @map("reject_reason")
+  fulfilledAt  DateTime? @db.Timestamp(0) @map("fulfilled_at")
+  createdAt    DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt    DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @db.Timestamp(0) @map("deleted_at")
+  user         User      @relation(fields: [userId], references: [id])
+  product      Product   @relation(fields: [productId], references: [id])
 
   @@index([userId, status])
   @@index([status, createdAt])
@@ -452,12 +501,13 @@ model ExchangeOrder {
 // ========== 付费知识（副业域） ==========
 
 model MdDoc {
-  id        String   @id @default(uuid())
-  authorId  String   @map("author_id")
+  id        Int          @id @default(autoincrement())
+  authorId  Int          @map("author_id")
   content   String
   excerpt   String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @db.Timestamp(0)     @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0)    @map("deleted_at")
 
   author User          @relation(fields: [authorId], references: [id])
   images MdDocImage[]
@@ -467,14 +517,39 @@ model MdDoc {
 }
 
 model MdDocImage {
-  id        String   @id @default(uuid())
-  docId     String   @map("doc_id")
-  fileId    String   @map("file_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        Int       @id @default(autoincrement())
+  docId     Int       @map("doc_id")
+  fileId    Int       @map("file_id")
+  createdAt DateTime  @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt DateTime  @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
 
   doc  MdDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
-  file File @relation(fields: [fileId], references: [id])
+  file File  @relation(fields: [fileId], references: [id])
 
   @@index([docId])
   @@map("md_doc_image")
+}
+
+// ========== 系统日志（日志中心） ==========
+
+model SystemLog {
+  id        Int       @id @default(autoincrement())
+  service   String? // api-service / cron-service
+  level     String // error / warn
+  message   String
+  stack     String?
+  requestId String?   @map("request_id")
+  method    String?
+  url       String?
+  status    Int?
+  code      Int?
+  userId    Int?      @map("user_id")
+  createdAt DateTime  @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt DateTime  @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  @@index([level, createdAt])
+  @@index([service, createdAt])
+  @@map("system_log")
 }

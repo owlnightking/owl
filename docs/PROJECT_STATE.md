@@ -49,19 +49,20 @@
 
 | 模块          | app | dom | infra | pres | 状态    |
 | ------------- | --- | --- | ----- | ---- | ------- |
-| audit-log     | 1   | 2   | 2     | 1    | ✅ 完整 |
-| auth          | 3   | 1   | 5     | 2    | ✅ 完整 |
-| field-config  | 1   | 1   | 1     | 1    | ✅ 完整 |
-| file          | 1   | 3   | 2     | 1    | ✅ 完整 |
+| audit-log     | 2   | 2   | 3     | 2    | ✅ 完整 |
+| auth          | 3   | 1   | 5     | 3    | ✅ 完整 |
+| field-config  | 1   | 1   | 1     | 2    | ✅ 完整 |
+| file          | 1   | 3   | 2     | 2    | ✅ 完整 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
-| md-doc        | 1   | 1   | 1     | 1    | ✅ 完整 |
-| notification  | 1   | 1   | 1     | 1    | ✅ 完整 |
-| permission    | 1   | 1   | 1     | 1    | ✅ 完整 |
+| md-doc        | 1   | 1   | 1     | 2    | ✅ 完整 |
+| notification  | 1   | 1   | 1     | 2    | ✅ 完整 |
+| permission    | 1   | 1   | 1     | 2    | ✅ 完整 |
 | project       | 0   | 0   | 0     | 0    | ❌ 空壳 |
-| recognition   | 6   | 6   | 6     | 4    | ✅ 完整 |
-| role          | 1   | 1   | 1     | 1    | ✅ 完整 |
-| system-config | 1   | 1   | 1     | 1    | ✅ 完整 |
-| user          | 1   | 1   | 1     | 1    | ✅ 完整 |
+| recognition   | 6   | 6   | 6     | 8    | ✅ 完整 |
+| role          | 1   | 1   | 1     | 2    | ✅ 完整 |
+| system-config | 1   | 1   | 1     | 2    | ✅ 完整 |
+| system-log    | 1   | 1   | 1     | 2    | ✅ 完整 |
+| user          | 1   | 1   | 1     | 2    | ✅ 完整 |
 
 <!-- AUTO-MODULES-END -->
 
@@ -117,6 +118,7 @@
 | ExchangeOrder   |      |
 | MdDoc           |      |
 | MdDocImage      |      |
+| SystemLog       |      |
 
 <!-- AUTO-MODELS-END -->
 
@@ -139,6 +141,10 @@
 | 20260904040000_restore_sync_log                      |      |
 | 20260908000000_add_md_doc                            |      |
 | 20260920000000_add_audit_log_system_module           |      |
+| 20260920120000_int_id_and_soft_delete                |      |
+| 20260920120100_restore_converted_unique_indexes      |      |
+| 20260920130000_unify_timestamps                      |      |
+| 20260921000000_add_system_log                        |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -159,21 +165,21 @@
 
 | 模块          | 方法   | 路径                                         |
 | ------------- | ------ | -------------------------------------------- |
-| field-config  | Delete | /api/field-config/:category/:module          |
+| field-config  | Delete | /api/field-config/:id                        |
 | file          | Delete | /api/files/:id                               |
 | md-doc        | Delete | /api/md-docs/:id                             |
 | permission    | Delete | /api/permissions/:id                         |
 | recognition   | Delete | /api/recognition/badges/:id                  |
 | recognition   | Delete | /api/recognition/products/:id                |
 | role          | Delete | /api/roles/:id                               |
-| system-config | Delete | /api/system-config/:key                      |
+| system-config | Delete | /api/system-config/:id                       |
 | audit-log     | Get    | /api/audit-logs                              |
 | auth          | Get    | /api/auth/feishu/callback                    |
 | auth          | Get    | /api/auth/feishu/login                       |
 | auth          | Get    | /api/auth/me                                 |
 | auth          | Get    | /api/auth/mock-users                         |
-| field-config  | Get    | /api/field-config/:category                  |
-| field-config  | Get    | /api/field-config/:category/:module          |
+| field-config  | Get    | /api/field-config                            |
+| field-config  | Get    | /api/field-config/:id                        |
 | file          | Get    | /api/files                                   |
 | file          | Get    | /api/files/:id                               |
 | md-doc        | Get    | /api/md-docs                                 |
@@ -197,13 +203,15 @@
 | recognition   | Get    | /api/recognition/products/:id                |
 | role          | Get    | /api/roles                                   |
 | role          | Get    | /api/roles/permissions                       |
-| system-config | Get    | /api/system-config/:key                      |
+| system-config | Get    | /api/system-config/:id                       |
+| system-log    | Get    | /api/system-logs                             |
 | user          | Get    | /api/users                                   |
 | user          | Get    | /api/users/:id/roles                         |
 | user          | Get    | /api/users/roles                             |
 | auth          | Post   | /api/auth/logout                             |
 | auth          | Post   | /api/auth/mock-login                         |
 | auth          | Post   | /api/auth/refresh                            |
+| field-config  | Post   | /api/field-config                            |
 | file          | Post   | /api/files/upload                            |
 | md-doc        | Post   | /api/md-docs                                 |
 | md-doc        | Post   | /api/md-docs/upload-image                    |
@@ -215,7 +223,7 @@
 | recognition   | Post   | /api/recognition/exchange/orders             |
 | recognition   | Post   | /api/recognition/products                    |
 | role          | Post   | /api/roles                                   |
-| field-config  | Put    | /api/field-config/:category/:module          |
+| field-config  | Put    | /api/field-config/:id                        |
 | md-doc        | Put    | /api/md-docs/:id                             |
 | notification  | Put    | /api/notifications/:id/read                  |
 | notification  | Put    | /api/notifications/read-all                  |
@@ -230,7 +238,7 @@
 | recognition   | Put    | /api/recognition/exchange/orders/:id/reject  |
 | recognition   | Put    | /api/recognition/products/:id                |
 | role          | Put    | /api/roles/:id                               |
-| system-config | Put    | /api/system-config/:key                      |
+| system-config | Put    | /api/system-config/:id                       |
 | user          | Put    | /api/users/:id/roles                         |
 | user          | Put    | /api/users/:id/status                        |
 

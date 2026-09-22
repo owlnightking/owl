@@ -24,6 +24,13 @@ src/
   utils/         # 工具函数
 ```
 
+**文件大小硬性规则**：单个代码文件不得超过 **1500 行**，超限必须拆分（页面拆子组件、逻辑抽 hooks、常量/类型下沉）。
+该规则由 `pnpm arch:check` 全仓统一校验（前后端同一阈值，另含 >1000 行阻断级预警），不在 `frontend:check` 重复实现。
+
+> **拆出来的子组件放哪**：`check_page_naming` 要求 `pages/` 目录下的一切 `.tsx` 只能是 `XxxPage.tsx` 或
+> `index.tsx`。因此从页面拆出的子组件要放 `src/components/`（或 `src/pages/<feature>/` 之外），
+> 不要直接放在 `pages/` 下，否则会被判为「页面组件命名错误」。
+
 ## 三、UI 库使用
 
 ### 硬性规则
@@ -207,21 +214,21 @@ const columns = [
 ```tsx
 import { Skeleton } from "@arco-design/web-react";
 
-// 列表页骨架屏
+// 列表页骨架屏（Arco web 文字占位用 text，图片占位用 image）
 function ListPageSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       {/* 标题区骨架 */}
-      <Skeleton paragraph={{ rows: 1 }} />
+      <Skeleton text={{ rows: 1 }} />
 
       {/* 筛选区骨架 */}
       <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton paragraph={{ rows: 2 }} />
+        <Skeleton text={{ rows: 2 }} />
       </div>
 
       {/* 列表区骨架 */}
       <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Skeleton paragraph={{ rows: 8 }} />
+        <Skeleton text={{ rows: 8 }} />
       </div>
     </div>
   );
@@ -279,33 +286,54 @@ function UsersPage() {
 
 1. **100% 使用 Tailwind CSS 工具类**
 2. **禁止**：
-   - CSS Modules (`*.module.css`)
-   - styled-components / emotion
+   - CSS Modules (`*.module.css` / `*.module.scss` / `*.module.less`)
+   - styled 文件与 styled-components / emotion
+   - 业务自建 `.css`：各前端只允许唯一的 Tailwind 入口 `src/index.css`（第三方包 css 不受限，如 `vditor/dist/index.css`）
    - 内联 style（除 Arco 组件必要属性）
-   - 硬编码颜色 HEX/RGB（使用 Tailwind 调色板）
+   - 硬编码颜色 HEX（使用 Tailwind 调色板）
 3. **响应式**：
    - Web 端：固定桌面布局（无响应式）
    - Mobile 端：使用 `dvh`、`fixed` 定位、触摸友好尺寸
 
+上述「禁止」项由 `check_style_solution` 自动校验；内联 style 由 `check_inline_style` 校验（列入白名单的
+Arco 属性是**前缀匹配**：`style={{ width: 300 }}` 放行，但同一行里再叠加其他任意属性也会一并放行，需人工留意）；
+硬编码颜色只自动查引号内的 HEX，`rgb()` / `hsl()` 需人工确认。
+
 ## 八、检查规则
 
-AI 写完前端代码后，必须检查：
+AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：**脚本阻断项**由门禁自动校验，检出即阻断；
+**跨脚本覆盖**由其他门禁负责（同一规则只有一个实现）；**人工评审项**无法用脚本可靠判定，必须人工确认。
 
-- [ ] 组件命名是否符合规范
-- [ ] 目录组织是否正确
-- [ ] UI 库导入是否匹配应用类型
-- [ ] 是否使用了 package.json 中已有的 UI 组件（禁止自研）
-- [ ] 操作反馈是否使用正确的组件（web: Notification, mobile: Notify）
-- [ ] 图片上传是否使用公共组件 ImageUpload（禁止裸 Upload / input type=file）
-- [ ] 列表页布局是否符合规范（标题→筛选→操作→列表）
-- [ ] 列表操作列是否固定在右侧且使用 icon
-- [ ] 列表字段超长文本是否截断并悬浮显示
-- [ ] 每个区域是否使用骨架屏加载
-- [ ] 样式是否使用 Tailwind
-- [ ] 是否有内联 style
-- [ ] 是否有硬编码颜色值
-- [ ] 是否有 emoji/颜文字
+### 8.1 脚本阻断项（`pnpm frontend:check` 检出即阻断）
 
-以上任一问题均为 ERROR 级别，`pnpm frontend:check` 检出即阻断提交。
+| #   | 规则                                                                                   | 校验实现                        |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------- |
+| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                    | `check_page_naming`             |
+| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                  | `check_ui_library_cross_import` |
+| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                              | `check_inline_style`            |
+| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                     | `check_hardcoded_colors`        |
+| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                               | `check_notification_component`  |
+| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                          | `check_skeleton_loading`        |
+| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web） | `check_image_upload_component`  |
+| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind    | `check_style_solution`          |
+
+### 8.2 跨脚本覆盖（同属前端规范，由其他门禁校验）
+
+| 规则                                        | 校验入口                                                                   |
+| ------------------------------------------- | -------------------------------------------------------------------------- |
+| 禁止 emoji / 颜文字                         | `scan-ai-residue.sh` 第 10 条（`scripts/lib/find-emoji.mjs`）              |
+| 禁止 `any`                                  | `scan-ai-residue.sh` 第 1 条 + ESLint `@typescript-eslint/no-explicit-any` |
+| 单文件 ≤ 1500 行（另有 >1000 行阻断级预警） | `pnpm arch:check`                                                          |
+| 前端禁止跨 app `import`                     | `pnpm arch:check` 第 10 条                                                 |
+
+### 8.3 人工评审项（脚本无法可靠校验，提交前人工确认）
+
+- 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
+- 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
+- 列表页布局四段式：页面标题区 → 筛选区表单 → 列表外操作区（右靠齐）→ 列表区。
+- 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
+- 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
+- 骨架屏需覆盖**每个区域**：脚本只能判定「有 loading 状态就必须出现 `Skeleton`」，无法判断覆盖是否完整。
+- 响应式约定：Web 端固定桌面布局；Mobile 端使用 `dvh` / `fixed` 定位 / 触摸友好尺寸。
 
 运行检查：`pnpm frontend:check`

@@ -16,7 +16,9 @@ interface RecognitionItem {
   createdAt: string;
 }
 interface PageData {
-  items: RecognitionItem[];
+  list: RecognitionItem[];
+  pageNum: number;
+  pageSize: number;
   total: number;
 }
 
@@ -33,7 +35,7 @@ export function RecognitionsPage() {
       const p = new URLSearchParams({ page: String(page), pageSize: "20" });
       if (tab !== "all") p.set("status", tab);
       const r = await get<PageData>(`/recognition?${p}`);
-      setData(r.items);
+      setData(r.list);
       setTotal(r.total);
     } catch {
       // API 请求失败时保持当前数据状态，避免白屏

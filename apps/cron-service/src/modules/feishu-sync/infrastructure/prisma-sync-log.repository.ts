@@ -6,7 +6,7 @@ import type { SyncLogRepositoryPort } from "../domain/feishu-sync.ports";
 export class PrismaSyncLogRepository implements SyncLogRepositoryPort {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async create(type: string): Promise<string> {
+  async create(type: string): Promise<number> {
     const log = await this.prisma.syncLog.create({
       data: {
         type,
@@ -18,7 +18,7 @@ export class PrismaSyncLogRepository implements SyncLogRepositoryPort {
   }
 
   async update(
-    id: string,
+    id: number,
     data: { status: string; total?: number; created?: number; updated?: number; errorMsg?: string }
   ): Promise<void> {
     const updateData: Record<string, unknown> = { status: data.status };
@@ -30,6 +30,6 @@ export class PrismaSyncLogRepository implements SyncLogRepositoryPort {
     if (data.updated !== undefined) updateData.updated = data.updated;
     if (data.errorMsg !== undefined) updateData.errorMsg = data.errorMsg;
 
-    await this.prisma.syncLog.update({ where: { id }, data: updateData });
+    await this.prisma.syncLog.update({ where: { id, deletedAt: null }, data: updateData });
   }
 }

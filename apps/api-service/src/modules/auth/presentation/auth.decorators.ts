@@ -6,7 +6,7 @@ export const PERMISSIONS_KEY = "owl_required_permissions";
 export const RequirePermission = (...permissions: string[]) => SetMetadata(PERMISSIONS_KEY, permissions);
 
 export interface AuthPrincipal {
-  userId: string;
+  userId: number;
   unionId: string;
   client: string;
 }

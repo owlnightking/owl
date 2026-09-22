@@ -20,7 +20,7 @@ export function isSupportedImage(mimeType: string): boolean {
   return (IMAGE_MIME_TYPES as readonly string[]).includes(mimeType);
 }
 
-export function buildImageObjectKey(ownerId: string, mimeType: string): string {
+export function buildImageObjectKey(ownerId: number, mimeType: string): string {
   const extension = IMAGE_EXTENSIONS[mimeType] ?? "bin";
   return `${IMAGE_OBJECT_PREFIX}/${ownerId}/${randomUUID()}.${extension}`;
 }

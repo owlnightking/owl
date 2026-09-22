@@ -60,10 +60,10 @@ export function MallPage() {
     setLoading(true);
     try {
       const [pRes, bRes] = await Promise.all([
-        get<{ items: Product[] }>("/recognition/products", { pageSize: "50" }),
+        get<{ list: Product[] }>("/recognition/products", { pageSize: "50" }),
         get<CoinAccount>("/recognition/exchange/coin-account"),
       ]);
-      setProducts(pRes.items);
+      setProducts(pRes.list);
       setBalance(bRes.balance);
     } catch {
       Toast.info("加载失败");

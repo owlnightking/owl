@@ -40,10 +40,10 @@ launch() {
 }
 
 wait_backend() {
-  local port="$1" name="$2"
+  local port="$1" name="$2" path="$3"
   echo "[dev] waiting for $name on :$port ..."
   for _ in $(seq 1 60); do
-    if curl -sf "http://localhost:$port/api/health" >/dev/null 2>&1; then
+    if curl -sf "http://localhost:$port$path" >/dev/null 2>&1; then
       echo "[dev] $name ready."
       return 0
     fi
@@ -68,9 +68,9 @@ wait_port() {
 case "$TARGET" in
   all)
     launch @owl/api-service api 36
-    wait_backend "$API_PORT" api-service
+    wait_backend "$API_PORT" api-service /api/health
     launch @owl/cron-service cron 35
-    wait_backend "$CRON_PORT" cron-service
+    wait_backend "$CRON_PORT" cron-service /cron/health
     launch @owl/cron-web cronweb 34
     wait_port "$CRON_WEB_PORT" cron-web
     launch @owl/admin-web admin 33
@@ -90,16 +90,24 @@ case "$TARGET" in
     echo "[dev]     业务工作台   :  http://localhost:$GATEWAY_PORT/owl/"
     echo "[dev]     管理台      :  http://localhost:$GATEWAY_PORT/admin/"
     echo "[dev]     定时任务    :  http://localhost:$GATEWAY_PORT/cron/"
-    echo "[dev]     移动端      :  http://localhost:$GATEWAY_PORT/mobile/"
+    echo "[dev]   移动端      :  http://localhost:$GATEWAY_PORT/mobile/"
     echo "[dev]   局域网访问请将 localhost 换成局域网 IP（如 192.168.x.x）"
     echo "[dev]   内部端口 5270/5273/5274/5275/5276 仅本机网关代理使用，勿直接访问"
+    echo "[dev]   接口调试 Swagger:"
+    echo "[dev]     api-service :  http://localhost:$GATEWAY_PORT/api/docs"
+    echo "[dev]                 :  http://localhost:$API_PORT/api/docs（直连）"
+    echo "[dev]     cron-service:  http://localhost:$CRON_PORT/cron/docs"
     echo "[dev] ==================================================="
     ;;
   api)
     launch @owl/api-service api 36
+    wait_backend "$API_PORT" api-service /api/health
+    echo "[dev] api-service Swagger: http://localhost:$API_PORT/api/docs"
     ;;
   cron)
     launch @owl/cron-service cron 35
+    wait_backend "$CRON_PORT" cron-service /cron/health
+    echo "[dev] cron-service Swagger: http://localhost:$CRON_PORT/cron/docs"
     ;;
   owl)
     launch @owl/owl-web owl 32

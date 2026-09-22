@@ -9,6 +9,7 @@ export class PrismaUserSyncRepository implements UserSyncRepositoryPort {
   async upsertBatch(users: FeishuUser[]): Promise<void> {
     const deptByOpenId = new Map<string, string>();
     const depts = await this.prisma.department.findMany({
+      where: { deletedAt: null },
       select: { feishuDepartmentId: true, openDepartmentId: true },
     });
     for (const d of depts) {

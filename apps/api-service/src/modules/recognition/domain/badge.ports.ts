@@ -1,5 +1,5 @@
 export interface BadgeItem {
-  id: string;
+  id: number;
   name: string;
   icon: string | null;
   description: string | null;
@@ -32,10 +32,10 @@ export interface BadgeUpdateInput {
 
 export interface BadgeRepositoryPort {
   list(): Promise<BadgeItem[]>;
-  findById(id: string): Promise<BadgeItem | null>;
+  findById(id: number): Promise<BadgeItem | null>;
   create(input: BadgeCreateInput): Promise<BadgeItem>;
-  update(id: string, input: BadgeUpdateInput): Promise<BadgeItem | null>;
-  delete(id: string): Promise<void>;
+  update(id: number, input: BadgeUpdateInput): Promise<BadgeItem | null>;
+  delete(id: number): Promise<void>;
 }
 
 export const BADGE_REPOSITORY = Symbol("BADGE_REPOSITORY");

@@ -1,5 +1,5 @@
 export interface ProductItem {
-  id: string;
+  id: number;
   name: string;
   description: string | null;
   image: string | null;
@@ -39,12 +39,12 @@ export interface ProductListOptions {
 
 export interface ProductRepositoryPort {
   list(options?: ProductListOptions): Promise<{ items: ProductItem[]; total: number }>;
-  findById(id: string): Promise<ProductItem | null>;
+  findById(id: number): Promise<ProductItem | null>;
   create(input: ProductCreateInput): Promise<ProductItem>;
-  update(id: string, input: ProductUpdateInput): Promise<ProductItem | null>;
-  delete(id: string): Promise<void>;
-  decrementStock(id: string, quantity: number): Promise<boolean>;
-  incrementStock(id: string, quantity: number): Promise<void>;
+  update(id: number, input: ProductUpdateInput): Promise<ProductItem | null>;
+  delete(id: number): Promise<void>;
+  decrementStock(id: number, quantity: number): Promise<boolean>;
+  incrementStock(id: number, quantity: number): Promise<void>;
 }
 
 export const PRODUCT_REPOSITORY = Symbol("PRODUCT_REPOSITORY");

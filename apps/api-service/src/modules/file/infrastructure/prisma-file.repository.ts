@@ -8,14 +8,14 @@ export class PrismaFileRepository implements FileRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
+    id: number;
     name: string;
     mimeType: string;
     size: number;
     bucket: string;
     objectKey: string;
     url: string | null;
-    uploadedBy: string;
+    uploadedBy: number;
     createdAt: Date;
   }): FileItem {
     return {
@@ -31,18 +31,18 @@ export class PrismaFileRepository implements FileRepositoryPort {
     };
   }
 
-  async findById(id: string): Promise<FileItem | null> {
-    const row = await this.prisma.file.findUnique({ where: { id } });
+  async findById(id: number): Promise<FileItem | null> {
+    const row = await this.prisma.file.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
   async listByUser(
-    userId: string,
+    userId: number,
     options?: { page: number; pageSize: number }
   ): Promise<{ items: FileItem[]; total: number }> {
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
-    const where = { uploadedBy: userId };
+    const where = { uploadedBy: userId, deletedAt: null };
 
     const [rows, total] = await Promise.all([
       this.prisma.file.findMany({
@@ -64,7 +64,7 @@ export class PrismaFileRepository implements FileRepositoryPort {
     bucket: string;
     objectKey: string;
     url?: string;
-    uploadedBy: string;
+    uploadedBy: number;
   }): Promise<FileItem> {
     const row = await this.prisma.file.create({
       data: {
@@ -80,7 +80,10 @@ export class PrismaFileRepository implements FileRepositoryPort {
     return this.toItem(row);
   }
 
-  async delete(id: string): Promise<void> {
-    await this.prisma.file.delete({ where: { id } });
+  async delete(id: number): Promise<void> {
+    await this.prisma.file.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

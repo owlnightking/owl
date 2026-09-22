@@ -1,5 +1,5 @@
 export interface SchedulerConfigItem {
-  id: string;
+  id: number;
   name: string;
   area: string;
   cron: string;
@@ -14,7 +14,7 @@ export interface SchedulerConfigItem {
 }
 
 export interface SchedulerRunItem {
-  id: string;
+  id: number;
   taskRunId: string;
   area: string | null;
   taskName: string | null;
@@ -29,7 +29,7 @@ export interface SchedulerRunItem {
 
 export interface SchedulerConfigRepositoryPort {
   findAll(): Promise<SchedulerConfigItem[]>;
-  findById(id: string): Promise<SchedulerConfigItem | null>;
+  findById(id: number): Promise<SchedulerConfigItem | null>;
   create(data: {
     name: string;
     area: string;
@@ -41,15 +41,15 @@ export interface SchedulerConfigRepositoryPort {
     description?: string;
   }): Promise<SchedulerConfigItem>;
   update(
-    id: string,
+    id: number,
     data: Partial<Pick<SchedulerConfigItem, "cron" | "enabled" | "description" | "timeoutMs" | "env">>
   ): Promise<void>;
-  delete(id: string): Promise<void>;
+  delete(id: number): Promise<void>;
 }
 
 export interface SchedulerRunRepositoryPort {
   findByConfigId(
-    configId: string,
+    configId: number,
     options: { page: number; pageSize: number }
   ): Promise<{ items: SchedulerRunItem[]; total: number }>;
   findAll(options: {
@@ -62,3 +62,4 @@ export interface SchedulerRunRepositoryPort {
 
 export const SCHEDULER_CONFIG_REPOSITORY = Symbol("SCHEDULER_CONFIG_REPOSITORY");
 export const SCHEDULER_RUN_REPOSITORY = Symbol("SCHEDULER_RUN_REPOSITORY");
+export const SCHEDULER_SERVICE = Symbol("SCHEDULER_SERVICE");

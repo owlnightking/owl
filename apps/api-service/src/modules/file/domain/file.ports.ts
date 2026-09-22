@@ -1,19 +1,19 @@
 export interface FileItem {
-  id: string;
+  id: number;
   name: string;
   mimeType: string;
   size: number;
   bucket: string;
   objectKey: string;
   url: string | null;
-  uploadedBy: string;
+  uploadedBy: number;
   createdAt: Date;
 }
 
 export interface FileRepositoryPort {
-  findById(id: string): Promise<FileItem | null>;
+  findById(id: number): Promise<FileItem | null>;
   listByUser(
-    userId: string,
+    userId: number,
     options?: { page: number; pageSize: number }
   ): Promise<{ items: FileItem[]; total: number }>;
   create(input: {
@@ -23,9 +23,9 @@ export interface FileRepositoryPort {
     bucket: string;
     objectKey: string;
     url?: string;
-    uploadedBy: string;
+    uploadedBy: number;
   }): Promise<FileItem>;
-  delete(id: string): Promise<void>;
+  delete(id: number): Promise<void>;
 }
 
 export const FILE_REPOSITORY = Symbol("FILE_REPOSITORY");

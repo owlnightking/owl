@@ -1,18 +1,18 @@
 export interface RecognitionItem {
-  id: string;
-  senderId: string;
+  id: number;
+  senderId: number;
   senderName?: string;
   senderAvatar?: string;
-  receiverId: string;
+  receiverId: number;
   receiverName?: string;
   receiverAvatar?: string;
-  badgeId: string | null;
+  badgeId: number | null;
   badgeName?: string;
   badgeIcon?: string;
   message: string;
   status: "pending" | "approved" | "rejected";
   pinned: boolean;
-  approverId: string | null;
+  approverId: number | null;
   approvedAt: Date | null;
   rejectReason: string | null;
   likeCount: number;
@@ -21,30 +21,32 @@ export interface RecognitionItem {
 }
 
 export interface RecognitionCreateInput {
-  receiverId: string;
-  badgeId?: string;
+  receiverId: number;
+  badgeId?: number;
   message: string;
 }
 
 export interface RecognitionListQuery {
   status?: "pending" | "approved" | "rejected";
-  receiverId?: string;
-  senderId?: string;
+  receiverId?: number;
+  senderId?: number;
   page: number;
   pageSize: number;
 }
 
 export interface RecognitionRepositoryPort {
-  findById(id: string): Promise<RecognitionItem | null>;
-  list(query: RecognitionListQuery, userId?: string): Promise<{ items: RecognitionItem[]; total: number }>;
-  listFeed(page: number, pageSize: number, userId?: string): Promise<{ items: RecognitionItem[]; total: number }>;
-  create(senderId: string, input: RecognitionCreateInput): Promise<RecognitionItem>;
-  approve(id: string, approverId: string): Promise<void>;
-  reject(id: string, approverId: string, reason?: string): Promise<void>;
-  togglePin(id: string): Promise<void>;
-  toggleLike(id: string, userId: string): Promise<boolean>;
-  hasLiked(id: string, userId: string): Promise<boolean>;
+  findById(id: number): Promise<RecognitionItem | null>;
+  list(query: RecognitionListQuery, userId?: number): Promise<{ items: RecognitionItem[]; total: number }>;
+  listFeed(page: number, pageSize: number, userId?: number): Promise<{ items: RecognitionItem[]; total: number }>;
+  create(senderId: number, input: RecognitionCreateInput): Promise<RecognitionItem>;
+  approve(id: number, approverId: number): Promise<void>;
+  reject(id: number, approverId: number, reason?: string): Promise<void>;
+  togglePin(id: number): Promise<void>;
+  toggleLike(id: number, userId: number): Promise<boolean>;
+  hasLiked(id: number, userId: number): Promise<boolean>;
   countPending(): Promise<number>;
+  getUserCreatedAt(userId: number): Promise<Date | null>;
+  getRecognitionExp(userId: number): Promise<number>;
 }
 
 export const RECOGNITION_REPOSITORY = Symbol("RECOGNITION_REPOSITORY");

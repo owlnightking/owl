@@ -25,8 +25,8 @@ export function FeedPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await get<{ items: FeedItem[] }>("/recognition/feed", { pageSize: "50" });
-      setItems(res.items);
+      const res = await get<{ list: FeedItem[] }>("/recognition/feed", { pageSize: "50" });
+      setItems(res.list);
     } catch {
       Toast.info("加载失败");
     } finally {

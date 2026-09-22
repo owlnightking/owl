@@ -1,27 +1,33 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
-import { DATABASE_CLIENT } from "@owl/database/provider";
-import type { PrismaClient } from "@owl/database";
+import { Controller, Get, Inject, Query, UseGuards } from "@nestjs/common";
+import { ApiOkResponse, ApiOperation, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
-import { Inject } from "@nestjs/common";
-import { ok } from "../../../common/response/api-response";
+import { AUDIT_LOG_SERVICE } from "../domain/audit-log.ports";
+import { AuditLogService } from "../application/audit-log.service";
+import { page } from "../../../common/response/api-response";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
+import { AuditLogPageVo } from "./audit-log.vo";
 
 class ListAuditLogsQueryDto {
+  @ApiPropertyOptional({ description: "用户 id", example: 1 })
   @IsOptional()
-  @IsString()
-  userId?: string;
+  @Type(() => Number)
+  @IsInt()
+  userId?: number;
 
+  @ApiPropertyOptional({ description: "资源标识", example: "user" })
   @IsOptional()
   @IsString()
   resource?: string;
 
+  @ApiPropertyOptional({ description: "页码", example: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page: number = 1;
 
+  @ApiPropertyOptional({ description: "每页条数", example: 20, default: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -30,36 +36,23 @@ class ListAuditLogsQueryDto {
   pageSize: number = 20;
 }
 
+@ApiTags("审计日志")
 @Controller("audit-logs")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 export class AuditLogController {
-  constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
+  constructor(@Inject(AUDIT_LOG_SERVICE) private readonly service: AuditLogService) {}
 
   @Get()
   @RequirePermission("role:read")
+  @ApiOperation({ summary: "审计日志分页列表" })
+  @ApiOkResponse({ description: "审计日志分页列表", type: AuditLogPageVo })
   async list(@Query() query: ListAuditLogsQueryDto) {
-    const where = {
-      ...(query.userId ? { userId: query.userId } : {}),
-      ...(query.resource ? { resource: query.resource } : {}),
-    };
-    const [items, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-        include: {
-          user: {
-            select: {
-              name: true,
-              avatar72: true,
-              avatar240: true,
-            },
-          },
-        },
-      }),
-      this.prisma.auditLog.count({ where }),
-    ]);
-    return ok({ items, total, page: query.page, pageSize: query.pageSize });
+    const result = await this.service.list({
+      userId: query.userId,
+      resource: query.resource,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+    return page(result.items, query.page, query.pageSize, result.total);
   }
 }

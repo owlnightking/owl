@@ -20,6 +20,7 @@ export class TaskQueueService {
       where: {
         area,
         handler: taskName,
+        deletedAt: null,
         OR: [{ env: this.currentEnv }, { env: "all" }],
       },
     });

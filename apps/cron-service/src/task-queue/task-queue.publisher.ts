@@ -5,7 +5,7 @@ export interface TaskMessage {
   area: string;
   task: string;
   params?: Record<string, unknown>;
-  runId: string;
+  runId: number;
   timestamp: number;
 }
 
@@ -34,7 +34,7 @@ export class TaskQueuePublisher {
     await this.channelModel?.close();
   }
 
-  async publish(area: string, taskName: string, runId: string, params?: Record<string, unknown>) {
+  async publish(area: string, taskName: string, runId: number, params?: Record<string, unknown>) {
     if (!this.channel) {
       throw new Error("RabbitMQ channel not available");
     }

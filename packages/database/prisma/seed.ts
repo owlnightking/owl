@@ -81,7 +81,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
 };
 
 async function seed() {
-  const roles: Record<string, string> = {};
+  const roles: Record<string, number> = {};
 
   for (const [code, name, isSystem, description] of [
     ["admin", "系统管理员", true, "系统内置管理员角色"],
@@ -113,7 +113,7 @@ async function seed() {
     if (!roleId) {
       continue;
     }
-    const permIds = permCodes.map((code) => permissionByCode.get(code)).filter((id): id is string => Boolean(id));
+    const permIds = permCodes.map((code) => permissionByCode.get(code)).filter((id): id is number => Boolean(id));
     await prisma.rolePermission.createMany({
       data: permIds.map((permissionId) => ({ roleId, permissionId })),
       skipDuplicates: true,
@@ -174,11 +174,12 @@ async function seed() {
   ];
 
   for (const badge of badges) {
-    await prisma.badge.upsert({
-      where: { id: badge.name },
-      update: badge,
-      create: { id: badge.name, ...badge },
-    });
+    const existing = await prisma.badge.findFirst({ where: { name: badge.name } });
+    if (existing) {
+      await prisma.badge.update({ where: { id: existing.id }, data: badge });
+    } else {
+      await prisma.badge.create({ data: badge });
+    }
   }
   console.log("seed: badges done");
 
@@ -234,11 +235,12 @@ async function seed() {
   ];
 
   for (const product of products) {
-    await prisma.product.upsert({
-      where: { id: product.name },
-      update: product,
-      create: { id: product.name, ...product },
-    });
+    const existing = await prisma.product.findFirst({ where: { name: product.name } });
+    if (existing) {
+      await prisma.product.update({ where: { id: existing.id }, data: product });
+    } else {
+      await prisma.product.create({ data: product });
+    }
   }
   console.log("seed: products done");
 

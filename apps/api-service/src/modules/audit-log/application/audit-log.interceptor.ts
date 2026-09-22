@@ -90,7 +90,7 @@ export class AuditLogInterceptor implements NestInterceptor {
       const module = this.resolveModule(route);
 
       const record: AuditRecord = {
-        userId: auth?.userId,
+        userId: auth?.userId ? Number(auth.userId) : undefined,
         unionId: auth?.unionId,
         action,
         resource,
@@ -148,7 +148,7 @@ export class AuditLogInterceptor implements NestInterceptor {
   private summarize(data: unknown): string {
     if (data && typeof data === "object") {
       const obj = data as Record<string, unknown>;
-      if (typeof obj.id === "string") return String(obj.id);
+      if (typeof obj.id === "string" || typeof obj.id === "number") return String(obj.id);
     }
     return typeof data === "string" ? data.slice(0, 200) : "";
   }

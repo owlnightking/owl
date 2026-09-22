@@ -12,8 +12,8 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
   private toItem(raw: {
-    id: string;
-    userId: string | null;
+    id: number;
+    userId: number | null;
     title: string;
     content: string;
     type: string;
@@ -36,12 +36,12 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
   }
 
   async listByUser(
-    userId: string,
+    userId: number,
     options?: { status?: string; page: number; pageSize: number }
   ): Promise<{ items: NotificationItem[]; total: number }> {
     const page = options?.page ?? 1;
     const pageSize = options?.pageSize ?? 20;
-    const where = { userId, ...(options?.status ? { status: options.status } : {}) };
+    const where = { userId, deletedAt: null, ...(options?.status ? { status: options.status } : {}) };
 
     const [rows, total] = await Promise.all([
       this.prisma.notification.findMany({
@@ -56,14 +56,14 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
     return { items: rows.map(this.toItem), total };
   }
 
-  async countUnread(userId: string): Promise<number> {
+  async countUnread(userId: number): Promise<number> {
     return this.prisma.notification.count({
-      where: { userId, status: "unread" },
+      where: { userId, status: "unread", deletedAt: null },
     });
   }
 
-  async findById(id: string): Promise<NotificationItem | null> {
-    const row = await this.prisma.notification.findUnique({ where: { id } });
+  async findById(id: number): Promise<NotificationItem | null> {
+    const row = await this.prisma.notification.findUnique({ where: { id, deletedAt: null } });
     return row ? this.toItem(row) : null;
   }
 
@@ -82,16 +82,16 @@ export class PrismaNotificationRepository implements NotificationRepositoryPort 
     return this.toItem(row);
   }
 
-  async markRead(id: string): Promise<void> {
+  async markRead(id: number): Promise<void> {
     await this.prisma.notification.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { status: "read" },
     });
   }
 
-  async markAllRead(userId: string): Promise<void> {
+  async markAllRead(userId: number): Promise<void> {
     await this.prisma.notification.updateMany({
-      where: { userId, status: "unread" },
+      where: { userId, status: "unread", deletedAt: null },
       data: { status: "read" },
     });
   }
