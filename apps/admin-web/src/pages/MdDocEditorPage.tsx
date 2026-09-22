@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Space, Badge, Notification } from "@arco-design/web-react";
+import { Button, Space, Badge, Notification, Skeleton } from "@arco-design/web-react";
 import { IconSave, IconLeft } from "@arco-design/web-react/icon";
 import { VditorEditor } from "../components/VditorEditor";
 import { get, post, put } from "../api/client";
@@ -177,7 +177,12 @@ export function MdDocEditorPage() {
   };
 
   if (loading) {
-    return <div className="flex h-64 items-center justify-center text-gray-400">加载中...</div>;
+    return (
+      <div className="flex h-64 flex-col gap-4">
+        <Skeleton text={{ rows: 3 }} />
+        <Skeleton text={{ rows: 6 }} />
+      </div>
+    );
   }
 
   return (

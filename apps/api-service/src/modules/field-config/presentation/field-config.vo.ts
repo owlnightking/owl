@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { PageMetaVo } from "../../../common/response/page.vo";
 
 export class FieldConfigVo {
   @ApiProperty({ description: "字段配置 id", example: 1 })
@@ -27,4 +28,9 @@ export class FieldConfigVo {
 
   @ApiProperty({ description: "更新时间", example: "2026-09-20T10:00:00.000Z" })
   updatedAt!: Date;
+}
+
+export class FieldConfigPageVo extends PageMetaVo {
+  @ApiProperty({ description: "字段配置列表", type: [FieldConfigVo] })
+  list!: FieldConfigVo[];
 }

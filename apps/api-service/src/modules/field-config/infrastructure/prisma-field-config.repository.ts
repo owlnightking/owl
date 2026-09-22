@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CLIENT } from "@owl/database/provider";
-import type { PrismaClient, Prisma } from "@owl/database";
+import type { Prisma, PrismaClient } from "@owl/database";
 import type {
-  FieldConfigRepositoryPort,
   FieldConfigItem,
+  FieldConfigQuery,
+  FieldConfigRepositoryPort,
   FieldConfigUpdateInput,
   FieldConfigUpsertInput,
 } from "../domain/field-config.ports";
@@ -34,6 +35,26 @@ export class PrismaFieldConfigRepository implements FieldConfigRepositoryPort {
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     };
+  }
+
+  async list(query: FieldConfigQuery): Promise<{ items: FieldConfigItem[]; total: number }> {
+    const where = {
+      deletedAt: null,
+      category: query.category,
+      ...(query.keyword
+        ? { OR: [{ module: { contains: query.keyword } }, { label: { contains: query.keyword } }] }
+        : {}),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.fieldConfig.findMany({
+        where,
+        orderBy: { module: "asc" },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.fieldConfig.count({ where }),
+    ]);
+    return { items: rows.map((row) => this.toItem(row)), total };
   }
 
   async findById(id: number): Promise<FieldConfigItem | null> {

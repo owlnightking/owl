@@ -180,6 +180,7 @@
 | auth          | Get    | /api/auth/mock-users                         |
 | field-config  | Get    | /api/field-config                            |
 | field-config  | Get    | /api/field-config/:id                        |
+| field-config  | Get    | /api/field-config/options                    |
 | file          | Get    | /api/files                                   |
 | file          | Get    | /api/files/:id                               |
 | md-doc        | Get    | /api/md-docs                                 |

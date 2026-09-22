@@ -3,6 +3,7 @@ import {
   FIELD_CONFIG_REPOSITORY,
   type FieldConfigRepositoryPort,
   type FieldConfigItem,
+  type FieldConfigQuery,
   type FieldConfigUpdateInput,
   type FieldConfigUpsertInput,
 } from "../domain/field-config.ports";
@@ -11,7 +12,11 @@ import {
 export class FieldConfigService {
   constructor(@Inject(FIELD_CONFIG_REPOSITORY) private readonly repo: FieldConfigRepositoryPort) {}
 
-  async listByCategory(category: string): Promise<FieldConfigItem[]> {
+  async list(query: FieldConfigQuery): Promise<{ items: FieldConfigItem[]; total: number }> {
+    return this.repo.list(query);
+  }
+
+  async listOptions(category: string): Promise<FieldConfigItem[]> {
     return this.repo.findByCategory(category);
   }
 

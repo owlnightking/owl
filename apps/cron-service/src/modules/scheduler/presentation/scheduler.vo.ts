@@ -78,3 +78,8 @@ export class SchedulerRunPageVo extends PageMetaVo {
   @ApiProperty({ description: "运行记录列表", type: [SchedulerRunVo] })
   list!: SchedulerRunVo[];
 }
+
+export class SchedulerConfigPageVo extends PageMetaVo {
+  @ApiProperty({ description: "定时任务配置列表", type: [SchedulerConfigVo] })
+  list!: SchedulerConfigVo[];
+}

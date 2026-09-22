@@ -23,9 +23,36 @@ import {
 } from "@nestjs/swagger";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth";
 import { FIELD_CONFIG_SERVICE, type FieldConfigServicePort } from "../domain/field-config.ports";
-import { ok } from "../../../common/response/api-response";
-import { IsOptional, IsString } from "class-validator";
-import { FieldConfigVo } from "./field-config.vo";
+import { ok, page } from "../../../common/response/api-response";
+import { Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { FieldConfigPageVo, FieldConfigVo } from "./field-config.vo";
+
+class ListFieldConfigsQueryDto {
+  @ApiProperty({ description: "字段分类", example: "scheduler" })
+  @IsString()
+  category!: string;
+
+  @ApiPropertyOptional({ description: "模块 / 显示名称关键字", example: "cron" })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: "页码", example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @ApiPropertyOptional({ description: "每页条数", example: 10, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize: number = 10;
+}
 
 class CreateFieldConfigDto {
   @ApiProperty({ description: "字段分类", example: "order" })
@@ -90,11 +117,20 @@ export class FieldConfigController {
   constructor(@Inject(FIELD_CONFIG_SERVICE) private readonly service: FieldConfigServicePort) {}
 
   @Get()
-  @ApiOperation({ summary: "按分类查询字段配置列表" })
+  @ApiOperation({ summary: "按分类查询字段配置分页列表" })
   @ApiQuery({ name: "category", description: "字段分类", example: "order" })
-  @ApiOkResponse({ description: "字段配置列表", type: [FieldConfigVo] })
-  async listByCategory(@Query("category") category: string) {
-    return ok(await this.service.listByCategory(category));
+  @ApiOkResponse({ description: "字段配置分页列表", type: FieldConfigPageVo })
+  async list(@Query() query: ListFieldConfigsQueryDto) {
+    const { items, total } = await this.service.list(query);
+    return page(items, query.page, query.pageSize, total);
+  }
+
+  @Get("options")
+  @ApiOperation({ summary: "按分类查询字段配置选项（不分页）" })
+  @ApiQuery({ name: "category", description: "字段分类", example: "scheduler" })
+  @ApiOkResponse({ description: "字段配置选项", type: [FieldConfigVo] })
+  async options(@Query("category") category: string) {
+    return ok(await this.service.listOptions(category));
   }
 
   @Get(":id")

@@ -10,6 +10,7 @@ export interface FieldConfigItem {
   description: string | null;
 }
 
+/** 字段配置选项（不分页）：cron 的任务表单用它渲染动态字段 */
 export async function fetchFieldConfigs(category: string): Promise<FieldConfigItem[]> {
-  return get<FieldConfigItem[]>("/field-config", { category });
+  return get<FieldConfigItem[]>("/field-config/options", { category });
 }

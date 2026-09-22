@@ -27,7 +27,14 @@ export interface SchedulerRunItem {
   createdAt: Date;
 }
 
+export interface SchedulerConfigQuery {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}
+
 export interface SchedulerConfigRepositoryPort {
+  findPage(query: SchedulerConfigQuery): Promise<{ items: SchedulerConfigItem[]; total: number }>;
   findAll(): Promise<SchedulerConfigItem[]>;
   findById(id: number): Promise<SchedulerConfigItem | null>;
   create(data: {

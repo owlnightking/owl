@@ -12,8 +12,21 @@ export interface FieldConfigItem {
   updatedAt: string;
 }
 
-export async function fetchFieldConfigs(category: string): Promise<FieldConfigItem[]> {
-  return get<FieldConfigItem[]>("/field-config", { category });
+export interface FieldConfigPageData {
+  list: FieldConfigItem[];
+  pageNum: number;
+  pageSize: number;
+  total: number;
+}
+
+/** 字段配置分页列表 */
+export async function fetchFieldConfigs(params: {
+  category: string;
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}): Promise<FieldConfigPageData> {
+  return get<FieldConfigPageData>("/field-config", { ...params });
 }
 
 export async function fetchFieldConfig(id: number): Promise<FieldConfigItem> {

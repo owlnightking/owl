@@ -13,7 +13,7 @@ import { SCHEDULER_SERVICE } from "../domain/scheduler.ports";
 import { ok, page } from "../../../common/response/api-response";
 import { IsArray, IsBoolean, IsIn, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { Type } from "class-transformer";
-import { SchedulerConfigVo, SchedulerRunPageVo } from "./scheduler.vo";
+import { SchedulerConfigPageVo, SchedulerConfigVo, SchedulerRunPageVo } from "./scheduler.vo";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -92,6 +92,27 @@ class UpdateSchedulerDto {
   env?: string;
 }
 
+class ConfigQueryDto {
+  @ApiPropertyOptional({ description: "任务名称 / Handler 关键字", example: "sync" })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: "页码", example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ description: "每页条数", example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  pageSize?: number;
+}
+
 class RunQueryDto {
   @ApiPropertyOptional({ description: "页码", example: 1 })
   @IsOptional()
@@ -125,9 +146,23 @@ export class SchedulerController {
   constructor(@Inject(SCHEDULER_SERVICE) private readonly schedulerService: SchedulerService) {}
 
   @Get()
-  @ApiOperation({ summary: "定时任务配置列表" })
-  @ApiOkResponse({ description: "定时任务配置列表", type: [SchedulerConfigVo] })
-  async list() {
+  @ApiOperation({ summary: "定时任务配置分页列表" })
+  @ApiOkResponse({ description: "定时任务配置分页列表", type: SchedulerConfigPageVo })
+  async list(@Query() query: ConfigQueryDto) {
+    const pageNum = query.page ?? DEFAULT_PAGE;
+    const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
+    const { items, total } = await this.schedulerService.listConfigPage({
+      page: pageNum,
+      pageSize,
+      keyword: query.keyword,
+    });
+    return page(items, pageNum, pageSize, total);
+  }
+
+  @Get("options")
+  @ApiOperation({ summary: "定时任务配置选项（不分页，供看板统计使用）" })
+  @ApiOkResponse({ description: "定时任务配置选项", type: [SchedulerConfigVo] })
+  async options() {
     return ok(await this.schedulerService.listConfigs());
   }
 

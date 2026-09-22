@@ -1,8 +1,21 @@
 import { cronHttp } from "./client";
 import type { SchedulerConfig, SchedulerRun } from "../types/scheduler";
 
+/** 任务配置选项（不分页）：看板统计用它做聚合 */
 export async function fetchSchedulers(): Promise<SchedulerConfig[]> {
-  const res = await cronHttp.get<{ data: SchedulerConfig[] }>("/schedulers");
+  const res = await cronHttp.get<{ data: SchedulerConfig[] }>("/schedulers/options");
+  return res.data.data;
+}
+
+/** 任务配置分页列表 */
+export async function fetchSchedulerPage(params: {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}): Promise<{ list: SchedulerConfig[]; pageNum: number; pageSize: number; total: number }> {
+  const res = await cronHttp.get<{
+    data: { list: SchedulerConfig[]; pageNum: number; pageSize: number; total: number };
+  }>("/schedulers", { params });
   return res.data.data;
 }
 

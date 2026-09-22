@@ -2,10 +2,11 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   SCHEDULER_CONFIG_REPOSITORY,
   SCHEDULER_RUN_REPOSITORY,
-  type SchedulerConfigRepositoryPort,
-  type SchedulerRunRepositoryPort,
   type SchedulerConfigItem,
+  type SchedulerConfigQuery,
+  type SchedulerConfigRepositoryPort,
   type SchedulerRunItem,
+  type SchedulerRunRepositoryPort,
 } from "../domain/scheduler.ports";
 
 @Injectable()
@@ -17,6 +18,10 @@ export class SchedulerService {
 
   async listConfigs(): Promise<SchedulerConfigItem[]> {
     return this.configRepo.findAll();
+  }
+
+  async listConfigPage(query: SchedulerConfigQuery): Promise<{ items: SchedulerConfigItem[]; total: number }> {
+    return this.configRepo.findPage(query);
   }
 
   async getConfig(id: number): Promise<SchedulerConfigItem | null> {

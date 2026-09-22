@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@arco-design/web-react";
+import { Button, Skeleton } from "@arco-design/web-react";
 import { IconLeft, IconEdit } from "@arco-design/web-react/icon";
 import { VditorPreview } from "../components/VditorPreview";
 import { get } from "../api/client";
@@ -25,7 +25,12 @@ export function MdDocPreviewPage() {
   }, [id, navigate]);
 
   if (loading) {
-    return <div className="flex h-64 items-center justify-center text-gray-400">加载中...</div>;
+    return (
+      <div className="flex h-64 flex-col gap-4">
+        <Skeleton text={{ rows: 3 }} />
+        <Skeleton text={{ rows: 6 }} />
+      </div>
+    );
   }
 
   return (

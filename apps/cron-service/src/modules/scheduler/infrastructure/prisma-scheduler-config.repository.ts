@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaClient } from "@owl/database";
-import type { SchedulerConfigRepositoryPort, SchedulerConfigItem } from "../domain/scheduler.ports";
+import type {
+  SchedulerConfigQuery,
+  SchedulerConfigRepositoryPort,
+  SchedulerConfigItem,
+} from "../domain/scheduler.ports";
 
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_TIMEOUT_MS = 60000;
@@ -37,6 +41,25 @@ export class PrismaSchedulerConfigRepository implements SchedulerConfigRepositor
       timeoutMs: raw.timeoutMs,
       updatedAt: raw.updatedAt,
     };
+  }
+
+  async findPage(query: SchedulerConfigQuery): Promise<{ items: SchedulerConfigItem[]; total: number }> {
+    const where = {
+      deletedAt: null,
+      ...(query.keyword
+        ? { OR: [{ name: { contains: query.keyword } }, { handler: { contains: query.keyword } }] }
+        : {}),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.schedulerConfig.findMany({
+        where,
+        orderBy: { updatedAt: "desc" },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.schedulerConfig.count({ where }),
+    ]);
+    return { items: rows.map((row) => this.toItem(row)), total };
   }
 
   async findAll(): Promise<SchedulerConfigItem[]> {
