@@ -3,6 +3,7 @@ import {
   BADGE_REPOSITORY,
   type BadgeCreateInput,
   type BadgeItem,
+  type BadgeQuery,
   type BadgeRepositoryPort,
   type BadgeUpdateInput,
 } from "../domain/badge.ports";
@@ -11,8 +12,12 @@ import {
 export class BadgeService {
   constructor(@Inject(BADGE_REPOSITORY) private readonly repo: BadgeRepositoryPort) {}
 
-  async list(): Promise<BadgeItem[]> {
-    return this.repo.list();
+  async list(query: BadgeQuery): Promise<{ items: BadgeItem[]; total: number }> {
+    return this.repo.list(query);
+  }
+
+  async listOptions(): Promise<BadgeItem[]> {
+    return this.repo.listOptions();
   }
 
   async findById(id: number): Promise<BadgeItem> {

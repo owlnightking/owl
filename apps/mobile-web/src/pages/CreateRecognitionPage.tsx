@@ -26,7 +26,7 @@ export function CreateRecognitionPage() {
     (async () => {
       try {
         const [bRes, uRes] = await Promise.all([
-          get<Badge[]>("/recognition/badges"),
+          get<Badge[]>("/recognition/badges/options"),
           get<{ list: User[] }>("/users", { pageSize: "100" }),
         ]);
         setBadges(bRes);

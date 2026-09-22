@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from "@nestjs/common";
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -9,13 +9,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from "class-validator";
 import { BADGE_SERVICE, type BadgeItem } from "../domain/badge.ports";
 import { BadgeService } from "../application/badge.service";
-import { ok } from "../../../common/response/api-response";
+import { ok, page } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
-import { BadgeVo } from "./badge.vo";
+import { BadgePageVo, BadgeVo } from "./badge.vo";
 
 class CreateBadgeDto {
   @ApiProperty({ description: "徽章名称", example: "团队之星" })
@@ -97,6 +97,28 @@ class UpdateBadgeDto {
   sortOrder?: number;
 }
 
+class ListBadgesQueryDto {
+  @ApiPropertyOptional({ description: "徽章名称关键字", example: "团队" })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: "页码", example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @ApiPropertyOptional({ description: "每页条数", example: 10, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize: number = 10;
+}
+
 @ApiTags("徽章管理")
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller("recognition/badges")
@@ -105,10 +127,19 @@ export class BadgeController {
 
   @Get()
   @RequirePermission("recognition:badge:read")
-  @ApiOperation({ summary: "徽章列表" })
-  @ApiOkResponse({ description: "徽章列表", type: [BadgeVo] })
-  async list() {
-    return ok((await this.service.list()).map(this.toResponse));
+  @ApiOperation({ summary: "徽章分页列表" })
+  @ApiOkResponse({ description: "徽章分页列表", type: BadgePageVo })
+  async list(@Query() query: ListBadgesQueryDto) {
+    const { items, total } = await this.service.list(query);
+    return page(items.map(this.toResponse), query.page, query.pageSize, total);
+  }
+
+  @Get("options")
+  @RequirePermission("recognition:badge:read")
+  @ApiOperation({ summary: "徽章下拉选项（不分页）" })
+  @ApiOkResponse({ description: "徽章下拉选项", type: [BadgeVo] })
+  async options() {
+    return ok((await this.service.listOptions()).map(this.toResponse));
   }
 
   @Get(":id")

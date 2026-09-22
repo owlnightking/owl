@@ -1,153 +1,152 @@
-import { useEffect, useState } from "react";
-import { Card, Tag, Table, Button, Notification, Spin } from "@arco-design/web-react";
-import { APP_ROUTES, type RouteConfig } from "@owl/permission";
-import { get, post } from "../api/client";
+/**
+ * 权限配置 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
+ *
+ * 只读页面：无新增 / 编辑 / 删除 / 多选能力，操作行只保留「刷新」。
+ * 列表数据来自 @owl/permission 的路由表（本地常量），因此分页在前端切片；同步状态通过与
+ * /roles/permissions 比对得出。原先的「同步」按钮已移除——其调用的 POST /roles/permissions/sync
+ * 后端并不存在。
+ */
+import { useCallback, useEffect, useState } from "react";
+import { Button, Notification, Pagination, Spin, Table, Tag, Tooltip } from "@arco-design/web-react";
+import { IconRefresh } from "@arco-design/web-react/icon";
+import { APP_ROUTES } from "@owl/permission";
+import { get } from "../api/client";
 
 interface PermissionItem {
-  id: string;
+  id: number;
   code: string;
   name: string;
   resource: string;
   action: string;
 }
 
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 export function PermissionsPage() {
   const [backendPermissions, setBackendPermissions] = useState<PermissionItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
-  const loadBackendPermissions = async () => {
+  const loadBackendPermissions = useCallback(async () => {
     setLoading(true);
     try {
-      const perms = await get<PermissionItem[]>("/roles/permissions");
-      setBackendPermissions(perms);
-    } catch {
+      setBackendPermissions(await get<PermissionItem[]>("/roles/permissions"));
+    } catch (error) {
       setBackendPermissions([]);
+      Notification.error({ title: "失败", content: error instanceof Error ? error.message : "权限列表加载失败" });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadBackendPermissions();
-  }, []);
+  }, [loadBackendPermissions]);
 
-  const isPermissionSynced = (code: string) => {
-    return backendPermissions.some((p) => p.code === code);
-  };
+  const syncedCodes = new Set(backendPermissions.map((item) => item.code));
 
-  const getUnsyncedPermissions = () => {
-    const unsynced: Array<{ app: string; route: RouteConfig }> = [];
-    for (const app of APP_ROUTES) {
-      for (const route of app.routes) {
-        if (!isPermissionSynced(route.permission)) {
-          unsynced.push({ app: app.app, route });
-        }
-      }
-    }
-    return unsynced;
-  };
-
-  const handleSync = async () => {
-    const unsynced = getUnsyncedPermissions();
-    if (unsynced.length === 0) {
-      Notification.info({ title: "提示", content: "所有权限已同步" });
-      return;
-    }
-
-    setSyncing(true);
-    try {
-      await post("/roles/permissions/sync", {
-        permissions: unsynced.map(({ app, route }) => ({
-          code: route.permission,
-          name: route.name,
-          resource: app,
-          action: "view",
-        })),
-      });
-      Notification.success({ title: "操作成功", content: `已同步 ${unsynced.length} 个权限` });
-      await loadBackendPermissions();
-    } catch (error) {
-      Notification.error({ title: "操作失败", content: error instanceof Error ? error.message : "同步失败" });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  const allRows = APP_ROUTES.flatMap((app) =>
+    app.routes.map((route) => ({
+      key: `${app.app}:${route.permission}`,
+      app: app.app,
+      appName: app.name,
+      name: route.name,
+      path: route.path,
+      permission: route.permission,
+      synced: syncedCodes.has(route.permission),
+    }))
+  );
+  const unsyncedCount = allRows.filter((row) => !row.synced).length;
+  const pagedRows = allRows.slice((page - 1) * pageSize, page * pageSize);
 
   const columns = [
+    // 左侧固定列必须排在列首
     {
       title: "应用",
       dataIndex: "app",
-      width: 120,
-      render: (app: string) => {
-        const appConfig = APP_ROUTES.find((a) => a.app === app);
-        return <Tag color="blue">{appConfig?.name ?? app}</Tag>;
-      },
+      fixed: "left" as const,
+      width: 140,
+      render: (_: unknown, record: (typeof allRows)[number]) => <Tag color="blue">{record.appName}</Tag>,
     },
-    {
-      title: "页面",
-      dataIndex: "name",
-      width: 180,
-    },
+    { title: "页面", dataIndex: "name", width: 200 },
     {
       title: "权限编码",
       dataIndex: "permission",
+      width: 280,
+      render: (value: string) => (
+        <Tooltip content={value}>
+          <span className="block max-w-[260px] truncate font-mono text-xs text-gray-600">{value}</span>
+        </Tooltip>
+      ),
     },
     {
       title: "状态",
       dataIndex: "synced",
-      width: 100,
-      render: (synced: boolean) => <Tag color={synced ? "green" : "orange"}>{synced ? "已同步" : "未同步"}</Tag>,
+      width: 110,
+      render: (value: boolean) => <Tag color={value ? "green" : "orange"}>{value ? "已同步" : "未同步"}</Tag>,
     },
   ];
 
-  const dataSource = APP_ROUTES.flatMap((app) =>
-    app.routes.map((route) => ({
-      key: `${app.app}:${route.permission}`,
-      app: app.app,
-      name: route.name,
-      path: route.path,
-      permission: route.permission,
-      synced: isPermissionSynced(route.permission),
-    }))
-  );
-
-  const unsyncedCount = getUnsyncedPermissions().length;
-
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800">权限配置</h2>
-          <p className="mt-1 text-sm text-gray-500">管理所有应用的权限点，新增路由后在此页面同步到后端</p>
+    <div className="flex flex-col gap-4">
+      {/* 1. 页面标题区 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-semibold text-gray-800">权限配置</h1>
+          <span className="text-sm text-gray-400">
+            管理所有应用的权限点，共 {allRows.length} 个，其中未同步 {unsyncedCount} 个
+          </span>
         </div>
-        <Button type="primary" loading={syncing} onClick={handleSync} disabled={unsyncedCount === 0}>
-          {unsyncedCount > 0 ? `同步 ${unsyncedCount} 个权限` : "已全部同步"}
-        </Button>
       </div>
 
-      <Card>
-        <Spin loading={loading}>
-          <Table rowKey="key" columns={columns} data={dataSource} pagination={false} border={false} />
-        </Spin>
-      </Card>
+      {/* 2. 操作行：只读页面，仅保留刷新 */}
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip content="刷新">
+          <Button icon={<IconRefresh />} onClick={() => void loadBackendPermissions()} />
+        </Tooltip>
+      </div>
 
-      <Card className="mt-4" title="权限说明">
-        <div className="space-y-2 text-sm text-gray-600">
-          <p>
-            <strong>权限编码规则：</strong>
-            <code className="mx-1 rounded bg-gray-100 px-2 py-0.5">{"{app}:{resource}:{action}"}</code>
-          </p>
-          <p>
-            <strong>示例：</strong>
-            <code className="mx-1 rounded bg-gray-100 px-2 py-0.5">admin:users:view</code>
-            表示管理后台-用户管理-查看权限
-          </p>
-          <p>
-            <strong>使用方式：</strong>在角色管理页面为角色分配权限，子应用中通过权限编码控制按钮/页面的显示
-          </p>
+      {/* 3. 列表区：Spin 点指示符 + 前端分页（数据来自本地路由表） */}
+      <div>
+        <Spin loading={loading} dot block>
+          <Table rowKey="key" columns={columns} data={pagedRows} pagination={false} scroll={{ x: 730 }} />
+        </Spin>
+        <div className="mt-4 flex justify-end">
+          <Pagination
+            showTotal={(count) => `共 ${count} 条`}
+            total={allRows.length}
+            current={page}
+            pageSize={pageSize}
+            sizeCanChange
+            sizeOptions={PAGE_SIZE_OPTIONS}
+            onChange={(currentPage, currentSize) => {
+              setPage(currentPage);
+              setPageSize(currentSize);
+            }}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
         </div>
-      </Card>
+      </div>
+
+      {/* 4. 权限说明：无卡片容器 */}
+      <div className="flex flex-col gap-2 text-sm text-gray-600">
+        <div className="text-sm font-medium text-gray-800">权限说明</div>
+        <p>
+          权限编码规则：
+          <code className="mx-1 rounded bg-gray-100 px-2 py-0.5">{"{app}:{resource}:{action}"}</code>
+        </p>
+        <p>
+          示例：
+          <code className="mx-1 rounded bg-gray-100 px-2 py-0.5">admin:users:view</code>
+          表示管理后台-用户管理-查看权限
+        </p>
+        <p>使用方式：在角色管理页面为角色分配权限，子应用中通过权限编码控制按钮/页面的显示</p>
+      </div>
     </div>
   );
 }

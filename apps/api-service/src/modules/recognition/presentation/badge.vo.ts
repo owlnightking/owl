@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { PageMetaVo } from "../../../common/response/page.vo";
 
 export class BadgeVo {
   @ApiProperty({ description: "徽章 id", example: 1 })
@@ -27,4 +28,9 @@ export class BadgeVo {
 
   @ApiProperty({ description: "创建时间", example: "2026-09-20T10:00:00.000Z" })
   createdAt!: string;
+}
+
+export class BadgePageVo extends PageMetaVo {
+  @ApiProperty({ description: "徽章列表", type: [BadgeVo] })
+  list!: BadgeVo[];
 }

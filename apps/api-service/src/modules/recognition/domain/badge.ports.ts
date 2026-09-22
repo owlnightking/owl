@@ -30,8 +30,16 @@ export interface BadgeUpdateInput {
   sortOrder?: number;
 }
 
+export interface BadgeQuery {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}
+
 export interface BadgeRepositoryPort {
-  list(): Promise<BadgeItem[]>;
+  list(query: BadgeQuery): Promise<{ items: BadgeItem[]; total: number }>;
+  /** 下拉/选择器用的全量列表（不分页） */
+  listOptions(): Promise<BadgeItem[]>;
   findById(id: number): Promise<BadgeItem | null>;
   create(input: BadgeCreateInput): Promise<BadgeItem>;
   update(id: number, input: BadgeUpdateInput): Promise<BadgeItem | null>;

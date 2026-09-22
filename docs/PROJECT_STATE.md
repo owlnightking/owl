@@ -191,6 +191,7 @@
 | recognition   | Get    | /api/recognition                             |
 | recognition   | Get    | /api/recognition/badges                      |
 | recognition   | Get    | /api/recognition/badges/:id                  |
+| recognition   | Get    | /api/recognition/badges/options              |
 | recognition   | Get    | /api/recognition/exchange/coin-account       |
 | recognition   | Get    | /api/recognition/exchange/coin-transactions  |
 | recognition   | Get    | /api/recognition/exchange/orders             |
