@@ -16,8 +16,8 @@
  *                        右侧靠最右是「新增」；列表选中数据后，在「新增」前多出「导出 / 批量删除」，
  *                        未选中时这两个按钮不显示
  *   4. 列表区            多选表格 + 独立 Pagination
- * 新增 / 编辑 / 详情共用右侧抽屉（Drawer placement="right"），只换标题与可编辑性；详情为只读。
- * 行操作：详情（小眼睛 icon）/ 编辑 / 删除。
+ * 新增 / 编辑 / 详情共用右侧抽屉（Drawer placement="right"）：详情为只读（取数期间骨架屏，取回后用 Descriptions 展示），
+ * 新增 / 编辑为可编辑表单。行操作：详情（小眼睛 icon）/ 编辑 / 删除。
  *
  * 筛选条件演示覆盖 6 类控件（网格内 10 个 + 状态切换行 1 个）：
  *   输入框     名称、编码、备注
@@ -30,7 +30,8 @@
  * 网格内的条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
  *
  * 形态约束：
- *   - 加载中显示整页骨架屏
+ *   - 列表加载用 `Spin dot` 指示符，不做整页骨架屏（首次进入也不显示骨架屏）；骨架屏只用于抽屉这类局部内容
+ *   - 查询 / 重置 / 翻页 / 新增编辑保存后重新请求列表，都会触发列表的 Spin
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
  *   - 反馈统一用 Notification（成功 title "成功" / 失败 title "失败"）
@@ -42,6 +43,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   DatePicker,
+  Descriptions,
   Drawer,
   Form,
   Input,
@@ -52,6 +54,7 @@ import {
   Select,
   Skeleton,
   Space,
+  Spin,
   Table,
   Tag,
   Tooltip,
@@ -165,6 +168,7 @@ const REMOTE_POOL = [
   "短信包 10 万条",
 ];
 const REMOTE_DELAY_MS = 300;
+const DETAIL_DELAY_MS = 600;
 const REMOTE_DEBOUNCE_MS = 300;
 const REMOTE_LIMIT = 8;
 
@@ -188,15 +192,13 @@ const EMPTY_FILTERS: SampleFilters = {
   remark: "",
 };
 
-function ListPageSkeleton() {
+/** 详情抽屉在取数期间的骨架屏（列表本身不用骨架屏，用 Spin 指示符） */
+function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      {/* 标题区 */}
-      <Skeleton text={{ rows: 1 }} />
-      {/* 筛选区 */}
+      <Skeleton text={{ rows: 2 }} />
+      <Skeleton text={{ rows: 2 }} />
       <Skeleton text={{ rows: 3 }} />
-      {/* 列表区 */}
-      <Skeleton text={{ rows: 8 }} />
     </div>
   );
 }
@@ -258,6 +260,12 @@ function removeItem(id: number): void {
     DEMO_ITEMS.splice(index, 1);
   }
 }
+
+// 详情单独取数：真实页面这里是 get(`/samples/${id}`)，取数期间抽屉显示骨架屏
+async function fetchDetail(id: number): Promise<SampleItem | null> {
+  await new Promise((resolve) => setTimeout(resolve, DETAIL_DELAY_MS));
+  return DEMO_ITEMS.find((item) => item.id === id) ?? null;
+}
 // -----------------------------------------------------------------------------
 
 export function SampleListPage() {
@@ -277,6 +285,9 @@ export function SampleListPage() {
   // 右侧抽屉：新增 / 编辑 / 详情共用同一个 Drawer
   const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
   const [drawerRecord, setDrawerRecord] = useState<SampleItem | null>(null);
+  // 详情是异步取数，取数期间抽屉里显示骨架屏
+  const [detailData, setDetailData] = useState<SampleItem | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const load = useCallback(async (currentPage: number, filters: SampleFilters) => {
     setLoading(true);
@@ -315,6 +326,23 @@ export function SampleListPage() {
       clearTimeout(timer);
     };
   }, [remoteKeyword]);
+
+  useEffect(() => {
+    if (drawerMode !== "detail" || !drawerRecord) {
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    void fetchDetail(drawerRecord.id).then((item) => {
+      if (!cancelled) {
+        setDetailData(item);
+        setDetailLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [drawerMode, drawerRecord]);
 
   const patchDraft = (patch: Partial<SampleFilters>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -468,10 +496,6 @@ export function SampleListPage() {
       ),
     },
   ];
-
-  if (loading) {
-    return <ListPageSkeleton />;
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -636,16 +660,19 @@ export function SampleListPage() {
 
       {/* 4. 列表区：无卡片容器 */}
       <div>
-        <Table
-          rowKey="id"
-          columns={columns}
-          data={data}
-          pagination={false}
-          rowSelection={{
-            selectedRowKeys: selectedKeys,
-            onChange: (keys) => setSelectedKeys(keys as number[]),
-          }}
-        />
+        {/* 列表加载用 Spin 点指示符，不用骨架屏；查询 / 重置 / 翻页 / 新增编辑保存后重新请求都会走到这里 */}
+        <Spin loading={loading} dot>
+          <Table
+            rowKey="id"
+            columns={columns}
+            data={data}
+            pagination={false}
+            rowSelection={{
+              selectedRowKeys: selectedKeys,
+              onChange: (keys) => setSelectedKeys(keys as number[]),
+            }}
+          />
+        </Spin>
         <div className="mt-4 flex justify-end">
           <Pagination total={total} current={page} pageSize={PAGE_SIZE} showTotal onChange={setPage} />
         </div>
@@ -662,51 +689,66 @@ export function SampleListPage() {
         onOk={handleDrawerOk}
         onCancel={closeDrawer}
       >
-        <Form layout="vertical">
-          <Form.Item label="名称">
-            <Input
-              placeholder="请输入名称"
-              disabled={drawerMode === "detail"}
-              defaultValue={drawerRecord?.name ?? ""}
+        {drawerMode === "detail" ? (
+          // 详情只展示、不可编辑：取数期间骨架屏，取回后用只读的 Descriptions 呈现
+          detailLoading || !detailData ? (
+            <DetailSkeleton />
+          ) : (
+            <Descriptions
+              column={1}
+              data={[
+                { label: "名称", value: detailData.name },
+                { label: "编码", value: detailData.code },
+                { label: "状态", value: STATUS_TEXT[detailData.status] },
+                { label: "分类", value: detailData.category },
+                { label: "所属模块", value: detailData.module },
+                { label: "所属部门", value: detailData.department },
+                { label: "关联商品", value: detailData.product },
+                { label: "负责人", value: detailData.owner },
+                { label: "标签", value: detailData.tags.join("、") },
+                { label: "创建时间", value: detailData.createdAt },
+                { label: "更新时间", value: detailData.updatedAt },
+                { label: "备注", value: detailData.remark },
+              ]}
             />
-          </Form.Item>
-          <Form.Item label="编码">
-            <Input
-              placeholder="请输入编码"
-              disabled={drawerMode === "detail"}
-              defaultValue={drawerRecord?.code ?? ""}
-            />
-          </Form.Item>
-          <Form.Item label="状态">
-            <Radio.Group defaultValue={drawerRecord?.status ?? "enabled"} disabled={drawerMode === "detail"}>
-              <Radio value="enabled">启用</Radio>
-              <Radio value="disabled">禁用</Radio>
-            </Radio.Group>
-          </Form.Item>
-          <Form.Item label="分类">
-            <Select
-              allowClear
-              placeholder="请选择分类"
-              style={{ width: "100%" }}
-              disabled={drawerMode === "detail"}
-              defaultValue={drawerRecord?.category}
-            >
-              {CATEGORY_OPTIONS.map((option) => (
-                <Select.Option key={option} value={option}>
-                  {option}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item label="备注">
-            <Input.TextArea
-              placeholder="请输入备注"
-              autoSize={{ minRows: 3, maxRows: 6 }}
-              disabled={drawerMode === "detail"}
-              defaultValue={drawerRecord?.remark ?? ""}
-            />
-          </Form.Item>
-        </Form>
+          )
+        ) : (
+          <Form layout="vertical">
+            <Form.Item label="名称">
+              <Input placeholder="请输入名称" defaultValue={drawerRecord?.name ?? ""} />
+            </Form.Item>
+            <Form.Item label="编码">
+              <Input placeholder="请输入编码" defaultValue={drawerRecord?.code ?? ""} />
+            </Form.Item>
+            <Form.Item label="状态">
+              <Radio.Group defaultValue={drawerRecord?.status ?? "enabled"}>
+                <Radio value="enabled">启用</Radio>
+                <Radio value="disabled">禁用</Radio>
+              </Radio.Group>
+            </Form.Item>
+            <Form.Item label="分类">
+              <Select
+                allowClear
+                placeholder="请选择分类"
+                style={{ width: "100%" }}
+                defaultValue={drawerRecord?.category}
+              >
+                {CATEGORY_OPTIONS.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item label="备注">
+              <Input.TextArea
+                placeholder="请输入备注"
+                autoSize={{ minRows: 3, maxRows: 6 }}
+                defaultValue={drawerRecord?.remark ?? ""}
+              />
+            </Form.Item>
+          </Form>
+        )}
       </Drawer>
     </div>
   );

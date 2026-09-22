@@ -142,7 +142,7 @@ import { ImageUpload } from "../components/ImageUpload";
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
 > mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。web 端模板包含：筛选条件网格（输入框 / 单选 /
 > 多选搜索 / 远程搜索 / 树形选择 / 时间选择器）、状态切换行、多选表格（选中后出现导出与批量删除）、
-> 新增 / 编辑 / 详情共用的右侧抽屉、行操作（详情 / 编辑 / 删除，全部 icon + Tooltip）、加载骨架屏、
+> 新增 / 编辑 / 详情共用的右侧抽屉、行操作（详情 / 编辑 / 删除，全部 icon + Tooltip）、列表 `Spin dot` 加载指示、
 > 操作列固定右侧、超长文本截断 + Tooltip；mobile 端为卡片列表 + 「加载更多」。
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
 > `apps/admin-web/src/pages/MdDocsPage.tsx`。
@@ -355,77 +355,55 @@ const columns = [
 ];
 ```
 
-## 六、骨架屏加载规范
+## 六、加载态规范
 
-### 硬性规则
+按「加载的是整页还是局部」分两种，不要混用：
 
-**每个区域都必须使用骨架屏加载**：数据加载时显示 Skeleton 组件，提升用户体验。
+### 列表页 —— 用 Spin 指示符，不用骨架屏
 
-### Web 端骨架屏
+页面外壳（标题区 / 筛选区 / 操作行）**一进来就直接渲染**，不给骨架屏；列表区加 `Spin dot` 指示符。
+查询、重置、翻页、新增 / 编辑保存后重新请求列表，全都走这一个 Spin：
 
 ```tsx
-import { Skeleton } from "@arco-design/web-react";
+import { Spin } from "@arco-design/web-react";
 
-// 列表页骨架屏（Arco web 文字占位用 text，图片占位用 image）
-function ListPageSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      {/* 标题区骨架 */}
-      <Skeleton text={{ rows: 1 }} />
+// loading 初值为 true：首次进入也走 Spin，不显示骨架屏
+<Spin loading={loading} dot>
+  <Table columns={columns} data={data} />
+</Spin>;
+```
 
-      {/* 筛选区骨架 */}
-      <Skeleton text={{ rows: 1 }} />
+### 抽屉 / 详情 —— 用骨架屏
 
-      {/* 列表区骨架 */}
-      <Skeleton text={{ rows: 8 }} />
-    </div>
+局部内容（详情抽屉、面板等）取数期间用 `Skeleton` 占位，取回后替换为只读展示：
+
+```tsx
+{
+  detailLoading ? (
+    <Skeleton text={{ rows: 2 }} />
+  ) : (
+    <Descriptions column={1} data={[{ label: "名称", value: detailData.name }]} />
   );
 }
 ```
 
-### Mobile 端骨架屏
+### Mobile 端
+
+移动端卡片列表沿用卡片骨架屏：
 
 ```tsx
 import { Skeleton } from "@arco-design/mobile-react";
 
-// 列表页骨架屏
-function ListPageSkeleton() {
+function ListSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      {/* 标题区骨架 */}
       <Skeleton title paragraph={{ rows: 1 }} />
-
-      {/* 列表项骨架 */}
       {[1, 2, 3].map((i) => (
         <div key={i} className="rounded-lg bg-white p-4">
           <Skeleton title paragraph={{ rows: 2 }} />
         </div>
       ))}
     </div>
-  );
-}
-```
-
-### 使用示例
-
-```tsx
-function UsersPage() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    fetchData().then((res) => {
-      setData(res);
-      setLoading(false);
-    });
-  }, []);
-
-  if (loading) {
-    return <ListPageSkeleton />;
-  }
-
-  return (
-    // 实际页面内容
   );
 }
 ```
@@ -466,22 +444,22 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 ### 8.1 脚本阻断项（`pnpm frontend:check` 检出即阻断）
 
-| #   | 规则                                                                                                                                                            | 校验实现                                             |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                                                                                             | `check_page_naming`                                  |
-| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                                                                                           | `check_ui_library_cross_import`                      |
-| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                                                                                                       | `check_inline_style`                                 |
-| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                                                                                              | `check_hardcoded_colors`                             |
-| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                                                                                                        | `check_notification_component`                       |
-| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                                                                                                   | `check_skeleton_loading`（见下方说明，**当前漏报**） |
-| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web）                                                                          | `check_image_upload_component`                       |
-| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind（各端仅一个入口 `index.css`；预览入口 `apps/*/preview/index.css` 同样合规） | `check_style_solution`                               |
-| 9   | 设计 token 单一来源：各端 `tailwind.config` 只能 `content` + `presets`，禁止自带 `theme` / `plugins`                                                            | `check_tailwind_single_source`                       |
+| #   | 规则                                                                                                                                                            | 校验实现                                                       |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                                                                                             | `check_page_naming`                                            |
+| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                                                                                           | `check_ui_library_cross_import`                                |
+| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                                                                                                       | `check_inline_style`                                           |
+| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                                                                                              | `check_hardcoded_colors`                                       |
+| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                                                                                                        | `check_notification_component`                                 |
+| 6   | 加载态必须有指示：列表用 `Spin dot`，抽屉 / 局部用 `Skeleton`（见第六节）                                                                                       | `check_skeleton_loading`（与现行约定不一致且漏报，见下方说明） |
+| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web）                                                                          | `check_image_upload_component`                                 |
+| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind（各端仅一个入口 `index.css`；预览入口 `apps/*/preview/index.css` 同样合规） | `check_style_solution`                                         |
+| 9   | 设计 token 单一来源：各端 `tailwind.config` 只能 `content` + `presets`，禁止自带 `theme` / `plugins`                                                            | `check_tailwind_single_source`                                 |
 
-> **第 6 条的检测缺陷（已知，勿依赖）**：`check_skeleton_loading` 用 `useState.*loading` 匹配加载状态，
-> 要求 `useState` 出现在 `loading` **之前**，因此对最常见写法 `const [loading, setLoading] = useState(false)`
-> 完全匹配不上，实际长期处于漏报状态。修正检测后当前有 **21/28 个页面**会报违规（存量页面普遍用
-> `Table loading` 而非骨架屏）。是否修正检测并迁移这 21 个页面，待决策；在决策前请按 8.3 人工确认。
+> **第 6 条已与现行约定脱节，勿依赖**：`check_skeleton_loading` 要求「有 loading 就必须出现 `Skeleton`」，
+> 但第六节约定列表页用 `Spin dot`、骨架屏只用于抽屉/局部；而且它的正则 `useState.*loading` 要求 `useState`
+> 出现在 `loading` 之前，对 `const [loading, setLoading] = useState(false)` 这种常见写法根本匹配不上，
+> 长期处于漏报状态。修正检测需要同时改判定口径，目前按人工评审处理。
 
 ### 8.2 跨脚本覆盖（同属前端规范，由其他门禁校验）
 
@@ -501,8 +479,8 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 批量操作（含导出）必须二次确认：凡一次影响多行的按钮都包 `Popconfirm`，确认文案写明影响范围。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
-- 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
-  替代骨架屏；新增页面请照样板（`MdDocsPage.tsx`）直接给整页骨架屏。
+- 加载态：**必须人工确认**。列表页用 `Spin dot`、且首次进入也不给骨架屏；骨架屏只用于抽屉 / 局部内容
+  （第六节）。第 6 条的自动检测与现行约定不一致且漏报，见 8.1 说明。
 - 响应式约定：Web 端固定桌面布局；Mobile 端使用 `dvh` / `fixed` 定位 / 触摸友好尺寸。
 
 ### 8.4 存量偏离清单（待迁移，新增代码不得模仿）
