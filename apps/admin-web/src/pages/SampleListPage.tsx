@@ -12,15 +12,17 @@
  *   1. 页面标题区        h1 text-xl font-semibold
  *   2. 筛选区            左边的条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置 / 新增」icon 按钮
  *   3. 列表区            表格 + 独立 Pagination
+ * 另可按需在筛选区与列表区之间插一行**状态切换**（Radio.Group type="button"，像标签页一样即点即生效），
+ * 本页就放了这一行。
  *
- * 筛选区演示 10 个条件、覆盖 5 类控件：
+ * 筛选条件演示覆盖 5 类控件（网格内 9 个 + 状态切换行 1 个）：
  *   输入框     名称、编码、备注
- *   单选       状态（Radio.Group）
+ *   单选       状态（Radio.Group，在状态切换行）
  *   多选       标签（Checkbox.Group）
  *   多选搜索   分类、负责人（Select mode="multiple"）
  *   时间选择器 创建时间、更新时间（DatePicker.RangePicker）
  *   另有单选下拉：所属模块
- * 条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
+ * 网格内的条件在草稿态（draft）里编辑，点「搜索」才提交为 applied 并重新查询；「重置」同时清空两者。
  *
  * 形态约束：
  *   - 加载中显示整页骨架屏
@@ -218,6 +220,13 @@ export function SampleListPage() {
     setPage(1);
   };
 
+  // 状态切换行像标签页一样即点即生效，不需要再点「搜索」
+  const handleStatusChange = (status: SampleFilters["status"]) => {
+    setDraft((prev) => ({ ...prev, status }));
+    setApplied((prev) => ({ ...prev, status }));
+    setPage(1);
+  };
+
   const handleReset = () => {
     setDraft(EMPTY_FILTERS);
     setApplied(EMPTY_FILTERS);
@@ -338,18 +347,6 @@ export function SampleListPage() {
             onChange={(value) => patchDraft({ code: value })}
             onPressEnter={handleSearch}
           />
-          {/* 单选框 */}
-          <Radio.Group
-            type="button"
-            value={draft.status}
-            onChange={(value: SampleFilters["status"]) => patchDraft({ status: value })}
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <Radio key={option.value} value={option.value}>
-                {option.label}
-              </Radio>
-            ))}
-          </Radio.Group>
           {/* 多选搜索：mode="multiple" 自带输入搜索 */}
           <Select
             mode="multiple"
@@ -439,7 +436,16 @@ export function SampleListPage() {
         </div>
       </div>
 
-      {/* 3. 列表区：无卡片容器 */}
+      {/* 3. 状态切换行：位于筛选区与列表区之间，点一下立即生效 */}
+      <Radio.Group type="button" value={applied.status} onChange={handleStatusChange}>
+        {STATUS_OPTIONS.map((option) => (
+          <Radio key={option.value} value={option.value}>
+            {option.label}
+          </Radio>
+        ))}
+      </Radio.Group>
+
+      {/* 4. 列表区：无卡片容器 */}
       <div>
         <Table rowKey="id" columns={columns} data={data} pagination={false} />
         <div className="mt-4 flex justify-end">

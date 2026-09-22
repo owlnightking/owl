@@ -174,12 +174,6 @@ import { ImageUpload } from "../components/ImageUpload";
     <div className="grid grid-cols-4 gap-3">
       {/* 输入框（不带 label，用 placeholder 表达含义） */}
       <Input placeholder="名称" style={{ width: "100%" }} value={kw} onChange={setKw} onPressEnter={onSearch} />
-      {/* 单选框 */}
-      <Radio.Group type="button" value={status} onChange={setStatus}>
-        <Radio value="all">全部</Radio>
-        <Radio value="enabled">启用</Radio>
-        <Radio value="disabled">禁用</Radio>
-      </Radio.Group>
       {/* 多选搜索 */}
       <Select mode="multiple" placeholder="分类" style={{ width: "100%" }} value={categories} onChange={setCategories}>
         {CATEGORY_OPTIONS.map((item) => (
@@ -212,7 +206,14 @@ import { ImageUpload } from "../components/ImageUpload";
     </div>
   </div>
 
-  {/* 3. 列表区 - 无卡片容器 */}
+  {/* 3. 状态切换行（可选）- 放在筛选区与列表区之间，像标签页一样即点即生效。无卡片容器 */}
+  <Radio.Group type="button" value={status} onChange={setStatus}>
+    <Radio value="all">全部</Radio>
+    <Radio value="enabled">启用</Radio>
+    <Radio value="disabled">禁用</Radio>
+  </Radio.Group>
+
+  {/* 4. 列表区 - 无卡片容器 */}
   <div>
     <Table columns={columns} data={data} />
     <div className="mt-4 flex justify-end">
@@ -227,8 +228,11 @@ import { ImageUpload } from "../components/ImageUpload";
 >
 > **筛选条件**：一律用不带 label 的控件，靠 `placeholder` 表达含义（单选/多选这类没有 placeholder 的控件除外，
 > 但优先考虑 `Radio.Group type="button"` 或把语义写进选项文案）。控制在四列网格里按需混用输入框、单选、多选、
-> 多选搜索（`Select mode="multiple"`）、时间选择器（`DatePicker.RangePicker`），条件数不限。
-> 条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
+> 多选搜索（`Select mode="multiple"`，自带输入搜索）、时间选择器（`DatePicker.RangePicker`），条件数不限。
+> 网格内的条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
+>
+> **状态切换行（可选）**：需要按状态切换视图时，在筛选区与列表区之间单独放一行
+> `Radio.Group type="button"`（如 全部 / 启用 / 禁用）。它不参与「搜索」提交，改动立即生效并回到第 1 页。
 >
 > 列表级操作（导出、批量操作等）统一放进筛选区右下角那一组 icon 按钮里，不再单独起一行操作栏。
 > 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
@@ -412,7 +416,8 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局三段式：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置 / 新增」icon 按钮）→ 列表区。
+- 列表页布局三段式：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置 / 新增」icon 按钮）→ 列表区；
+  需要状态视图切换时，在筛选区与列表区之间插一行状态切换（`Radio.Group type="button"`）。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
