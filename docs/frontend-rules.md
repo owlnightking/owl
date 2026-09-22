@@ -342,24 +342,32 @@ import { ImageUpload } from "../components/ImageUpload";
 
 1. **超长文本截断**：超过 12 个字符使用 `...` 展示，悬浮显示全部内容
 2. **列表操作列**：固定在右侧，使用 icon 按钮，悬浮显示操作名称
+3. **列多时横向滚动 + 两端固定**：列总宽超过容器就用 `scroll={{ x: <列宽合计> }}` 横向滚动，并固定两端——
+   左端固定标识列（本模板固定「编码」），右端固定操作列；多选列也要一起固定（`rowSelection={{ fixed: true }}`）。
+   **固定列必须排在列的首尾**：左侧固定列只能是列表最前面那几列，所以要把要固定的列挪到第一列，
+   不能只挑中间的列加 `fixed: "left"`，否则悬浮位置会错乱。
 
 ```tsx
 // 列表字段配置示例
 const columns = [
+  // 左侧固定列必须排在最前
+  { title: "编码", dataIndex: "code", fixed: "left", width: 160 },
   {
     title: "名称",
     dataIndex: "name",
+    width: 220,
     render: (text) => (
       <Tooltip content={text}>
         <span className="block max-w-[200px] truncate">{text}</span>
       </Tooltip>
     ),
   },
+  // ……中间是普通列
   {
     title: "操作",
     dataIndex: "actions",
     fixed: "right",
-    width: 120,
+    width: 140,
     render: (_, record) => (
       <Space>
         <Tooltip content="编辑">
@@ -372,6 +380,14 @@ const columns = [
     ),
   },
 ];
+
+// 配合 scroll + 固定多选列，两端滚动时始终可见
+<Table
+  columns={columns}
+  data={data}
+  scroll={{ x: 2380 }}
+  rowSelection={{ fixed: true, selectedRowKeys, onChange: setSelectedRowKeys }}
+/>;
 ```
 
 ## 六、加载态规范

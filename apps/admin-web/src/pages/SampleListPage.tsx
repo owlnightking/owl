@@ -33,6 +33,7 @@
  *   - 列表加载用 `Spin dot` 指示符，不做整页骨架屏（首次进入也不显示骨架屏）；骨架屏只用于抽屉这类局部内容
  *   - 查询 / 重置 / 翻页 / 新增编辑保存后重新请求列表，都会触发列表的 Spin
  *   - 分页展示总数（`共 N 条`）、可切页、可切换每页条数（切换每页条数后回到第 1 页）
+ *   - 列多时横向滚动：`scroll={{ x }}`，左端固定「编码」、右端固定「操作」，滚动时两端始终可见
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
  *   - 反馈统一用 Notification（成功 title "成功" / 失败 title "失败"）
@@ -83,11 +84,14 @@ interface SampleItem {
   name: string;
   code: string;
   status: SampleStatus;
+  priority: string;
   category: string;
   module: string;
   department: string;
   product: string;
   owner: string;
+  source: string;
+  quantity: number;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -118,6 +122,9 @@ interface SampleFilters {
 
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const DEMO_QUANTITY_STEP = 3;
+// 列宽合计（含多选列 50）：超过容器宽度就横向滚动，配合 fixed 列实现左右两端悬浮。增删列时同步这个值
+const TABLE_SCROLL_X = 2380;
 const DEMO_TOTAL = 46;
 const DEMO_DELAY_MS = 400;
 
@@ -130,6 +137,9 @@ const STATUS_OPTIONS: { label: string; value: SampleFilters["status"] }[] = [
 const CATEGORY_OPTIONS = ["商品", "订单", "用户", "内容"];
 const MODULE_OPTIONS = ["admin", "owl", "cron", "mobile", "portal"];
 const OWNER_OPTIONS = ["张三", "李四", "王五", "赵六"];
+const PRIORITY_OPTIONS = ["高", "中", "低"];
+const PRIORITY_COLOR: Record<string, string> = { 高: "red", 中: "orange", 低: "gray" };
+const SOURCE_OPTIONS = ["手动创建", "接口同步", "批量导入"];
 // 仅用于示例数据的展示（列表「标签」列），不参与筛选
 const DEMO_TAGS = ["重点", "归档", "待审", "内部"];
 
@@ -214,11 +224,14 @@ const DEMO_ITEMS: SampleItem[] = Array.from({ length: DEMO_TOTAL }, (_, index) =
     name: `示例资源 ${String(index + 1).padStart(2, "0")} · 一个刻意写得很长的名称用来演示截断`,
     code: `SAMPLE_${String(index + 1).padStart(3, "0")}`,
     status: index % 3 === 0 ? "disabled" : "enabled",
+    priority: PRIORITY_OPTIONS[index % PRIORITY_OPTIONS.length],
     category: CATEGORY_OPTIONS[index % CATEGORY_OPTIONS.length],
     module: MODULE_OPTIONS[index % MODULE_OPTIONS.length],
     department: DEPARTMENT_FLAT[index % DEPARTMENT_FLAT.length],
     product: REMOTE_POOL[index % REMOTE_POOL.length],
     owner: OWNER_OPTIONS[index % OWNER_OPTIONS.length],
+    source: SOURCE_OPTIONS[index % SOURCE_OPTIONS.length],
+    quantity: (index + 1) * DEMO_QUANTITY_STEP,
     tags: [DEMO_TAGS[index % DEMO_TAGS.length], DEMO_TAGS[(index + 2) % DEMO_TAGS.length]],
     createdAt: `2026-09-${day} 10:24:00`,
     updatedAt: `2026-10-${day} 18:05:00`,
@@ -419,21 +432,29 @@ export function SampleListPage() {
   };
 
   const columns = [
+    // 左侧固定列必须排在列首（表格库的通用约束），所以把「编码」放在第一列并 fixed: "left"
+    { title: "编码", dataIndex: "code", fixed: "left" as const, width: 160 },
     {
       title: "名称",
       dataIndex: "name",
+      width: 220,
       render: (text: string) => (
         <Tooltip content={text}>
           <span className="block max-w-[200px] truncate">{text}</span>
         </Tooltip>
       ),
     },
-    { title: "编码", dataIndex: "code", width: 140 },
     {
       title: "状态",
       dataIndex: "status",
       width: 100,
       render: (value: SampleStatus) => <Tag color={value === "enabled" ? "green" : "red"}>{STATUS_TEXT[value]}</Tag>,
+    },
+    {
+      title: "优先级",
+      dataIndex: "priority",
+      width: 100,
+      render: (value: string) => <Tag color={PRIORITY_COLOR[value]}>{value}</Tag>,
     },
     {
       title: "分类",
@@ -455,29 +476,33 @@ export function SampleListPage() {
         </Space>
       ),
     },
-    { title: "负责人", dataIndex: "owner", width: 100 },
+    { title: "所属模块", dataIndex: "module", width: 120 },
     { title: "所属部门", dataIndex: "department", width: 120 },
+    { title: "负责人", dataIndex: "owner", width: 100 },
+    { title: "来源", dataIndex: "source", width: 120 },
+    { title: "数量", dataIndex: "quantity", width: 100 },
     {
       title: "关联商品",
       dataIndex: "product",
-      width: 180,
+      width: 200,
       render: (text: string) => (
         <Tooltip content={text}>
-          <span className="block max-w-[140px] truncate">{text}</span>
+          <span className="block max-w-[160px] truncate">{text}</span>
         </Tooltip>
       ),
     },
     {
       title: "备注",
       dataIndex: "remark",
-      width: 180,
+      width: 200,
       render: (text: string) => (
         <Tooltip content={text}>
-          <span className="block max-w-[140px] truncate">{text}</span>
+          <span className="block max-w-[160px] truncate">{text}</span>
         </Tooltip>
       ),
     },
     { title: "创建时间", dataIndex: "createdAt", width: 180 },
+    { title: "更新时间", dataIndex: "updatedAt", width: 180 },
     {
       title: "操作",
       dataIndex: "actions",
@@ -671,7 +696,9 @@ export function SampleListPage() {
             columns={columns}
             data={data}
             pagination={false}
+            scroll={{ x: TABLE_SCROLL_X }}
             rowSelection={{
+              fixed: true,
               selectedRowKeys: selectedKeys,
               onChange: (keys) => setSelectedKeys(keys as number[]),
             }}
