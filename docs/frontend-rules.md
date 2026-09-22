@@ -403,7 +403,8 @@ const columns = [
 import { Spin } from "@arco-design/web-react";
 
 // loading 初值为 true：首次进入也走 Spin，不显示骨架屏
-<Spin loading={loading} dot>
+// block 必加：.arco-spin 是 display:inline-block，会按内容宽度收缩，宽表格会被撑出页面、内部横向滚动失效
+<Spin loading={loading} dot block>
   <Table columns={columns} data={data} />
 </Spin>;
 ```

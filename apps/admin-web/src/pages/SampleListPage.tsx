@@ -689,8 +689,10 @@ export function SampleListPage() {
 
       {/* 4. 列表区：无卡片容器 */}
       <div>
-        {/* 列表加载用 Spin 点指示符，不用骨架屏；查询 / 重置 / 翻页 / 新增编辑保存后重新请求都会走到这里 */}
-        <Spin loading={loading} dot>
+        {/* 列表加载用 Spin 点指示符，不用骨架屏；查询 / 重置 / 翻页 / 新增编辑保存后重新请求都会走到这里。
+            Spin 必须带 block：Arco 的 .arco-spin 是 display:inline-block，会按内容宽度收缩，
+            宽表格会被撑出页面、内部横向滚动失效 */}
+        <Spin loading={loading} dot block>
           <Table
             rowKey="id"
             columns={columns}
