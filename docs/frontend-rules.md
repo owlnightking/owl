@@ -548,15 +548,46 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
   （第六节）。第 6 条的自动检测与现行约定不一致且漏报，见 8.1 说明。
 - 响应式约定：Web 端固定桌面布局；Mobile 端使用 `dvh` / `fixed` 定位 / 触摸友好尺寸。
 
-### 8.4 存量偏离清单（待迁移，新增代码不得模仿）
+### 8.4 列表页迁移完成记录（新增代码不得退回旧写法）
 
-| 项目       | 现状                                                   | 目标                                        |
-| ---------- | ------------------------------------------------------ | ------------------------------------------- |
-| 骨架屏     | 21/28 页面缺失，普遍用 `Table loading` 替代            | 整页骨架屏（`MdDocsPage.tsx` 已落地）       |
-| 列表页结构 | 搜索框普遍放在标题行，无独立筛选区，按钮位置不统一     | 按第五节三段式结构（筛选区/列表区不套卡片） |
-| 操作列     | 未固定右侧，普遍是带文字的按钮                         | `fixed: "right"` + icon 按钮 + `Tooltip`    |
-| 超长文本   | 多数列表未截断                                         | `max-w-[Npx] truncate` + `Tooltip` 显示全文 |
-| 任意值语法 | 少量 `text-[28px]` / `h-[calc(100vh-66px)]` 等脱离刻度 | 改用设计刻度内的取值                        |
+**全仓列表页已按第五节样板统一**，此前 `搜索框放标题行`、`Table loading`、`操作列带文字按钮`、`列表超长文本不截断`
+等偏离项已清除。迁移覆盖：
+
+| 端             | 页面                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| admin-web      | 用户 / 角色 / 权限 / 字段配置 / 徽章 / 认可 / 商品 / 兑换单 / 文档 / 操作审计 / 系统日志（11 个列表页） |
+| cron-web       | 定时任务、执行日志（2 个）                                                                              |
+| admin-web 其余 | 文档编辑器 / 文档预览非列表页，仅加载态对齐（骨架屏），见第六节                                         |
+
+**有意保留、不套列表壳的页面（改前先看理由，不要一律套模板）**：
+
+| 页面                                  | 保留理由                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `admin-web` 登录页（`MockLoginPage`） | dev 专用 mock 登录，卡片即登录卡本身，非内容卡片；页面未进业务菜单     |
+| `cron-web` 看板（`DashboardPage`）    | 仪表盘统计卡，「不套卡片」只约束筛选区与列表区，不约束看板             |
+| `cron-web` `SettingsPage`             | **未挂路由**的死页面，改它没有收益；若后续启用，须先按样板改造再挂路由 |
+| `portal` 首页（`HomePage`）           | 门户自有内容设计；其 `Skeleton` 属「局部内容」用法，符合第六节         |
+
+**跨 app 共用的列表接口必须同时提供两种形态（本次迁移最重要的约束）**：分页形态供列表页，
+数组形态供下拉/统计等需要整集的消费方（约定路径后缀 `/options`）。已有的四处：
+
+| 分页接口                  | 数组形态                          | 数组消费方                                 |
+| ------------------------- | --------------------------------- | ------------------------------------------ |
+| `GET /roles`              | `GET /roles/options`              | admin-web 用户页角色下拉                   |
+| `GET /recognition/badges` | `GET /recognition/badges/options` | mobile-web `CreateRecognitionPage`         |
+| `GET /field-config`       | `GET /field-config/options`       | cron-web 任务表单动态字段                  |
+| `GET /cron/schedulers`    | `GET /cron/schedulers/options`    | cron-web 看板统计（`.length` / `.filter`） |
+
+把列表接口改成标准分页时，**同一个 PR 内必须把每个数组消费方一起切到 `/options`**，否则消费方拿到的是
+`{ list, pageNum, pageSize, total }` 对象，`.map` / `.length` 会在运行时报错——类型检查不一定拦得住
+（消费方常声明成 `any[]` 或过宽的数组类型）。
+
+**仍需注意的残留**：`portal` 用它自己的设计刻度，`text-[28px]` / `h-[calc(100vh-66px)]` 等任意值语法
+在 portal 内**依然存在且暂不改动**；新写 portal 之外的页面不得模仿。
+
+迁移的结构一致性在真实运行环境里核对过（12 个 admin-web 列表页 + 2 个 cron-web 页面逐页打开，确认标题区
+`text-xl font-semibold`、列表区零 `.arco-card`、`Spin` 计算样式为 `block`、页面无横向溢出、分页显示
+`共 N 条` 与每页条数选择器）。
 
 ## 九、Web 端 / Mobile 端差异速查
 
@@ -569,7 +600,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 | 图标     | `@arco-design/web-react/icon`                     | `@arco-design/mobile-react/esm/icon`               |
 | 布局     | `ArcoLayout`（`Sider` + `Content`）               | 纯 Tailwind + `TabBar`                             |
 | 反馈组件 | `Notification`                                    | `Notify`                                           |
-| 加载提示 | `Spin`（列表页用 `Skeleton`）                     | `Toast.loading()`                                  |
+| 加载提示 | 列表页 `Spin dot block`；抽屉 / 局部 `Skeleton`   | `Toast.loading()`                                  |
 | 尺寸体系 | px，固定桌面布局（无响应式）                      | rem 等比（`html` font-size 50px），`dvh` / `fixed` |
 | 设计基线 | `tailwind/web.cjs`                                | `tailwind/mobile.cjs`                              |
 | 页面命名 | `XxxPage.tsx`                                     | `XxxPage.tsx`                                      |
