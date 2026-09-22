@@ -337,8 +337,8 @@ import { ImageUpload } from "../components/ImageUpload";
 > 这样条件增删都不用改布局。
 >
 > **分页**：用独立 `Pagination`（不挂在 Table 的 `pagination` 属性上），必须做三件事——展示总数
-> （`showTotal` → `共 N 条`）、可切页、可切换每页条数（`sizeCanChange` + `sizeOptions`，如 `[10, 20, 50, 100]`）。
-> 切换每页条数后回到第 1 页。每页条数本身是 state，重新请求列表时要把它带给接口。
+> （`showTotal` → `共 N 条`）、可切页、可切换每页条数（`sizeCanChange` + `sizeOptions`，如 `[10, 20, 50, 100]`，
+> **默认 10 条/页**）。切换每页条数后回到第 1 页。每页条数本身是 state，重新请求列表时要把它带给接口。
 >
 > **操作行**：筛选区下面、列表区上面单独一行。左侧是**页面级小 tab**（可选，用来切换分类 / 视图；
 > 写法与约定见第三节「页面级小 tab」——`Tabs type="capsule"` + `size="small"` + `w-fit`；不参与「搜索」提交，

@@ -32,7 +32,7 @@
  * 形态约束：
  *   - 列表加载用 `Spin dot` 指示符，不做整页骨架屏（首次进入也不显示骨架屏）；骨架屏只用于抽屉这类局部内容
  *   - 查询 / 重置 / 翻页 / 新增编辑保存后重新请求列表，都会触发列表的 Spin
- *   - 分页展示总数（`共 N 条`）、可切页、可切换每页条数（切换每页条数后回到第 1 页）
+ *   - 分页展示总数（`共 N 条`）、可切页、可切换每页条数（默认 10 条/页，切换每页条数后回到第 1 页）
  *   - 列多时横向滚动：`scroll={{ x }}`，左端固定「编码」、右端固定「操作」，滚动时两端始终可见
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
@@ -121,7 +121,7 @@ interface SampleFilters {
   remark: string;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const DEMO_QUANTITY_STEP = 3;
 /** 分类 tab 中「全部」的取值 */
