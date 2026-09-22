@@ -7,7 +7,8 @@
 # 5. 操作反馈组件检测（web: Notification, mobile: Notify）
 # 6. 骨架屏加载检测
 # 7. 图片上传公共组件检测（admin-web 必须使用 components/ImageUpload）
-# 8. 样式方案检测（禁用 CSS Modules / styled-components / 业务自建 .css）
+# 8. 样式方案检测（禁止 CSS Modules / styled-components / 业务自建 .css，统一 Tailwind）
+# 9. 设计 token 单一来源（各端 tailwind.config 只允许 content + presets 引用共享预设）
 #
 # 已移出本脚本、唯一实现见括号（避免同一规则多份实现漂移）：
 #   - emoji / 颜文字 → scripts/scan-ai-residue.sh 第 10 条（scripts/lib/find-emoji.mjs）
@@ -180,6 +181,22 @@ check_style_solution() {
   done <<< "$FRONTEND_FILES"
 }
 
+# 9. 设计 token 单一来源：各端 tailwind.config 必须 presets 引用共享预设，且不得自带 theme / plugins
+# 共享预设在仓库根 tailwind/（web.cjs 四个 web 端共用、mobile.cjs 移动端专用）。
+# 这条规则是「所有页面一份风格」的机制保障：设计 token 只有一处可改，不允许某个端偷偷分叉。
+check_tailwind_single_source() {
+  local file
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    if ! grep -qE 'presets:[[:space:]]*\[' "$file" 2>/dev/null; then
+      error "$file" "必须用 presets 引用共享设计基线（tailwind/web.cjs 或 tailwind/mobile.cjs）"
+    fi
+    if grep -qE '^[[:space:]]*(theme|plugins)[[:space:]]*:' "$file" 2>/dev/null; then
+      error "$file" "设计 token 只允许在 tailwind/ 预设中声明，各 app 配置不得自带 theme / plugins"
+    fi
+  done < <(find apps -maxdepth 2 -name 'tailwind.config.cjs' -not -path '*/node_modules/*' 2>/dev/null)
+}
+
 check_page_naming
 check_ui_library_cross_import
 check_inline_style
@@ -188,6 +205,7 @@ check_notification_component
 check_skeleton_loading
 check_image_upload_component
 check_style_solution
+check_tailwind_single_source
 echo "check-frontend-rules.sh: ERROR=$ERROR_COUNT"
 if [ "$ERROR_COUNT" -gt 0 ]; then
   exit 1

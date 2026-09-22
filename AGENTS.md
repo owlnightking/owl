@@ -273,6 +273,7 @@ kubectl -n owl get pods # 或直接用 kubectl
 ## 十二、前端 UI 规范
 
 AI Agent 在编写前端布局代码前，必须先读 `docs/frontend-rules.md`，写完后运行 `pnpm frontend:check` 验证。
+新增列表页直接以 `apps/admin-web/src/pages/MdDocsPage.tsx` 为样板（四段式 + 整页骨架屏 + 固定操作列）。
 
 **检查命令**：
 
@@ -284,12 +285,16 @@ pnpm frontend:check  # 前端 UI 规则检查
 
 - 页面组件命名错误、UI 库跨端导入、操作反馈组件用错、图片上传未走公共组件
 - 样式方案违规：CSS Modules / styled-components / emotion / 业务自建 `.css`（各端只留唯一 Tailwind 入口 `src/index.css`）
+- 设计 token 分叉：各端 `tailwind.config.cjs` 必须 `presets` 引用 `tailwind/web.cjs` 或 `tailwind/mobile.cjs`，不得自带 `theme` / `plugins`
 - 内联 style（Arco 组件必要属性除外）、硬编码颜色值（引号内 HEX）
-- 页面有 loading 状态但未使用 Skeleton 骨架屏
 - emoji / 颜文字、`any` 泄漏、单文件 >1000 行（WARN 级同样阻断）/ >1500 行
 
+**设计 token 单一来源**：风格基线在仓库根 `tailwind/`（web 端四个应用共用 `web.cjs`、移动端用 `mobile.cjs`），
+改风格只改预设，各端同时生效。各端不得自行声明 `theme` / `plugins`。
+
 > emoji、`any`、文件行数不属 `frontend:check`：分别由 `scan-ai-residue.sh` 与 `arch:check` 统一校验
-> （同一规则只保留一处实现）。完整清单含「人工评审项」，见 `docs/frontend-rules.md` 第八节。
+> （同一规则只保留一处实现）。骨架屏规则（第 6 条）的自动检测当前**漏报**，需人工确认；
+> 完整清单含「人工评审项」与「存量偏离清单」，见 `docs/frontend-rules.md` 第八节。
 
 ## 十三、后端规范
 

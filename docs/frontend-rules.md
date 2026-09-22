@@ -133,6 +133,10 @@ import { ImageUpload } from "../components/ImageUpload";
 
 ## 五、列表页布局规范
 
+> **标准样板（可直接复制）**：`apps/admin-web/src/pages/MdDocsPage.tsx` —— 它是当前唯一严格符合本节的页面，
+> 四段式结构、整页骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip 全部已落地。
+> 新增列表页以它为模板；改写存量页面时也以它为目标。
+
 ### 标准列表页结构
 
 ```tsx
@@ -299,6 +303,18 @@ function UsersPage() {
 Arco 属性是**前缀匹配**：`style={{ width: 300 }}` 放行，但同一行里再叠加其他任意属性也会一并放行，需人工留意）；
 硬编码颜色只自动查引号内的 HEX，`rgb()` / `hsl()` 需人工确认。
 
+### 设计 token 的单一来源
+
+设计基线放在仓库根 `tailwind/`，各端 config 只引用、不自带：
+
+| 预设                  | 适用范围                                | 内容                                                                |
+| --------------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| `tailwind/web.cjs`    | admin-web / owl-web / cron-web / portal | 语义色 `brand` / `danger` / `success` / `warning`，及既有中性色约定 |
+| `tailwind/mobile.cjs` | mobile-web                              | rem 尺寸体系：`spacing` 以 0.08rem 为步长、字号与圆角按 rem         |
+
+改风格只改这两个文件，各端同时生效，不存在「改了 3 个漏了 1 个」的漂移。各端配置禁止自带 `theme` / `plugins`
+（由 `check_tailwind_single_source` 校验）。新增颜色请加到预设的语义色里，不要在页面直接写 `blue-*` 等原始色阶。
+
 ## 八、检查规则
 
 AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：**脚本阻断项**由门禁自动校验，检出即阻断；
@@ -306,16 +322,22 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 ### 8.1 脚本阻断项（`pnpm frontend:check` 检出即阻断）
 
-| #   | 规则                                                                                   | 校验实现                        |
-| --- | -------------------------------------------------------------------------------------- | ------------------------------- |
-| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                    | `check_page_naming`             |
-| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                  | `check_ui_library_cross_import` |
-| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                              | `check_inline_style`            |
-| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                     | `check_hardcoded_colors`        |
-| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                               | `check_notification_component`  |
-| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                          | `check_skeleton_loading`        |
-| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web） | `check_image_upload_component`  |
-| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind    | `check_style_solution`          |
+| #   | 规则                                                                                                 | 校验实现                                             |
+| --- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | 页面组件必须 `PascalCase + Page.tsx`（`pages/` 下）                                                  | `check_page_naming`                                  |
+| 2   | UI 库与应用类型严格匹配，禁止跨端导入                                                                | `check_ui_library_cross_import`                      |
+| 3   | 禁止内联 style（Arco 必要属性如 `width` / `height` 除外）                                            | `check_inline_style`                                 |
+| 4   | 禁止硬编码颜色值（引号内 HEX），用 Tailwind 调色板                                                   | `check_hardcoded_colors`                             |
+| 5   | 操作反馈用对组件（web `Notification` / mobile `Notify`）                                             | `check_notification_component`                       |
+| 6   | 页面有 loading 状态必须使用 `Skeleton` 骨架屏                                                        | `check_skeleton_loading`（见下方说明，**当前漏报**） |
+| 7   | 图片上传必须用公共组件 `ImageUpload`（禁止裸 `Upload` / `input type=file`，admin-web）               | `check_image_upload_component`                       |
+| 8   | 禁止 CSS Modules / styled-components / emotion / 业务自建 `.css`，样式统一 Tailwind                  | `check_style_solution`                               |
+| 9   | 设计 token 单一来源：各端 `tailwind.config` 只能 `content` + `presets`，禁止自带 `theme` / `plugins` | `check_tailwind_single_source`                       |
+
+> **第 6 条的检测缺陷（已知，勿依赖）**：`check_skeleton_loading` 用 `useState.*loading` 匹配加载状态，
+> 要求 `useState` 出现在 `loading` **之前**，因此对最常见写法 `const [loading, setLoading] = useState(false)`
+> 完全匹配不上，实际长期处于漏报状态。修正检测后当前有 **21/28 个页面**会报违规（存量页面普遍用
+> `Table loading` 而非骨架屏）。是否修正检测并迁移这 21 个页面，待决策；在决策前请按 8.3 人工确认。
 
 ### 8.2 跨脚本覆盖（同属前端规范，由其他门禁校验）
 
@@ -333,7 +355,34 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 - 列表页布局四段式：页面标题区 → 筛选区表单 → 列表外操作区（右靠齐）→ 列表区。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
-- 骨架屏需覆盖**每个区域**：脚本只能判定「有 loading 状态就必须出现 `Skeleton`」，无法判断覆盖是否完整。
+- 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
+  替代骨架屏；新增页面请照样板（`MdDocsPage.tsx`）直接给整页骨架屏。
 - 响应式约定：Web 端固定桌面布局；Mobile 端使用 `dvh` / `fixed` 定位 / 触摸友好尺寸。
+
+### 8.4 存量偏离清单（待迁移，新增代码不得模仿）
+
+| 项目       | 现状                                                   | 目标                                        |
+| ---------- | ------------------------------------------------------ | ------------------------------------------- |
+| 骨架屏     | 21/28 页面缺失，普遍用 `Table loading` 替代            | 整页骨架屏（`MdDocsPage.tsx` 已落地）       |
+| 列表页结构 | 多数页面无筛选卡片、无列表外操作区、表格未包卡片       | 按第五节四段式结构                          |
+| 操作列     | 未固定右侧，普遍是带文字的按钮                         | `fixed: "right"` + icon 按钮 + `Tooltip`    |
+| 超长文本   | 多数列表未截断                                         | `max-w-[Npx] truncate` + `Tooltip` 显示全文 |
+| 任意值语法 | 少量 `text-[28px]` / `h-[calc(100vh-66px)]` 等脱离刻度 | 改用设计刻度内的取值                        |
+
+## 九、Web 端 / Mobile 端差异速查
+
+两端规则不拆成两份文档：**通用规则（emoji、`any`、文件行数、命名、上传组件）两端完全相同**，
+按端拆份会变成两处维护、两处漂移；**端特有规则（下表）取值互斥**，用并列对照比拆文件更好查。
+
+| 维度     | Web 端（admin-web / owl-web / cron-web / portal） | Mobile 端（mobile-web）                            |
+| -------- | ------------------------------------------------- | -------------------------------------------------- |
+| UI 库    | `@arco-design/web-react`                          | `@arco-design/mobile-react`                        |
+| 图标     | `@arco-design/web-react/icon`                     | `@arco-design/mobile-react/esm/icon`               |
+| 布局     | `ArcoLayout`（`Sider` + `Content`）               | 纯 Tailwind + `TabBar`                             |
+| 反馈组件 | `Notification`                                    | `Notify`                                           |
+| 加载提示 | `Spin`（列表页用 `Skeleton`）                     | `Toast.loading()`                                  |
+| 尺寸体系 | px，固定桌面布局（无响应式）                      | rem 等比（`html` font-size 50px），`dvh` / `fixed` |
+| 设计基线 | `tailwind/web.cjs`                                | `tailwind/mobile.cjs`                              |
+| 页面命名 | `XxxPage.tsx`                                     | `XxxPage.tsx`                                      |
 
 运行检查：`pnpm frontend:check`

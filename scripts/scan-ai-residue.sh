@@ -5,6 +5,10 @@
 #
 # 实现说明：每条规则只跑一次 grep（结果写入临时文件后用 while read 迭代），
 # 避免「每文件一次进程替换」在 macOS bash 3.2 上因进程数过多而段错误/挂起。
+#
+# 所有 grep 必须带 -H：`--staged` 只暂存一个 .ts/.tsx 时 grep 会省略文件名前缀，
+# 于是 `${match%%:*}` 取到的是行号而非路径，各条按扩展名/路径的分支（如跳过 *.tsx、
+# 跳过 mock 目录）会全部失配，把前端 JSX 里的数字误报成魔法数字而阻断提交。
 
 set -uo pipefail
 
@@ -40,7 +44,7 @@ strip_lineno() { echo "$1" | sed 's/^[0-9]*: *//'; }
 
 # 1. 无类型 any 泄漏
 check_any() {
-  grep -nE ': *any\b|\bas any\b|<any>' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE ': *any\b|\bas any\b|<any>' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -52,7 +56,7 @@ check_any
 
 # 2. 魔法数字（非 0/1/2 且非常量上下文；跳过 tsx 样式类、端口声明、mock 数据、描述文本中的数字）
 check_magic_numbers() {
-  grep -nE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE '[^0-9.](3|[4-9]|[1-9][0-9]+)[^0-9]' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -78,7 +82,7 @@ check_magic_numbers
 
 # 3. 注释只写"做了什么"（以设置/调用/赋值/打印开头且未解释为什么）
 check_comment_quality() {
-  grep -nE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE '^\s*//\s*(设置|调用|赋值|打印|创建|删除)\s' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -90,7 +94,7 @@ check_comment_quality
 
 # 4. 无意义命名（仅占位符 a/b/tmp/xxx/yyy，data/res 为通用合法名）
 check_naming() {
-  grep -nE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE '\b(a|b|tmp|xxx|yyy)\b\s*[:=]' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -102,7 +106,7 @@ check_naming
 
 # 5. TODO/FIXME 无责任人
 check_todo() {
-  grep -nE 'TODO|FIXME' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE 'TODO|FIXME' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -149,7 +153,7 @@ check_duplicate_blocks
 
 # 7. console.log 残留（非入口文件）
 check_console_log() {
-  grep -nE 'console\.log' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE 'console\.log' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -163,7 +167,7 @@ check_console_log
 
 # 8. 空 catch 吞异常
 check_empty_catch() {
-  grep -nE 'catch\s*(\([^)]*\))?\s*\{\s*\}' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE 'catch\s*(\([^)]*\))?\s*\{\s*\}' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
@@ -174,7 +178,7 @@ check_empty_catch
 
 # 9. 未校验外部输入（直接使用 req.body/query/params 未过 DTO）
 check_unvalidated_input() {
-  grep -nE '@Body\(\)' $FILES 2>/dev/null > "$MATCH_FILE"
+  grep -HnE '@Body\(\)' $FILES 2>/dev/null > "$MATCH_FILE"
   while IFS= read -r match; do
     [ -z "$match" ] && continue
     local file="${match%%:*}"
