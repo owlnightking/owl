@@ -512,7 +512,7 @@ export function SampleListPage() {
           <DatePicker.RangePicker
             format="YYYY-MM-DD"
             style={{ width: "100%" }}
-            placeholder={["创建起", "创建止"]}
+            placeholder={["创建开始", "创建结束"]}
             value={draft.createdRange}
             onChange={(dateStrings: string[]) => patchDraft({ createdRange: dateStrings })}
           />
@@ -520,7 +520,7 @@ export function SampleListPage() {
           <DatePicker.RangePicker
             format="YYYY-MM-DD"
             style={{ width: "100%" }}
-            placeholder={["更新起", "更新止"]}
+            placeholder={["更新开始", "更新结束"]}
             value={draft.updatedRange}
             onChange={(dateStrings: string[]) => patchDraft({ updatedRange: dateStrings })}
           />

@@ -186,7 +186,7 @@ import { ImageUpload } from "../components/ImageUpload";
       <DatePicker.RangePicker
         format="YYYY-MM-DD"
         style={{ width: "100%" }}
-        placeholder={["创建起", "创建止"]}
+        placeholder={["创建开始", "创建结束"]}
         value={createdRange}
         onChange={setCreatedRange}
       />
@@ -257,7 +257,8 @@ import { ImageUpload } from "../components/ImageUpload";
 > 但优先考虑 `Radio.Group type="button"` 或把语义写进选项文案）。控制在四列网格里按需混用：输入框、单选、
 > 多选搜索（`Select mode="multiple"`，自带输入搜索）、**远程搜索**（`Select showSearch` + `filterOption={false}`，
 > 候选由 `onSearch` 请求返回，需自行防抖并处理竞态）、**树形选择**（`TreeSelect`）、时间选择器
-> （`DatePicker.RangePicker`）。条件数不限。
+> （`DatePicker.RangePicker`）。条件数不限。时间选择器的两个占位文案统一写成「<字段>开始 / <字段>结束」，
+> 例如 `placeholder={["创建开始", "创建结束"]}`。
 > 网格内的条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
 >
 > **状态切换行（可选）**：需要按状态切换视图时，在筛选区与列表区之间单独放一行
