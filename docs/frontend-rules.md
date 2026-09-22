@@ -147,15 +147,17 @@ import { ImageUpload } from "../components/ImageUpload";
 
 ### 在应用内查看样板页
 
-样板页是**真实路由**，跑在各自应用里，内置示例数据、不依赖后端接口：
+样板页是**真实路由**，跑在各自应用里，内置示例数据、不依赖后端接口。`pnpm dev` 后走统一网关访问：
 
-| 端     | 入口                        | 地址                                                    |
-| ------ | --------------------------- | ------------------------------------------------------- |
-| web    | 管理台左侧菜单「样板页」    | `http://localhost:<ADMIN_WEB_PORT>/admin/sample-list`   |
-| mobile | 直接访问路由（未挂 TabBar） | `http://localhost:<MOBILE_WEB_PORT>/mobile/sample-list` |
+| 端     | 入口                        | dev 地址                                  | 生产路径              |
+| ------ | --------------------------- | ----------------------------------------- | --------------------- |
+| web    | 管理台左侧菜单「样板页」    | `http://localhost:5172/admin/sample-list` | `/admin/sample-list`  |
+| mobile | 直接访问路由（未挂 TabBar） | `http://localhost:5173/sample-list`       | `/mobile/sample-list` |
 
-`pnpm dev` 后即可访问（admin-web 需先经 dev 的 `/mock-login` 登录）。调样板页就是在真实应用里调，
-改完刷新看到效果，不需要单独的预览工程。
+（5172 / 5173 是 `WEB_GATEWAY_PORT` / `MOBILE_GATEWAY_PORT`，见 `.env.example`。admin-web 需先经
+`http://localhost:5172/admin/mock-login` 登录。mobile 的 vite `base` 在 dev 下是 `/`、构建后是 `/mobile/`。）
+
+调样板页就是在真实应用里调，改完刷新看到效果，不需要单独的预览工程。
 
 ### 标准列表页结构
 
