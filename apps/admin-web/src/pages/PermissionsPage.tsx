@@ -1,14 +1,13 @@
 /**
  * 权限配置 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
  *
- * 只读页面：无新增 / 编辑 / 删除 / 多选能力，操作行只保留「刷新」。
+ * 只读页面：无新增 / 编辑 / 删除 / 多选能力，也不设操作行。
  * 列表数据来自 @owl/permission 的路由表（本地常量），因此分页在前端切片；同步状态通过与
  * /roles/permissions 比对得出。原先的「同步」按钮已移除——其调用的 POST /roles/permissions/sync
  * 后端并不存在。
  */
 import { useCallback, useEffect, useState } from "react";
-import { Button, Notification, Pagination, Spin, Table, Tag, Tooltip } from "@arco-design/web-react";
-import { IconRefresh } from "@arco-design/web-react/icon";
+import { Notification, Pagination, Spin, Table, Tag, Tooltip } from "@arco-design/web-react";
 import { APP_ROUTES } from "@owl/permission";
 import { get } from "../api/client";
 
@@ -101,14 +100,7 @@ export function PermissionsPage() {
         </div>
       </div>
 
-      {/* 2. 操作行：只读页面，仅保留刷新 */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip content="刷新">
-          <Button icon={<IconRefresh />} onClick={() => void loadBackendPermissions()} />
-        </Tooltip>
-      </div>
-
-      {/* 3. 列表区：Spin 点指示符 + 前端分页（数据来自本地路由表） */}
+      {/* 2. 列表区：Spin 点指示符 + 前端分页（数据来自本地路由表） */}
       <div>
         <Spin loading={loading} dot block>
           <Table rowKey="key" columns={columns} data={pagedRows} pagination={false} scroll={{ x: 730 }} />

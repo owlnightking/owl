@@ -104,7 +104,6 @@ export function SettingsPage() {
             <Button type="primary" loading={syncing} onClick={() => void handleSync()}>
               手动同步
             </Button>
-            <Button onClick={() => void loadLogs()}>刷新</Button>
           </Space>
         </div>
       </Card>

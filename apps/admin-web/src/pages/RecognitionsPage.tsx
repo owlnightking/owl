@@ -3,7 +3,7 @@
  *
  * 本页只有业务流转动作（通过 / 驳回 / 置顶），没有新增、编辑、删除接口，因此操作行不放新增与批量按钮，
  * 也没有筛选条件网格：状态维度由操作行左侧的页面级胶囊 tab 承担（点一下立即生效并回到第 1 页）。
- * 结构：标题区 → 操作行（左侧状态 tab + 右侧刷新）→ 列表区（Spin 点指示符、独立分页、
+ * 结构：标题区 → 操作行（仅左侧状态 tab）→ 列表区（Spin 点指示符、独立分页、
  * 左端固定「发起人」、右端固定「操作」、超长文本截断 + Tooltip）。
  */
 import { useCallback, useEffect, useState } from "react";
@@ -20,7 +20,7 @@ import {
   Tabs,
   Tooltip,
 } from "@arco-design/web-react";
-import { IconCheck, IconClose, IconPushpin, IconRefresh } from "@arco-design/web-react/icon";
+import { IconCheck, IconClose, IconPushpin } from "@arco-design/web-react/icon";
 import type { ColumnProps } from "@arco-design/web-react/es/Table";
 import { get, put } from "../api/client";
 
@@ -225,7 +225,7 @@ export function RecognitionsPage() {
         <h1 className="text-xl font-semibold text-gray-800">认可管理</h1>
       </div>
 
-      {/* 2. 操作行：左侧状态切换（页面级小 tab，点一下立即生效），右侧刷新。
+      {/* 2. 操作行：左侧状态切换（页面级小 tab，点一下立即生效）。
           本页没有增删改接口，也没有批量与新增按钮；状态筛选由 tab 承担，不再另设条件网格 */}
       <div className="flex items-center gap-2">
         <Tabs type="capsule" size="small" className="w-fit shrink-0" activeTab={status} onChange={handleStatusChange}>
@@ -233,11 +233,6 @@ export function RecognitionsPage() {
             <Tabs.TabPane key={option.value} title={option.label} />
           ))}
         </Tabs>
-        <div className="ml-auto flex items-center gap-2">
-          <Tooltip content="刷新">
-            <Button icon={<IconRefresh />} onClick={() => void load(page, pageSize, status)} />
-          </Tooltip>
-        </div>
       </div>
 
       {/* 3. 列表区：无卡片容器；Spin 必须带 block，否则 Arco 的 .arco-spin 会按内容宽度收缩，宽表格的横向滚动失效 */}

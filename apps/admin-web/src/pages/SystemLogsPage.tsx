@@ -1,7 +1,7 @@
 /**
  * 系统日志 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
  *
- * 只读页面：操作行只保留「刷新」，无右端固定的操作列。筛选条件（级别 / 服务 / 关键字）在草稿态编辑，
+ * 只读页面：不设操作行，无右端固定的操作列。筛选条件（级别 / 服务 / 关键字）在草稿态编辑，
  * 点「搜索」才提交生效；保留原有的展开行显示堆栈。
  */
 import { useCallback, useEffect, useState } from "react";
@@ -206,14 +206,7 @@ export function SystemLogsPage() {
         </div>
       </div>
 
-      {/* 3. 操作行：只读页面，仅保留刷新 */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip content="刷新">
-          <Button icon={<IconRefresh />} onClick={() => void load(page, pageSize, applied)} />
-        </Tooltip>
-      </div>
-
-      {/* 4. 列表区：Spin 点指示符 + 展开行看堆栈 + 分页默认 10 条 */}
+      {/* 3. 列表区：Spin 点指示符 + 展开行看堆栈 + 分页默认 10 条 */}
       <div>
         <Spin loading={loading} dot block>
           <Table

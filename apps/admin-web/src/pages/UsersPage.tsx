@@ -1,10 +1,10 @@
 /**
  * 用户管理 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
  *
- * 结构：标题区 → 筛选区（条件网格 + 搜索/重置贴最后一行最右）→ 操作行（右侧刷新）→ 列表区（Spin 加载、
+ * 结构：标题区 → 筛选区（条件网格 + 搜索/重置贴最后一行最右）→ 列表区（Spin 加载、
  * 分页默认 10 条 + 总数 + 每页条数、左端固定「姓名」、右端固定「操作」、超长截断）。
  *
- * 接口只支持「列表 / 分配角色 / 启停用」：没有新增、删除与详情接口，因此操作行不放「新增」，
+ * 接口只支持「列表 / 分配角色 / 启停用」：没有新增、删除与详情接口，因此不设操作行，
  * 操作列不放「删除」，详情直接展示列表行已有字段（不额外取数，抽屉内也不需要骨架屏）。
  * 编辑（分配角色）与详情共用右侧抽屉。
  */
@@ -299,14 +299,7 @@ export function UsersPage() {
         </div>
       </div>
 
-      {/* 3. 操作行：用户没有新增接口，右侧只保留刷新 */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip content="刷新">
-          <Button icon={<IconRefresh />} onClick={() => void load(page, pageSize, appliedKeyword)} />
-        </Tooltip>
-      </div>
-
-      {/* 4. 列表区：Spin 点指示符 + 表格（左右两端固定列） */}
+      {/* 3. 列表区：Spin 点指示符 + 表格（左右两端固定列） */}
       <div>
         <Spin loading={loading} dot block>
           <Table rowKey="id" columns={columns} data={data} pagination={false} scroll={{ x: TABLE_SCROLL_X }} />

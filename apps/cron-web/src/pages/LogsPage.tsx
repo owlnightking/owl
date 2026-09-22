@@ -1,7 +1,7 @@
 /**
  * 执行日志 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
  *
- * 只读页面：操作行只有「刷新」；PROD / DEV 是页面级视图切换，按规范用胶囊 Tabs 放在操作行左侧。
+ * 只读页面：操作行只有 PROD / DEV 视图切换——按规范用胶囊 Tabs 放在操作行左侧。
  * 筛选条件（状态）在草稿态编辑，点「搜索」才提交生效。
  */
 import { useCallback, useEffect, useState } from "react";
@@ -162,7 +162,7 @@ export function LogsPage() {
         </div>
       </div>
 
-      {/* 3. 操作行：左侧环境切换（页面级小 tab），右侧刷新 */}
+      {/* 3. 操作行：左侧环境切换（页面级小 tab） */}
       <div className="flex items-center gap-2">
         <Tabs
           type="capsule"
@@ -177,11 +177,6 @@ export function LogsPage() {
           <Tabs.TabPane key="prod" title="PROD" />
           <Tabs.TabPane key="dev" title="DEV" />
         </Tabs>
-        <div className="ml-auto flex items-center gap-2">
-          <Tooltip content="刷新">
-            <Button icon={<IconRefresh />} onClick={() => void load(page, pageSize, status, env)} />
-          </Tooltip>
-        </div>
       </div>
 
       {/* 4. 列表区：Spin 点指示符 + 分页默认 10 条 */}

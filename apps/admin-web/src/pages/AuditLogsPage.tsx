@@ -1,7 +1,7 @@
 /**
  * 操作审计 —— 按 apps/admin-web/src/pages/SampleListPage.tsx 的样板改造（规范见 docs/frontend-rules.md 第五节）。
  *
- * 只读页面：没有新增 / 编辑 / 删除 / 多选能力，因此操作行只保留「刷新」，也没有右端固定的操作列。
+ * 只读页面：没有新增 / 编辑 / 删除 / 多选能力，因此不设操作行，也没有右端固定的操作列。
  * 接口支持 userId / resource 两个筛选条件，已在筛选区暴露。
  */
 import { useCallback, useEffect, useState } from "react";
@@ -259,14 +259,7 @@ export function AuditLogsPage() {
         </div>
       </div>
 
-      {/* 3. 操作行：只读页面，仅保留刷新 */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip content="刷新">
-          <Button icon={<IconRefresh />} onClick={() => void load(page, pageSize, filters)} />
-        </Tooltip>
-      </div>
-
-      {/* 4. 列表区：Spin 点指示符 + 分页默认 10 条 */}
+      {/* 3. 列表区：Spin 点指示符 + 分页默认 10 条 */}
       <div>
         <Spin loading={loading} dot block>
           <Table rowKey="id" columns={columns} data={data} pagination={false} scroll={{ x: 1240 }} />
