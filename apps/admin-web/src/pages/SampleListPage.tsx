@@ -8,12 +8,15 @@
  * 组件的筛选、加载态、分页、删除、骨架屏结构都不用动。
  * 真实取数与错误处理的完整写法见 apps/admin-web/src/pages/MdDocsPage.tsx。
  *
- * 结构固定三段（筛选区与列表区都不要卡片容器：无边框、无圆角、无内边距，直接落在页面背景上）：
+ * 结构（筛选区与列表区都不要卡片容器：无边框、无圆角、无内边距，直接落在页面背景上）：
  *   1. 页面标题区        h1 text-xl font-semibold
- *   2. 筛选区            左边的条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置 / 新增」icon 按钮
- *   3. 列表区            表格 + 独立 Pagination
- * 另可按需在筛选区与列表区之间插一行**状态切换**（Radio.Group type="button"，像标签页一样即点即生效），
- * 本页就放了这一行。
+ *   2. 筛选区            条件网格（多列，条件数不限）+ 右下角对齐的「搜索 / 重置」icon 按钮
+ *   3. 操作行            左侧状态切换（Radio.Group type="button"，像标签页一样即点即生效），
+ *                        右侧靠最右是「新增」；列表选中数据后，在「新增」前多出「导出 / 批量删除」，
+ *                        未选中时这两个按钮不显示
+ *   4. 列表区            多选表格 + 独立 Pagination
+ * 新增 / 编辑 / 详情共用右侧抽屉（Drawer placement="right"），只换标题与可编辑性；详情为只读。
+ * 行操作：详情（小眼睛 icon）/ 编辑 / 删除。
  *
  * 筛选条件演示覆盖 6 类控件（网格内 10 个 + 状态切换行 1 个）：
  *   输入框     名称、编码、备注
@@ -30,6 +33,7 @@
  *   - 操作列 fixed: "right" + 只有 icon 的按钮 + Tooltip 说明
  *   - 超长文本用定宽 + truncate 截断，Tooltip 悬浮显示全文
  *   - 反馈统一用 Notification（成功 title "成功" / 失败 title "失败"）
+ *   - 批量操作按钮随选中状态出现/消失，不留占位
  *
  * 设计 token（颜色/圆角/字号）来自 tailwind/web.cjs，不要在页面里写死颜色或自带 theme。
  */
@@ -37,6 +41,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   DatePicker,
+  Drawer,
+  Form,
   Input,
   Notification,
   Pagination,
@@ -50,9 +56,22 @@ import {
   Tooltip,
   TreeSelect,
 } from "@arco-design/web-react";
-import { IconDelete, IconEdit, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
+import {
+  IconDelete,
+  IconDownload,
+  IconEdit,
+  IconEye,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+} from "@arco-design/web-react/icon";
 
 type SampleStatus = "enabled" | "disabled";
+
+/** 右侧抽屉的三种用途：新增 / 编辑 / 详情 */
+type DrawerMode = "create" | "edit" | "detail";
+
+const DRAWER_TITLE: Record<DrawerMode, string> = { create: "新增", edit: "编辑", detail: "详情" };
 
 interface SampleItem {
   id: number;
@@ -252,6 +271,11 @@ export function SampleListPage() {
   const [remoteKeyword, setRemoteKeyword] = useState("");
   const [remoteOptions, setRemoteOptions] = useState<string[]>([]);
   const [remoteLoading, setRemoteLoading] = useState(false);
+  // 表格多选：选中后才出现「导出 / 批量删除」
+  const [selectedKeys, setSelectedKeys] = useState<number[]>([]);
+  // 右侧抽屉：新增 / 编辑 / 详情共用同一个 Drawer
+  const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
+  const [drawerRecord, setDrawerRecord] = useState<SampleItem | null>(null);
 
   const load = useCallback(async (currentPage: number, filters: SampleFilters) => {
     setLoading(true);
@@ -316,6 +340,7 @@ export function SampleListPage() {
   const handleDelete = async (id: number) => {
     try {
       removeItem(id);
+      setSelectedKeys((prev) => prev.filter((key) => key !== id));
       Notification.success({ title: "成功", content: "删除成功" });
       // 删掉本页最后一条时回退一页，避免停在空页
       if (data.length === 1 && page > 1) {
@@ -326,6 +351,38 @@ export function SampleListPage() {
     } catch (error) {
       Notification.error({ title: "失败", content: error instanceof Error ? error.message : "删除失败" });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      selectedKeys.forEach((id) => removeItem(id));
+      Notification.success({ title: "成功", content: `已删除 ${selectedKeys.length} 项` });
+      setSelectedKeys([]);
+      setPage(1);
+      void load(1, applied);
+    } catch (error) {
+      Notification.error({ title: "失败", content: error instanceof Error ? error.message : "批量删除失败" });
+    }
+  };
+
+  const handleExport = () => {
+    Notification.success({ title: "成功", content: `已导出选中 ${selectedKeys.length} 项（示例）` });
+  };
+
+  const openDrawer = (mode: DrawerMode, record?: SampleItem) => {
+    setDrawerMode(mode);
+    setDrawerRecord(record ?? null);
+  };
+
+  const closeDrawer = () => {
+    setDrawerMode(null);
+    setDrawerRecord(null);
+  };
+
+  const handleDrawerOk = () => {
+    Notification.success({ title: "成功", content: `已保存（${drawerMode === "create" ? "新增" : "编辑"}示例）` });
+    closeDrawer();
+    void load(page, applied);
   };
 
   const columns = [
@@ -392,11 +449,14 @@ export function SampleListPage() {
       title: "操作",
       dataIndex: "actions",
       fixed: "right" as const,
-      width: 120,
+      width: 140,
       render: (_: unknown, record: SampleItem) => (
         <Space>
+          <Tooltip content="详情">
+            <Button type="text" icon={<IconEye />} onClick={() => openDrawer("detail", record)} />
+          </Tooltip>
           <Tooltip content="编辑">
-            <Button type="text" icon={<IconEdit />} />
+            <Button type="text" icon={<IconEdit />} onClick={() => openDrawer("edit", record)} />
           </Tooltip>
           <Tooltip content="删除">
             <Popconfirm title="确认删除？" onOk={() => handleDelete(record.id)}>
@@ -541,28 +601,111 @@ export function SampleListPage() {
           <Tooltip content="重置">
             <Button icon={<IconRefresh />} onClick={handleReset} />
           </Tooltip>
+        </div>
+      </div>
+
+      {/* 3. 操作行：左侧状态切换（点一下立即生效），右侧「新增」；选中列表数据后，新增前多出「导出 / 批量删除」 */}
+      <div className="flex items-center gap-2">
+        <Radio.Group type="button" value={applied.status} onChange={handleStatusChange}>
+          {STATUS_OPTIONS.map((option) => (
+            <Radio key={option.value} value={option.value}>
+              {option.label}
+            </Radio>
+          ))}
+        </Radio.Group>
+        <div className="ml-auto flex items-center gap-2">
+          {selectedKeys.length > 0 && (
+            <>
+              <Tooltip content={`导出选中（${selectedKeys.length}）`}>
+                <Button icon={<IconDownload />} onClick={handleExport} />
+              </Tooltip>
+              <Popconfirm title={`确认删除选中的 ${selectedKeys.length} 项？`} onOk={handleBulkDelete}>
+                <Tooltip content={`批量删除（${selectedKeys.length}）`}>
+                  <Button status="danger" icon={<IconDelete />} />
+                </Tooltip>
+              </Popconfirm>
+            </>
+          )}
           <Tooltip content="新增">
-            <Button icon={<IconPlus />} />
+            <Button icon={<IconPlus />} onClick={() => openDrawer("create")} />
           </Tooltip>
         </div>
       </div>
 
-      {/* 3. 状态切换行：位于筛选区与列表区之间，点一下立即生效 */}
-      <Radio.Group type="button" value={applied.status} onChange={handleStatusChange}>
-        {STATUS_OPTIONS.map((option) => (
-          <Radio key={option.value} value={option.value}>
-            {option.label}
-          </Radio>
-        ))}
-      </Radio.Group>
-
       {/* 4. 列表区：无卡片容器 */}
       <div>
-        <Table rowKey="id" columns={columns} data={data} pagination={false} />
+        <Table
+          rowKey="id"
+          columns={columns}
+          data={data}
+          pagination={false}
+          rowSelection={{
+            selectedRowKeys: selectedKeys,
+            onChange: (keys) => setSelectedKeys(keys as number[]),
+          }}
+        />
         <div className="mt-4 flex justify-end">
           <Pagination total={total} current={page} pageSize={PAGE_SIZE} showTotal onChange={setPage} />
         </div>
       </div>
+
+      {/* 5. 右侧抽屉：新增 / 编辑 / 详情共用，只换标题与可编辑性 */}
+      <Drawer
+        visible={drawerMode !== null}
+        placement="right"
+        width={480}
+        title={drawerMode ? DRAWER_TITLE[drawerMode] : ""}
+        unmountOnExit
+        footer={drawerMode === "detail" ? null : undefined}
+        onOk={handleDrawerOk}
+        onCancel={closeDrawer}
+      >
+        <Form layout="vertical">
+          <Form.Item label="名称">
+            <Input
+              placeholder="请输入名称"
+              disabled={drawerMode === "detail"}
+              defaultValue={drawerRecord?.name ?? ""}
+            />
+          </Form.Item>
+          <Form.Item label="编码">
+            <Input
+              placeholder="请输入编码"
+              disabled={drawerMode === "detail"}
+              defaultValue={drawerRecord?.code ?? ""}
+            />
+          </Form.Item>
+          <Form.Item label="状态">
+            <Radio.Group defaultValue={drawerRecord?.status ?? "enabled"} disabled={drawerMode === "detail"}>
+              <Radio value="enabled">启用</Radio>
+              <Radio value="disabled">禁用</Radio>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item label="分类">
+            <Select
+              allowClear
+              placeholder="请选择分类"
+              style={{ width: "100%" }}
+              disabled={drawerMode === "detail"}
+              defaultValue={drawerRecord?.category}
+            >
+              {CATEGORY_OPTIONS.map((option) => (
+                <Select.Option key={option} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item label="备注">
+            <Input.TextArea
+              placeholder="请输入备注"
+              autoSize={{ minRows: 3, maxRows: 6 }}
+              disabled={drawerMode === "detail"}
+              defaultValue={drawerRecord?.remark ?? ""}
+            />
+          </Form.Item>
+        </Form>
+      </Drawer>
     </div>
   );
 }

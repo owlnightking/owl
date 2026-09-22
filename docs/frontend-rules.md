@@ -140,9 +140,10 @@ import { ImageUpload } from "../components/ImageUpload";
 ## 五、列表页布局规范
 
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
-> mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。两者是业务无关的列表页模板：
-> 三段式结构、筛选条件网格（输入框 / 单选 / 多选 / 多选搜索 / 时间选择器）、加载骨架屏、
-> 操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
+> mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。web 端模板包含：筛选条件网格（输入框 / 单选 /
+> 多选搜索 / 远程搜索 / 树形选择 / 时间选择器）、状态切换行、多选表格（选中后出现导出与批量删除）、
+> 新增 / 编辑 / 详情共用的右侧抽屉、行操作（详情 / 编辑 / 删除，全部 icon + Tooltip）、加载骨架屏、
+> 操作列固定右侧、超长文本截断 + Tooltip；mobile 端为卡片列表 + 「加载更多」。
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
 > `apps/admin-web/src/pages/MdDocsPage.tsx`。
 
@@ -227,26 +228,56 @@ import { ImageUpload } from "../components/ImageUpload";
       <Tooltip content="重置">
         <Button icon={<IconRefresh />} onClick={onReset} />
       </Tooltip>
+    </div>
+  </div>
+
+  {/* 3. 操作行 - 左侧状态切换（可选，像标签页一样即点即生效），右侧靠最右是「新增」。
+      列表选中数据后，「新增」前多出「导出 / 批量删除」；未选中时这两个按钮不显示。无卡片容器 */}
+  <div className="flex items-center gap-2">
+    <Radio.Group type="button" value={status} onChange={setStatus}>
+      <Radio value="all">全部</Radio>
+      <Radio value="enabled">启用</Radio>
+      <Radio value="disabled">禁用</Radio>
+    </Radio.Group>
+    <div className="ml-auto flex items-center gap-2">
+      {selectedKeys.length > 0 && (
+        <>
+          <Tooltip content="导出">
+            <Button icon={<IconDownload />} onClick={onExport} />
+          </Tooltip>
+          <Popconfirm title="确认批量删除？" onOk={onBulkDelete}>
+            <Tooltip content="批量删除">
+              <Button status="danger" icon={<IconDelete />} />
+            </Tooltip>
+          </Popconfirm>
+        </>
+      )}
       <Tooltip content="新增">
-        <Button icon={<IconPlus />} />
+        <Button icon={<IconPlus />} onClick={onCreate} />
       </Tooltip>
     </div>
   </div>
 
-  {/* 3. 状态切换行（可选）- 放在筛选区与列表区之间，像标签页一样即点即生效。无卡片容器 */}
-  <Radio.Group type="button" value={status} onChange={setStatus}>
-    <Radio value="all">全部</Radio>
-    <Radio value="enabled">启用</Radio>
-    <Radio value="disabled">禁用</Radio>
-  </Radio.Group>
-
-  {/* 4. 列表区 - 无卡片容器 */}
+  {/* 4. 列表区 - 多选表格，无卡片容器 */}
   <div>
-    <Table columns={columns} data={data} />
+    <Table columns={columns} data={data} rowSelection={{ selectedRowKeys: selectedKeys, onChange: setSelectedKeys }} />
     <div className="mt-4 flex justify-end">
       <Pagination total={total} current={current} onChange={setCurrent} />
     </div>
   </div>
+
+  {/* 5. 新增 / 编辑 / 详情共用右侧抽屉，只换标题与可编辑性（详情只读） */}
+  <Drawer
+    visible={drawerMode !== null}
+    placement="right"
+    width={480}
+    title={DRAWER_TITLE[drawerMode]}
+    footer={drawerMode === "detail" ? null : undefined}
+    onOk={onSave}
+    onCancel={closeDrawer}
+  >
+    {/* 表单字段见 apps/admin-web/src/pages/SampleListPage.tsx */}
+  </Drawer>
 </div>
 ```
 
@@ -261,14 +292,20 @@ import { ImageUpload } from "../components/ImageUpload";
 > 例如 `placeholder={["创建开始", "创建结束"]}`。
 > 网格内的条件编辑在 `draft` 状态里，点「搜索」才提交为 `applied` 并触发查询；「重置」两者一起清空并回到第 1 页。
 >
-> **状态切换行（可选）**：需要按状态切换视图时，在筛选区与列表区之间单独放一行
-> `Radio.Group type="button"`（如 全部 / 启用 / 禁用）。它不参与「搜索」提交，改动立即生效并回到第 1 页。
+> **操作行**：筛选区下面、列表区上面单独一行。左侧是状态切换（可选，`Radio.Group type="button"`，
+> 如 全部 / 启用 / 禁用；不参与「搜索」提交，改动立即生效并回到第 1 页），右侧靠最右固定放「新增」。
+> 列表支持多选后，**选中数据时**在「新增」左前方出现「导出 / 批量删除」，未选中时这两个按钮不显示、也不占位。
+> 批量删除走 `Popconfirm` 二次确认；批量按钮的 Tooltip 带上选中数量。
 >
-> 列表级操作（导出、批量操作等）统一放进筛选区右下角那一组 icon 按钮里，不再单独起一行操作栏。
-> 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
+> **新增 / 编辑 / 详情**共用同一个右侧抽屉（`Drawer placement="right"`，宽度 480），只换标题与可编辑性：
+> 详情只读（`footer={null}` + 控件 `disabled`），新增与编辑可编辑。行操作固定为
+> 详情（小眼睛 `IconEye`）/ 编辑 / 删除 三个 icon 按钮。
+>
+> **按钮强调色**：一组按钮里只保留一个 `type="primary"`（筛选区的「搜索」），其余用默认样式；
+> 破坏性操作用 `status="danger"`（删除、批量删除）。
 >
 > 完整示例（11 个条件 + 状态切换行，覆盖输入框 / 单选 / 多选搜索 / 远程搜索 / 树形选择 / 时间选择器 6 类控件，
-> 含可用的过滤逻辑）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
+> 含可用的过滤逻辑、多选批量操作与右侧抽屉）见 `apps/admin-web/src/pages/SampleListPage.tsx`。
 
 ### 列表字段规范
 
@@ -447,8 +484,8 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局三段式：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置 / 新增」icon 按钮）→ 列表区；
-  需要状态视图切换时，在筛选区与列表区之间插一行状态切换（`Radio.Group type="button"`）。
+- 列表页布局：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置」）→ 操作行（左侧状态切换，右侧最右为
+  「新增」；列表选中后在「新增」前出现「导出 / 批量删除」）→ 多选列表区。新增 / 编辑 / 详情统一走右侧抽屉。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
