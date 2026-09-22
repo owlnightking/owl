@@ -242,10 +242,12 @@ import { ImageUpload } from "../components/ImageUpload";
     <div className="ml-auto flex items-center gap-2">
       {selectedKeys.length > 0 && (
         <>
-          <Tooltip content="导出">
-            <Button icon={<IconDownload />} onClick={onExport} />
-          </Tooltip>
-          <Popconfirm className="w-56" title="确认删除选中项？" content="共 N 项" onOk={onBulkDelete}>
+          <Popconfirm className="w-56" title={`确认导出选中的 ${selectedKeys.length} 项？`} onOk={onExport}>
+            <Tooltip content="导出">
+              <Button icon={<IconDownload />} />
+            </Tooltip>
+          </Popconfirm>
+          <Popconfirm className="w-56" title={`确认删除选中的 ${selectedKeys.length} 项？`} onOk={onBulkDelete}>
             <Tooltip content="批量删除">
               <Button status="danger" icon={<IconDelete />} />
             </Tooltip>
@@ -297,9 +299,12 @@ import { ImageUpload } from "../components/ImageUpload";
 > 列表支持多选后，**选中数据时**在「新增」左前方出现「导出 / 批量删除」，未选中时这两个按钮不显示、也不占位。
 > 批量删除走 `Popconfirm` 二次确认；批量按钮的 Tooltip 带上选中数量。
 >
+> **所有批量操作都要二次确认**（含导出）：凡是一次影响多行的按钮，一律包 `Popconfirm`，
+> 确认文案**写成一行**并把影响范围写进去，例如 `确认删除选中的 3 项？`；不要拆成标题 + `content` 两行。
+>
 > **`Popconfirm` 挂在 icon 按钮上时要给定宽**：它的弹层宽度由标题文字撑开，而 icon 按钮触发的弹层很窄，
-> 「取消 / 确定」会被挤到换行堆叠。统一加 `className="w-56"`（Tailwind 标准宽度 14rem = 224px），
-> 让文案和按钮各占一行；多行信息（如选中项数）放 `content`，标题保持一行。
+> 文案和「取消 / 确定」都会被挤到换行堆叠。统一加 `className="w-56"`（Tailwind 标准宽度 14rem = 224px），
+> 保证文案一行、按钮一行；如果文案更长，按需升到 `w-64` 并保持单行。
 >
 > **新增 / 编辑 / 详情**共用同一个右侧抽屉（`Drawer placement="right"`，宽度 480），只换标题与可编辑性：
 > 详情只读（`footer={null}` + 控件 `disabled`），新增与编辑可编辑。行操作固定为
@@ -491,6 +496,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 - 列表页布局：页面标题区 → 筛选区（条件网格 + 右下角对齐的「搜索 / 重置」）→ 操作行（左侧状态切换，右侧最右为
   「新增」；列表选中后在「新增」前出现「导出 / 批量删除」）→ 多选列表区。新增 / 编辑 / 详情统一走右侧抽屉。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
+- 批量操作（含导出）必须二次确认：凡一次影响多行的按钮都包 `Popconfirm`，确认文案写明影响范围。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
   替代骨架屏；新增页面请照样板（`MdDocsPage.tsx`）直接给整页骨架屏。

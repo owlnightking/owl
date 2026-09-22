@@ -616,15 +616,12 @@ export function SampleListPage() {
         <div className="ml-auto flex items-center gap-2">
           {selectedKeys.length > 0 && (
             <>
-              <Tooltip content={`导出选中（${selectedKeys.length}）`}>
-                <Button icon={<IconDownload />} onClick={handleExport} />
-              </Tooltip>
-              <Popconfirm
-                className="w-56"
-                title="确认删除选中项？"
-                content={`共 ${selectedKeys.length} 项`}
-                onOk={handleBulkDelete}
-              >
+              <Popconfirm className="w-56" title={`确认导出选中的 ${selectedKeys.length} 项？`} onOk={handleExport}>
+                <Tooltip content={`导出选中（${selectedKeys.length}）`}>
+                  <Button icon={<IconDownload />} />
+                </Tooltip>
+              </Popconfirm>
+              <Popconfirm className="w-56" title={`确认删除选中的 ${selectedKeys.length} 项？`} onOk={handleBulkDelete}>
                 <Tooltip content={`批量删除（${selectedKeys.length}）`}>
                   <Button status="danger" icon={<IconDelete />} />
                 </Tooltip>
