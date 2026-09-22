@@ -4,6 +4,8 @@ import {
   ROLE_REPOSITORY,
   type RoleCreateInput,
   type RoleItem,
+  type RoleOption,
+  type RoleQuery,
   type RoleRepositoryPort,
   type RoleUpdateInput,
   type RoleServicePort,
@@ -15,8 +17,12 @@ const SYSTEM_ROLE_CODES = new Set(["admin", "business_user", "reader", "member"]
 export class RoleService implements RoleServicePort {
   constructor(@Inject(ROLE_REPOSITORY) private readonly roles: RoleRepositoryPort) {}
 
-  async list(): Promise<RoleItem[]> {
-    return this.roles.list();
+  async list(query: RoleQuery): Promise<{ items: RoleItem[]; total: number }> {
+    return this.roles.list(query);
+  }
+
+  async listOptions(): Promise<RoleOption[]> {
+    return this.roles.listOptions();
   }
 
   async listPermissions(): Promise<{ id: number; code: string; name: string; resource: string; action: string }[]> {

@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Post, Put, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -9,11 +21,33 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsArray, IsInt, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
-import { ok } from "../../../common/response/api-response";
+import { IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
+import { ok, page } from "../../../common/response/api-response";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
 import { ROLE_SERVICE, type RoleServicePort } from "../domain/role.ports";
-import { RolePermissionVo, RoleVo } from "./role.vo";
+import { RoleOptionVo, RolePageVo, RolePermissionVo, RoleVo } from "./role.vo";
+
+class ListRolesQueryDto {
+  @ApiPropertyOptional({ description: "角色编码 / 名称关键字", example: "运营" })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: "页码", example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @ApiPropertyOptional({ description: "每页条数", example: 10, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize: number = 10;
+}
 
 class CreateRoleDto {
   @ApiProperty({ description: "角色编码", example: "operator" })
@@ -70,11 +104,19 @@ export class RoleController {
 
   @Get()
   @RequirePermission("role:read")
-  @ApiOperation({ summary: "角色列表" })
-  @ApiOkResponse({ description: "角色列表", type: [RoleVo] })
-  async list() {
-    const items = await this.roleService.list();
-    return ok(items);
+  @ApiOperation({ summary: "角色分页列表" })
+  @ApiOkResponse({ description: "角色分页列表", type: RolePageVo })
+  async list(@Query() query: ListRolesQueryDto) {
+    const { items, total } = await this.roleService.list(query);
+    return page(items, query.page, query.pageSize, total);
+  }
+
+  @Get("options")
+  @RequirePermission("role:read")
+  @ApiOperation({ summary: "角色下拉选项（不分页）" })
+  @ApiOkResponse({ description: "角色下拉选项", type: [RoleOptionVo] })
+  async options() {
+    return ok(await this.roleService.listOptions());
   }
 
   @Get("permissions")

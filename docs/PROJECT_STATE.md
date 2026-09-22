@@ -202,6 +202,7 @@
 | recognition   | Get    | /api/recognition/products                    |
 | recognition   | Get    | /api/recognition/products/:id                |
 | role          | Get    | /api/roles                                   |
+| role          | Get    | /api/roles/options                           |
 | role          | Get    | /api/roles/permissions                       |
 | system-config | Get    | /api/system-config/:id                       |
 | system-log    | Get    | /api/system-logs                             |

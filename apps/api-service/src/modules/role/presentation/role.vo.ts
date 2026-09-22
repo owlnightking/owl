@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { PageMetaVo } from "../../../common/response/page.vo";
 
 export class RolePermissionVo {
   @ApiProperty({ description: "权限 id", example: 1 })
@@ -38,4 +39,23 @@ export class RoleVo {
 
   @ApiProperty({ description: "权限列表", type: [RolePermissionVo] })
   permissions!: RolePermissionVo[];
+}
+
+export class RolePageVo extends PageMetaVo {
+  @ApiProperty({ description: "角色列表", type: [RoleVo] })
+  list!: RoleVo[];
+}
+
+export class RoleOptionVo {
+  @ApiProperty({ description: "角色 id", example: 1 })
+  id!: number;
+
+  @ApiProperty({ description: "角色编码", example: "admin" })
+  code!: string;
+
+  @ApiProperty({ description: "角色名称", example: "系统管理员" })
+  name!: string;
+
+  @ApiProperty({ description: "是否系统内置", example: true })
+  isSystem!: boolean;
 }

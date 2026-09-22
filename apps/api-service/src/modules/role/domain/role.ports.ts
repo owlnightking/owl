@@ -29,8 +29,23 @@ export interface PermissionItem {
   action: string;
 }
 
+export interface RoleQuery {
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}
+
+/** 下拉选项形态：只需 id/code/name/isSystem，不带上权限明细 */
+export interface RoleOption {
+  id: number;
+  code: string;
+  name: string;
+  isSystem: boolean;
+}
+
 export interface RoleRepositoryPort {
-  list(): Promise<RoleItem[]>;
+  list(query: RoleQuery): Promise<{ items: RoleItem[]; total: number }>;
+  listOptions(): Promise<RoleOption[]>;
   findById(id: number): Promise<RoleItem | null>;
   findByCode(code: string): Promise<RoleItem | null>;
   create(input: RoleCreateInput): Promise<RoleItem>;
@@ -43,7 +58,8 @@ export const ROLE_REPOSITORY = Symbol("ROLE_REPOSITORY");
 export const ROLE_SERVICE = Symbol("ROLE_SERVICE");
 
 export interface RoleServicePort {
-  list(): Promise<RoleItem[]>;
+  list(query: RoleQuery): Promise<{ items: RoleItem[]; total: number }>;
+  listOptions(): Promise<RoleOption[]>;
   listPermissions(): Promise<PermissionItem[]>;
   create(input: RoleCreateInput): Promise<RoleItem>;
   update(id: number, input: RoleUpdateInput): Promise<RoleItem>;

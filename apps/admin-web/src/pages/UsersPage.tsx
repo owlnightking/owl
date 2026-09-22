@@ -63,7 +63,7 @@ export function UsersPage() {
   }, [page, pageSize, keyword, load]);
 
   useEffect(() => {
-    void get<RoleOption[]>("/roles").then((roles) => setRoleOptions(roles));
+    void get<RoleOption[]>("/roles/options").then((roles) => setRoleOptions(roles));
   }, []);
 
   const openEdit = (user: UserItem) => {

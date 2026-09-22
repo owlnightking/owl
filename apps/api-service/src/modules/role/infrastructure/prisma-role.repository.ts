@@ -5,6 +5,8 @@ import type {
   PermissionItem,
   RoleCreateInput,
   RoleItem,
+  RoleOption,
+  RoleQuery,
   RoleRepositoryPort,
   RoleUpdateInput,
 } from "../domain/role.ports";
@@ -33,15 +35,32 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
     };
   }
 
-  async list(): Promise<RoleItem[]> {
+  async list(query: RoleQuery): Promise<{ items: RoleItem[]; total: number }> {
+    const where = {
+      deletedAt: null,
+      ...(query.keyword ? { OR: [{ code: { contains: query.keyword } }, { name: { contains: query.keyword } }] } : {}),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.role.findMany({
+        where,
+        include: {
+          permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.role.count({ where }),
+    ]);
+    return { items: rows.map((r) => this.toItem(r)), total };
+  }
+
+  async listOptions(): Promise<RoleOption[]> {
     const rows = await this.prisma.role.findMany({
       where: { deletedAt: null },
-      include: {
-        permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-      },
       orderBy: { createdAt: "asc" },
     });
-    return rows.map((r) => this.toItem(r));
+    return rows.map((r) => ({ id: r.id, code: r.code, name: r.name, isSystem: r.isSystem }));
   }
 
   async findById(id: number): Promise<RoleItem | null> {
