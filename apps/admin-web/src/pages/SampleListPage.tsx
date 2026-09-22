@@ -10,7 +10,8 @@
  *
  * 结构固定四段：
  *   1. 页面标题区        h1 text-xl font-semibold
- *   2. 筛选区            rounded-lg bg-white p-4 shadow-sm + Form layout="inline"
+ *   2. 筛选区            rounded-lg bg-white p-4 shadow-sm
+ *                        左侧输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置」icon 按钮（右对齐）
  *   3. 列表外操作区      右靠齐，只放 icon 按钮，文字用 Tooltip 悬浮显示
  *   4. 列表区            卡片包住表格 + 独立 Pagination
  *
@@ -25,7 +26,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Button,
-  Form,
   Input,
   Notification,
   Pagination,
@@ -36,7 +36,7 @@ import {
   Tag,
   Tooltip,
 } from "@arco-design/web-react";
-import { IconDelete, IconEdit, IconPlus, IconRefresh } from "@arco-design/web-react/icon";
+import { IconDelete, IconEdit, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
 
 interface SampleItem {
   id: number;
@@ -101,6 +101,7 @@ export function SampleListPage() {
   const [data, setData] = useState<SampleItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [inputValue, setInputValue] = useState("");
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -120,6 +121,17 @@ export function SampleListPage() {
   useEffect(() => {
     void load(page, keyword);
   }, [page, keyword, load]);
+
+  const handleSearch = () => {
+    setKeyword(inputValue);
+    setPage(1);
+  };
+
+  const handleReset = () => {
+    setInputValue("");
+    setKeyword("");
+    setPage(1);
+  };
 
   const handleDelete = async (id: number) => {
     try {
@@ -186,20 +198,25 @@ export function SampleListPage() {
         <h1 className="text-xl font-semibold text-gray-800">示例资源</h1>
       </div>
 
-      {/* 2. 筛选区 */}
+      {/* 2. 筛选区：左输入框（无 label、无 icon）+ 右侧「搜索 / 重置」icon 按钮，右对齐 */}
       <div className="rounded-lg bg-white p-4 shadow-sm">
-        <Form layout="inline">
-          <Form.Item label="名称">
-            <Input.Search
-              placeholder="搜索名称"
-              style={{ width: 240 }}
-              onSearch={(value) => {
-                setKeyword(value);
-                setPage(1);
-              }}
-            />
-          </Form.Item>
-        </Form>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="请输入名称"
+            style={{ width: 240 }}
+            value={inputValue}
+            onChange={setInputValue}
+            onPressEnter={handleSearch}
+          />
+          <div className="ml-auto flex items-center gap-2">
+            <Tooltip content="搜索">
+              <Button type="primary" icon={<IconSearch />} onClick={handleSearch} />
+            </Tooltip>
+            <Tooltip content="重置">
+              <Button icon={<IconRefresh />} onClick={handleReset} />
+            </Tooltip>
+          </div>
+        </div>
       </div>
 
       {/* 3. 列表外操作区（右靠齐、只用 icon、Tooltip 显示文字） */}

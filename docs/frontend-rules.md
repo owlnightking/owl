@@ -166,9 +166,19 @@ import { ImageUpload } from "../components/ImageUpload";
     <h1 className="text-xl font-semibold">页面标题</h1>
   </div>
 
-  {/* 2. 筛选区表单 */}
+  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置」icon 按钮，右对齐 */}
   <div className="rounded-lg bg-white p-4 shadow-sm">
-    <Form layout="inline">{/* 筛选表单 */}</Form>
+    <div className="flex items-center gap-2">
+      <Input placeholder="请输入名称" style={{ width: 240 }} value={kw} onChange={setKw} onPressEnter={onSearch} />
+      <div className="ml-auto flex items-center gap-2">
+        <Tooltip content="搜索">
+          <Button type="primary" icon={<IconSearch />} onClick={onSearch} />
+        </Tooltip>
+        <Tooltip content="重置">
+          <Button icon={<IconRefresh />} onClick={onReset} />
+        </Tooltip>
+      </div>
+    </div>
   </div>
 
   {/* 3. 列表外操作区 - 右靠齐，只展示 icon，悬浮显示文字 */}
@@ -372,7 +382,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局四段式：页面标题区 → 筛选区表单 → 列表外操作区（右靠齐）→ 列表区。
+- 列表页布局四段式：页面标题区 → 筛选区（左输入框 + 右对齐「搜索 / 重置」icon 按钮）→ 列表外操作区（右靠齐）→ 列表区。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
