@@ -8,12 +8,11 @@
  * 组件的加载态、分页、搜索、删除、骨架屏结构都不用动。
  * 真实取数与错误处理的完整写法见 apps/admin-web/src/pages/MdDocsPage.tsx。
  *
- * 结构固定四段：
+ * 结构固定三段：
  *   1. 页面标题区        h1 text-xl font-semibold
  *   2. 筛选区            rounded-lg bg-white p-4 shadow-sm
- *                        左侧输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置」icon 按钮（右对齐）
- *   3. 列表外操作区      右靠齐，只放 icon 按钮，文字用 Tooltip 悬浮显示
- *   4. 列表区            卡片包住表格 + 独立 Pagination
+ *                        左侧输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮（右对齐）
+ *   3. 列表区            卡片包住表格 + 独立 Pagination
  *
  * 形态约束：
  *   - 加载中显示整页骨架屏（标题/筛选/列表三个区域各一块）
@@ -198,7 +197,7 @@ export function SampleListPage() {
         <h1 className="text-xl font-semibold text-gray-800">示例资源</h1>
       </div>
 
-      {/* 2. 筛选区：左输入框（无 label、无 icon）+ 右侧「搜索 / 重置」icon 按钮，右对齐 */}
+      {/* 2. 筛选区：左输入框（无 label、无 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐 */}
       <div className="rounded-lg bg-white p-4 shadow-sm">
         <div className="flex items-center gap-2">
           <Input
@@ -215,21 +214,14 @@ export function SampleListPage() {
             <Tooltip content="重置">
               <Button icon={<IconRefresh />} onClick={handleReset} />
             </Tooltip>
+            <Tooltip content="新增">
+              <Button icon={<IconPlus />} />
+            </Tooltip>
           </div>
         </div>
       </div>
 
-      {/* 3. 列表外操作区（右靠齐、只用 icon、Tooltip 显示文字） */}
-      <div className="flex items-center justify-end gap-2">
-        <Tooltip content="刷新">
-          <Button icon={<IconRefresh />} onClick={() => void load(page, keyword)} />
-        </Tooltip>
-        <Tooltip content="新增">
-          <Button type="primary" icon={<IconPlus />} />
-        </Tooltip>
-      </div>
-
-      {/* 4. 列表区 */}
+      {/* 3. 列表区 */}
       <div className="rounded-lg bg-white p-4 shadow-sm">
         <Table rowKey="id" columns={columns} data={data} pagination={false} />
         <div className="mt-4 flex justify-end">

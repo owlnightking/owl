@@ -274,7 +274,7 @@ kubectl -n owl get pods # 或直接用 kubectl
 
 AI Agent 在编写前端布局代码前，必须先读 `docs/frontend-rules.md`，写完后运行 `pnpm frontend:check` 验证。
 新增列表页直接以样板为模板：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`、
-mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`（四段式 + 骨架屏 + 固定操作列；移动端为卡片列表 + 加载更多）。
+mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`（三段式 + 骨架屏 + 固定操作列；移动端为卡片列表 + 加载更多）。
 
 **检查命令**：
 

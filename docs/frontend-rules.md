@@ -141,7 +141,7 @@ import { ImageUpload } from "../components/ImageUpload";
 
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
 > mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。两者是业务无关的列表页模板：
-> 四段式结构、加载骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
+> 三段式结构、加载骨架屏、操作列固定右侧且只用 icon、超长文本截断 + Tooltip（移动端为卡片列表 + 「加载更多」）。
 > 新增列表页以对应端的文件为模板，改写存量页面时以它为目标。真实业务里按该结构落地的例子见
 > `apps/admin-web/src/pages/MdDocsPage.tsx`。
 
@@ -168,7 +168,7 @@ import { ImageUpload } from "../components/ImageUpload";
     <h1 className="text-xl font-semibold">页面标题</h1>
   </div>
 
-  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置」icon 按钮，右对齐 */}
+  {/* 2. 筛选区 - 左输入框（不带 label、不带 icon）+ 右侧「搜索 / 重置 / 新增」icon 按钮，右对齐 */}
   <div className="rounded-lg bg-white p-4 shadow-sm">
     <div className="flex items-center gap-2">
       <Input placeholder="请输入名称" style={{ width: 240 }} value={kw} onChange={setKw} onPressEnter={onSearch} />
@@ -179,21 +179,14 @@ import { ImageUpload } from "../components/ImageUpload";
         <Tooltip content="重置">
           <Button icon={<IconRefresh />} onClick={onReset} />
         </Tooltip>
+        <Tooltip content="新增">
+          <Button icon={<IconPlus />} />
+        </Tooltip>
       </div>
     </div>
   </div>
 
-  {/* 3. 列表外操作区 - 右靠齐，只展示 icon，悬浮显示文字 */}
-  <div className="flex items-center justify-end gap-2">
-    <Tooltip content="新增">
-      <Button type="primary" icon={<IconPlus />} />
-    </Tooltip>
-    <Tooltip content="导出">
-      <Button icon={<IconDownload />} />
-    </Tooltip>
-  </div>
-
-  {/* 4. 列表区 */}
+  {/* 3. 列表区 */}
   <div className="rounded-lg bg-white p-4 shadow-sm">
     <Table columns={columns} data={data} />
     <div className="mt-4 flex justify-end">
@@ -202,6 +195,9 @@ import { ImageUpload } from "../components/ImageUpload";
   </div>
 </div>
 ```
+
+> 列表级操作（导出、批量操作等）统一放进筛选区右侧那一组 icon 按钮里，不再单独起一行操作栏。
+> 一组按钮里只保留一个 `type="primary"`（搜索），其余用默认样式，避免并列出现多个强调色。
 
 ### 列表字段规范
 
@@ -384,7 +380,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
-- 列表页布局四段式：页面标题区 → 筛选区（左输入框 + 右对齐「搜索 / 重置」icon 按钮）→ 列表外操作区（右靠齐）→ 列表区。
+- 列表页布局三段式：页面标题区 → 筛选区（左输入框 + 右对齐「搜索 / 重置 / 新增」icon 按钮）→ 列表区。
 - 列表操作列固定在右侧，使用 icon 按钮 + `Tooltip` 显示操作名称。
 - 列表字段超长文本（超过 12 个字符）截断并悬浮显示全文。
 - 骨架屏：**必须人工确认**。第 6 条的自动检测当前漏报（见 8.1 说明），存量 21 个页面普遍用 `Table loading`
@@ -396,7 +392,7 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 | 项目       | 现状                                                   | 目标                                        |
 | ---------- | ------------------------------------------------------ | ------------------------------------------- |
 | 骨架屏     | 21/28 页面缺失，普遍用 `Table loading` 替代            | 整页骨架屏（`MdDocsPage.tsx` 已落地）       |
-| 列表页结构 | 多数页面无筛选卡片、无列表外操作区、表格未包卡片       | 按第五节四段式结构                          |
+| 列表页结构 | 多数页面无筛选卡片、列表未包卡片、操作散落在标题行     | 按第五节三段式结构                          |
 | 操作列     | 未固定右侧，普遍是带文字的按钮                         | `fixed: "right"` + icon 按钮 + `Tooltip`    |
 | 超长文本   | 多数列表未截断                                         | `max-w-[Npx] truncate` + `Tooltip` 显示全文 |
 | 任意值语法 | 少量 `text-[28px]` / `h-[calc(100vh-66px)]` 等脱离刻度 | 改用设计刻度内的取值                        |
