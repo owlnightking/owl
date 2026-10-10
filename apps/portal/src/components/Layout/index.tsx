@@ -19,7 +19,7 @@ import {
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../../store/auth";
-import owlLogo from "../../assets/owl-logo.jpg";
+import huiyouLogo from "../../assets/huiyou-logo.jpg";
 
 const { Header, Content } = ArcoLayout;
 
@@ -69,7 +69,7 @@ export function Layout() {
       >
         {/* 左侧 Logo */}
         <button onClick={() => navigate("/")} className="flex items-center gap-2 hover:opacity-80">
-          <img src={owlLogo} alt="Owl Logo" className="h-10 w-10 rounded-xl object-cover" />
+          <img src={huiyouLogo} alt="Owl Logo" className="h-10 w-10 rounded-xl object-cover" />
           <span className="text-lg font-semibold text-gray-800">Owl</span>
         </button>
 

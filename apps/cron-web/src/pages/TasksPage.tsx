@@ -47,6 +47,8 @@ type DrawerMode = "create" | "edit" | "detail";
 
 const DRAWER_TITLE: Record<DrawerMode, string> = { create: "新增任务", edit: "编辑任务", detail: "任务详情" };
 const DEFAULT_PAGE_SIZE = 10;
+// 手动触发按钮的 loading 下限：请求快于该时长也转满 3s，慢于则等到请求结束才恢复 icon
+const TRIGGER_MIN_LOADING_MS = 3000;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 // 列宽合计（含多选列 50）：超过容器宽度就横向滚动，配合 fixed 列实现左右两端悬浮。增删列时同步这个值
 const TABLE_SCROLL_X = 1190;
@@ -240,14 +242,26 @@ export function TasksPage() {
 
   const handleTrigger = async (config: SchedulerConfig) => {
     setTriggering(config.id);
+    const startedAt = Date.now();
+    let failure: unknown = null;
     try {
       await triggerTask(config.area, config.handler);
-      Notification.success({ title: "成功", content: `${config.name} 已触发执行` });
     } catch (error) {
-      Notification.error({ title: "失败", content: error instanceof Error ? error.message : "触发失败" });
-    } finally {
-      setTriggering(null);
+      failure = error;
     }
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < TRIGGER_MIN_LOADING_MS) {
+      await new Promise((resolve) => setTimeout(resolve, TRIGGER_MIN_LOADING_MS - elapsed));
+    }
+    setTriggering(null);
+    if (failure !== null) {
+      Notification.error({
+        title: "失败",
+        content: failure instanceof Error ? failure.message : "触发失败",
+      });
+      return;
+    }
+    Notification.success({ title: "成功", content: "定时任务触发成功" });
   };
 
   const columns = [

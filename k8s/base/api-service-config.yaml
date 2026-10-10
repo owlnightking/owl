@@ -23,7 +23,7 @@ data:
   MINIO_BUCKET_IMAGES: images
   MINIO_BUCKET_ATTACHMENTS: attachments
   MINIO_BUCKET_EXPORTS: exports
-  FEISHU_APP_ID: cli_a976e72a8a3cdbd0
+  FEISHU_APP_ID: cli_aa42154820b99cbc
   FEISHU_REDIRECT_URI: http://100.99.162.82:9262/api/auth/feishu/callback
   JWT_ACCESS_TTL: 2h
   JWT_REFRESH_TTL: 3d

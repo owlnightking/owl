@@ -535,8 +535,8 @@ jobs:
     steps:
       - name: Send notification
         env:
-          FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/d1555289-d3fa-4a54-995e-0dc088b7202c
-          FEISHU_SECRET: Guh42RBEaDqLy38GIdmuxd
+          FEISHU_WEBHOOK: https://open.feishu.cn/open-apis/bot/v2/hook/9967ac79-199f-495c-b5af-70eb32a5aee7
+          FEISHU_SECRET: bJ8oFIUen9W2Vy6RyAB3Lg
           DEPLOY_STATUS: ${{ needs.deploy.result }}
           DEPLOY_RESULTS: ${{ needs.deploy.outputs.deploy_results }}
           RELEASE_TYPE: ${{ needs.detect-release.outputs.release_type }}
