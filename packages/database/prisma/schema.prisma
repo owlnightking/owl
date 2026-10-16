@@ -553,3 +553,412 @@ model SystemLog {
   @@index([service, createdAt])
   @@map("system_log")
 }
+
+// ========== 主领域：产品线流水线（IPD / GTM / ISC / VOC） ==========
+// 金额口径：全局美元（USD）为准；CNY 录入后经汇率表折算
+// 主线对象：ProductLine（产品线）→ Spu（多个同风格 SPU）→ Sku
+// IPD 阶段：opportunity(机会判断) → proposal(立项) → finalize(定型) → decision(投决) → review(经营复盘)
+// 生命周期：incubating(立项期) / presale(预售期) / new_product(新品期) / mature(成熟期) / liquidation(清货期)
+
+model ProductLine {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique // PL-YYYY-NNN
+  name            String
+  styleDesc       String?  @map("style_desc") // 风格描述（同产品线内 SPU 共享风格）
+  ipdStage        String   @default("opportunity") @map("ipd_stage")
+  lifecycleStage  String   @default("incubating") @map("lifecycle_stage")
+  targetMarket    String?  @map("target_market") // 目标市场：北美 / 澳洲 / 新西兰
+  notes           String?
+  createdAt       DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt       DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  spus            Spu[]
+  researches      IpdResearch[]
+  designTasks     DesignTask[]
+  prototypeReview PrototypeReview?
+  investDecision  InvestDecision?
+  roiReviews      RoiReview[]
+  campaigns       GtmCampaign[]
+  feedbacks       CommunityFeedback[]
+  presales        PresaleBatch[]
+  quotes          SupplierQuote[]
+  shipments       ShipmentOrder[]
+  vocTickets      VocTicket[]
+
+  @@index([ipdStage])
+  @@index([lifecycleStage])
+  @@map("product_line")
+}
+
+model Spu {
+  id           Int       @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  internalCode String    @unique @map("internal_code") // SPU-YYYY-NNN，立项期产生
+  spuCode      String?   @unique @map("spu_code") // 市场 SPU 编码，预发售产生
+  name         String
+  status       String    @default("concept") // concept / developing / presale / on_sale / mature / liquidating / delisted
+  launchAt     DateTime? @db.Timestamp(0) @map("launch_at")
+  notes        String?
+  createdAt    DateTime  @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt    DateTime  @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine  ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+  skus         Sku[]
+  quotes       SupplierQuote[]
+  productions  ProductionBatch[]
+  presales     PresaleBatch[]
+  shipments    ShipmentOrder[]
+  vocTickets   VocTicket[]
+
+  @@index([productLineId])
+  @@index([status])
+  @@map("spu")
+}
+
+model Sku {
+  id        Int      @id @default(autoincrement())
+  spuId     Int      @map("spu_id")
+  skuCode   String   @unique @map("sku_code")
+  name      String
+  priceUsd  Decimal  @default(0) @db.Decimal(18, 2) @map("price_usd") // 美元售价
+  limited   Boolean  @default(false) // 限量款
+  stock     Int      @default(0)
+  enabled   Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  spu Spu @relation(fields: [spuId], references: [id], onDelete: Cascade)
+
+  @@index([spuId])
+  @@map("sku")
+}
+
+// IPD-1 机会判断：竞品调研 / 市场调研 / VOC 反馈材料
+model IpdResearch {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  type          String // competitor / market / voc
+  title         String
+  content       String?
+  sourceRef     String?  @map("source_ref") // 来源引用（链接 / 工单号等）
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@index([productLineId])
+  @@map("ipd_research")
+}
+
+// IPD-2 立项：设计任务（产品 / 外观 / 机械 / 包装）
+model DesignTask {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  type          String // product / appearance / mechanism / packaging
+  title         String
+  status        String   @default("pending") // pending / in_progress / done
+  feasible      Boolean? // 生产可行性结论（null 未定）
+  notes         String?
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@index([productLineId])
+  @@map("design_task")
+}
+
+// IPD-3 定型：手办样 + 内部评审（每产品线一条，更新维护）
+model PrototypeReview {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @unique @map("product_line_id")
+  sampleReady   Boolean  @default(false) @map("sample_ready") // 手办样完成
+  reviewPassed  Boolean  @default(false) @map("review_passed") // 内部评审通过
+  reviewNotes   String?  @map("review_notes")
+  sharedWithGtm Boolean  @default(false) @map("shared_with_gtm") // 已推送给 GTM 共建用户
+  sharedAt      DateTime? @db.Timestamp(0) @map("shared_at")
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@map("prototype_review")
+}
+
+// IPD-4 投决：汇总 GTM 反馈 + ISC 供应情况 + 成本定价 → 通过 / 否决
+model InvestDecision {
+  id                  Int      @id @default(autoincrement())
+  productLineId       Int      @unique @map("product_line_id")
+  gtmFeedbackSummary  String?  @map("gtm_feedback_summary") // GTM 社媒 / 社群反馈摘要
+  iscSummary          String?  @map("isc_summary") // ISC 生产 / 备货 / 物流情况摘要
+  targetPriceUsd      Decimal? @db.Decimal(18, 2) @map("target_price_usd") // 目标定价（美元）
+  unitCostUsd         Decimal? @db.Decimal(18, 2) @map("unit_cost_usd") // 单位成本（美元）
+  result              String   @default("pending") // pending / approved / rejected
+  decidedAt           DateTime? @db.Timestamp(0) @map("decided_at")
+  notes               String?
+  createdAt           DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt           DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt           DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@map("invest_decision")
+}
+
+// IPD-5 经营复盘 / ROI：预售期与上市后两阶段手工复盘
+model RoiReview {
+  id               Int      @id @default(autoincrement())
+  productLineId    Int      @map("product_line_id")
+  phase            String // presale / listed
+  salesUsd         Decimal  @default(0) @db.Decimal(18, 2) @map("sales_usd")
+  adCostUsd        Decimal  @default(0) @db.Decimal(18, 2) @map("ad_cost_usd")
+  productCostUsd   Decimal  @default(0) @db.Decimal(18, 2) @map("product_cost_usd")
+  fulfillmentCostUsd Decimal @default(0) @db.Decimal(18, 2) @map("fulfillment_cost_usd")
+  refundUsd        Decimal  @default(0) @db.Decimal(18, 2) @map("refund_usd")
+  afterSaleCostUsd Decimal  @default(0) @db.Decimal(18, 2) @map("after_sale_cost_usd")
+  roi              Decimal? @db.Decimal(18, 4) // 手工计算 ROI（利润 / 投入），可空
+  decision         String?  // price_reduce / cost_down / liquidate / new_opportunity / hold
+  notes            String?
+  createdAt        DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt        DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt        DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@index([productLineId, phase])
+  @@map("roi_review")
+}
+
+// GTM：营销 campaign（挂产品线：预热 / 预发售 / 上市 / 投流）
+model GtmCampaign {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  name          String
+  type          String // warmup / presale / launch / traffic
+  platform      String   @default("tiktok") // tiktok / instagram / twitter / youtube / facebook / other
+  status        String   @default("planned") // planned / running / ended
+  kolId         Int?     @map("kol_id")
+  budgetUsd     Decimal  @default(0) @db.Decimal(18, 2) @map("budget_usd")
+  spentUsd      Decimal  @default(0) @db.Decimal(18, 2) @map("spent_usd")
+  feedbackNotes String?  @map("feedback_notes") // 投流 / 传播反馈
+  startDate     DateTime? @db.Timestamp(0) @map("start_date")
+  endDate       DateTime? @db.Timestamp(0) @map("end_date")
+  notes         String?
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+  kol         Kol? @relation(fields: [kolId], references: [id], onDelete: SetNull)
+
+  @@index([productLineId])
+  @@index([platform, status])
+  @@map("gtm_campaign")
+}
+
+// GTM：KOL 红人管理
+model Kol {
+  id              Int      @id @default(autoincrement())
+  name            String
+  platform        String   @default("tiktok")
+  handle          String? // 账号 handle
+  followers       Int      @default(0)
+  coopStatus      String   @default("contacting") @map("coop_status") // contacting / cooperating / ended
+  contactInfo     String?  @map("contact_info")
+  totalSpentUsd   Decimal  @default(0) @db.Decimal(18, 2) @map("total_spent_usd")
+  cooperationNotes String? @map("cooperation_notes")
+  createdAt       DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt       DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  campaigns GtmCampaign[]
+
+  @@index([platform, coopStatus])
+  @@map("kol")
+}
+
+// GTM：社群 / 社媒反馈收集（期待用户、产品改进方向、研发状态跟进）
+model CommunityFeedback {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  type          String // expectation / improvement / status_follow / other
+  content       String
+  source        String?  // 社群 / twitter / tiktok评论 等
+  collectedAt   DateTime @db.Timestamp(0) @default(now()) @map("collected_at")
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+
+  @@index([productLineId, type])
+  @@map("community_feedback")
+}
+
+// GTM：预发售批次（限量款，粒度 SPU + SKU）
+model PresaleBatch {
+  id        Int      @id @default(autoincrement())
+  spuId     Int      @map("spu_id")
+  name      String
+  limited   Boolean  @default(true)
+  quantity  Int      @default(0) // 预售数量
+  priceUsd  Decimal  @default(0) @db.Decimal(18, 2) @map("price_usd")
+  startAt   DateTime? @db.Timestamp(0) @map("start_at")
+  endAt     DateTime? @db.Timestamp(0) @map("end_at")
+  notes     String?
+  createdAt DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  spu         Spu @relation(fields: [spuId], references: [id], onDelete: Cascade)
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+  productLineId Int @map("product_line_id")
+
+  @@index([spuId])
+  @@index([productLineId])
+  @@map("presale_batch")
+}
+
+// ISC：生产供应商管理
+model Supplier {
+  id             Int      @id @default(autoincrement())
+  name           String
+  contact        String?
+  region         String? // 产地 / 区域
+  coopStatus     String   @default("potential") @map("coop_status") // potential / active / paused / ended
+  capability     String? // 产能 / 工艺能力描述
+  notes          String?
+  createdAt      DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt      DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  quotes     SupplierQuote[]
+  productions ProductionBatch[]
+  shipments  ShipmentOrder[]
+
+  @@map("supplier")
+}
+
+// ISC：供应商报价（人民币录入 → 美元折算快照）
+model SupplierQuote {
+  id            Int      @id @default(autoincrement())
+  supplierId    Int      @map("supplier_id")
+  productLineId Int?     @map("product_line_id")
+  spuId         Int?     @map("spu_id")
+  itemName      String   @map("item_name") // 报价项：如 手办样 / 首批量 / 包装
+  amountCny     Decimal  @db.Decimal(18, 2) @map("amount_cny") // 原币金额（人民币）
+  exchangeRate  Decimal  @db.Decimal(18, 6) @map("exchange_rate") // 录入时 CNY→USD 汇率快照
+  amountUsd     Decimal  @db.Decimal(18, 2) @map("amount_usd") // 折算美元 = amountCny * exchangeRate
+  quotedAt      DateTime @db.Timestamp(0) @default(now()) @map("quoted_at")
+  notes         String?
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  supplier    Supplier    @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  productLine ProductLine? @relation(fields: [productLineId], references: [id], onDelete: SetNull)
+  spu         Spu? @relation(fields: [spuId], references: [id], onDelete: SetNull)
+
+  @@index([supplierId])
+  @@index([productLineId])
+  @@map("supplier_quote")
+}
+
+// ISC：生产批次（小批量 / 产能爬坡 / 大货）
+model ProductionBatch {
+  id          Int      @id @default(autoincrement())
+  spuId       Int      @map("spu_id")
+  supplierId  Int      @map("supplier_id")
+  type        String // pilot / ramp / mass
+  quantity    Int      @default(0)
+  status      String   @default("planned") // planned / producing / completed
+  plannedAt   DateTime? @db.Timestamp(0) @map("planned_at")
+  completedAt DateTime? @db.Timestamp(0) @map("completed_at")
+  notes       String?
+  createdAt   DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  spu      Spu      @relation(fields: [spuId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([spuId])
+  @@index([supplierId])
+  @@map("production_batch")
+}
+
+// ISC：头程 / 物流（TikTok 海外仓，海运 / 空运）
+model ShipmentOrder {
+  id            Int      @id @default(autoincrement())
+  productLineId Int      @map("product_line_id")
+  spuId         Int?     @map("spu_id")
+  supplierId    Int?     @map("supplier_id")
+  mode          String   @map("mode") // sea / air
+  warehouse     String   @default("tiktok_us") @map("warehouse") // tiktok_us / tiktok_au / tiktok_nz / other
+  status        String   @default("pending") @map("status") // pending / head_haul / in_transit / customs / warehouse / received
+  trackingRef   String?  @map("tracking_ref") // 运单 / 柜号
+  costCny       Decimal? @db.Decimal(18, 2) @map("cost_cny")
+  exchangeRate  Decimal? @db.Decimal(18, 6) @map("exchange_rate")
+  costUsd       Decimal? @db.Decimal(18, 2) @map("cost_usd")
+  etaDate       DateTime? @db.Timestamp(0) @map("eta_date")
+  receivedAt    DateTime? @db.Timestamp(0) @map("received_at")
+  notes         String?
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine @relation(fields: [productLineId], references: [id], onDelete: Cascade)
+  spu         Spu? @relation(fields: [spuId], references: [id], onDelete: SetNull)
+  supplier    Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+
+  @@index([productLineId])
+  @@index([status])
+  @@map("shipment_order")
+}
+
+// VOC：五渠道用户反馈工单（售后邮箱 / 社群 / 产品工坊留言 / WhatsApp / Twitter 私信）
+model VocTicket {
+  id            Int      @id @default(autoincrement())
+  source        String // after_sale_email / community / workshop_comment / whatsapp / twitter_dm
+  productLineId Int?     @map("product_line_id")
+  spuId         Int?     @map("spu_id")
+  title         String
+  content       String?
+  category      String   @default("other") // improvement / complaint / praise / inquiry / other
+  status        String   @default("new") // new / triaged / resolved / ignored
+  handledNote   String?  @map("handled_note")
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  productLine ProductLine? @relation(fields: [productLineId], references: [id], onDelete: SetNull)
+  spu         Spu? @relation(fields: [spuId], references: [id], onDelete: SetNull)
+
+  @@index([source, status])
+  @@index([productLineId])
+  @@map("voc_ticket")
+}
+
+// 汇率表：CNY→USD（cron 定时抓取 + 人工校验维护）
+model ExchangeRate {
+  id            Int      @id @default(autoincrement())
+  base          String   @default("CNY")
+  quote         String   @default("USD")
+  rate          Decimal  @db.Decimal(18, 6) // 1 base = rate quote
+  source        String   @default("api") // api / manual
+  verified      Boolean  @default(false) @map("verified") // 人工校验标记
+  effectiveDate DateTime @db.Timestamp(0) @map("effective_date")
+  createdAt     DateTime @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt     DateTime @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt     DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  @@index([base, quote, effectiveDate])
+  @@map("exchange_rate")
+}

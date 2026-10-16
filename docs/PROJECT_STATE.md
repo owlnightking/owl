@@ -51,8 +51,12 @@
 | ------------- | --- | --- | ----- | ---- | ------- |
 | audit-log     | 2   | 2   | 3     | 2    | ✅ 完整 |
 | auth          | 3   | 1   | 5     | 3    | ✅ 完整 |
+| exchange-rate | 1   | 1   | 1     | 2    | ✅ 完整 |
 | field-config  | 1   | 1   | 1     | 2    | ✅ 完整 |
 | file          | 1   | 3   | 2     | 2    | ✅ 完整 |
+| gtm           | 1   | 1   | 1     | 2    | ✅ 完整 |
+| ipd           | 3   | 4   | 3     | 4    | ✅ 完整 |
+| isc           | 1   | 1   | 1     | 2    | ✅ 完整 |
 | mcp           | 0   | 0   | 0     | 0    | ❌ 空壳 |
 | md-doc        | 1   | 1   | 1     | 2    | ✅ 完整 |
 | notification  | 1   | 1   | 1     | 2    | ✅ 完整 |
@@ -63,6 +67,7 @@
 | system-config | 1   | 1   | 1     | 2    | ✅ 完整 |
 | system-log    | 1   | 1   | 1     | 2    | ✅ 完整 |
 | user          | 1   | 1   | 1     | 2    | ✅ 完整 |
+| voc           | 1   | 1   | 1     | 1    | ✅ 完整 |
 
 <!-- AUTO-MODULES-END -->
 
@@ -88,37 +93,55 @@
 
 <!-- AUTO-MODELS-BEGIN -->
 
-| 模型            | 说明 |
-| --------------- | ---- |
-| User            |      |
-| Department      |      |
-| SyncLog         |      |
-| Role            |      |
-| Permission      |      |
-| RolePermission  |      |
-| UserRole        |      |
-| AuthSession     |      |
-| AuditLog        |      |
-| Notification    |      |
-| File            |      |
-| SystemConfig    |      |
-| FieldConfig     |      |
-| McpTool         |      |
-| McpSession      |      |
-| McpToolLog      |      |
-| SchedulerConfig |      |
-| SchedulerRun    |      |
-| Badge           |      |
-| Recognition     |      |
-| RecognitionLike |      |
-| CoinAccount     |      |
-| CoinTransaction |      |
-| StaminaAccount  |      |
-| Product         |      |
-| ExchangeOrder   |      |
-| MdDoc           |      |
-| MdDocImage      |      |
-| SystemLog       |      |
+| 模型              | 说明 |
+| ----------------- | ---- |
+| User              |      |
+| Department        |      |
+| SyncLog           |      |
+| Role              |      |
+| Permission        |      |
+| RolePermission    |      |
+| UserRole          |      |
+| AuthSession       |      |
+| AuditLog          |      |
+| Notification      |      |
+| File              |      |
+| SystemConfig      |      |
+| FieldConfig       |      |
+| McpTool           |      |
+| McpSession        |      |
+| McpToolLog        |      |
+| SchedulerConfig   |      |
+| SchedulerRun      |      |
+| Badge             |      |
+| Recognition       |      |
+| RecognitionLike   |      |
+| CoinAccount       |      |
+| CoinTransaction   |      |
+| StaminaAccount    |      |
+| Product           |      |
+| ExchangeOrder     |      |
+| MdDoc             |      |
+| MdDocImage        |      |
+| SystemLog         |      |
+| ProductLine       |      |
+| Spu               |      |
+| Sku               |      |
+| IpdResearch       |      |
+| DesignTask        |      |
+| PrototypeReview   |      |
+| InvestDecision    |      |
+| RoiReview         |      |
+| GtmCampaign       |      |
+| Kol               |      |
+| CommunityFeedback |      |
+| PresaleBatch      |      |
+| Supplier          |      |
+| SupplierQuote     |      |
+| ProductionBatch   |      |
+| ShipmentOrder     |      |
+| VocTicket         |      |
+| ExchangeRate      |      |
 
 <!-- AUTO-MODELS-END -->
 
@@ -145,6 +168,7 @@
 | 20260920120100_restore_converted_unique_indexes      |      |
 | 20260920130000_unify_timestamps                      |      |
 | 20260921000000_add_system_log                        |      |
+| 20261015000000_add_product_line_pipeline             |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -152,10 +176,11 @@
 
 <!-- AUTO-TESTS-BEGIN -->
 
-| 目录             | spec 数量 |
-| ---------------- | --------- |
-| apps/api-service | 2         |
-| **合计**         | **2**     |
+| 目录              | spec 数量 |
+| ----------------- | --------- |
+| apps/api-service  | 6         |
+| apps/cron-service | 1         |
+| **合计**          | **7**     |
 
 <!-- AUTO-TESTS-END -->
 
@@ -163,86 +188,164 @@
 
 <!-- AUTO-API-BEGIN -->
 
-| 模块          | 方法   | 路径                                         |
-| ------------- | ------ | -------------------------------------------- |
-| field-config  | Delete | /api/field-config/:id                        |
-| file          | Delete | /api/files/:id                               |
-| md-doc        | Delete | /api/md-docs/:id                             |
-| permission    | Delete | /api/permissions/:id                         |
-| recognition   | Delete | /api/recognition/badges/:id                  |
-| recognition   | Delete | /api/recognition/products/:id                |
-| role          | Delete | /api/roles/:id                               |
-| system-config | Delete | /api/system-config/:id                       |
-| audit-log     | Get    | /api/audit-logs                              |
-| auth          | Get    | /api/auth/feishu/callback                    |
-| auth          | Get    | /api/auth/feishu/login                       |
-| auth          | Get    | /api/auth/me                                 |
-| auth          | Get    | /api/auth/mock-users                         |
-| field-config  | Get    | /api/field-config                            |
-| field-config  | Get    | /api/field-config/:id                        |
-| field-config  | Get    | /api/field-config/options                    |
-| file          | Get    | /api/files                                   |
-| file          | Get    | /api/files/:id                               |
-| md-doc        | Get    | /api/md-docs                                 |
-| md-doc        | Get    | /api/md-docs/:id                             |
-| notification  | Get    | /api/notifications                           |
-| notification  | Get    | /api/notifications/unread-count              |
-| permission    | Get    | /api/permissions                             |
-| permission    | Get    | /api/permissions/:id                         |
-| recognition   | Get    | /api/recognition                             |
-| recognition   | Get    | /api/recognition/badges                      |
-| recognition   | Get    | /api/recognition/badges/:id                  |
-| recognition   | Get    | /api/recognition/badges/options              |
-| recognition   | Get    | /api/recognition/exchange/coin-account       |
-| recognition   | Get    | /api/recognition/exchange/coin-transactions  |
-| recognition   | Get    | /api/recognition/exchange/orders             |
-| recognition   | Get    | /api/recognition/exchange/pending-count      |
-| recognition   | Get    | /api/recognition/exchange/stamina            |
-| recognition   | Get    | /api/recognition/feed                        |
-| recognition   | Get    | /api/recognition/level                       |
-| recognition   | Get    | /api/recognition/pending-count               |
-| recognition   | Get    | /api/recognition/products                    |
-| recognition   | Get    | /api/recognition/products/:id                |
-| role          | Get    | /api/roles                                   |
-| role          | Get    | /api/roles/options                           |
-| role          | Get    | /api/roles/permissions                       |
-| system-config | Get    | /api/system-config/:id                       |
-| system-log    | Get    | /api/system-logs                             |
-| user          | Get    | /api/users                                   |
-| user          | Get    | /api/users/:id/roles                         |
-| user          | Get    | /api/users/roles                             |
-| auth          | Post   | /api/auth/logout                             |
-| auth          | Post   | /api/auth/mock-login                         |
-| auth          | Post   | /api/auth/refresh                            |
-| field-config  | Post   | /api/field-config                            |
-| file          | Post   | /api/files/upload                            |
-| md-doc        | Post   | /api/md-docs                                 |
-| md-doc        | Post   | /api/md-docs/upload-image                    |
-| notification  | Post   | /api/notifications                           |
-| permission    | Post   | /api/permissions                             |
-| recognition   | Post   | /api/recognition                             |
-| recognition   | Post   | /api/recognition/:id/like                    |
-| recognition   | Post   | /api/recognition/badges                      |
-| recognition   | Post   | /api/recognition/exchange/orders             |
-| recognition   | Post   | /api/recognition/products                    |
-| role          | Post   | /api/roles                                   |
-| field-config  | Put    | /api/field-config/:id                        |
-| md-doc        | Put    | /api/md-docs/:id                             |
-| notification  | Put    | /api/notifications/:id/read                  |
-| notification  | Put    | /api/notifications/read-all                  |
-| permission    | Put    | /api/permissions/:id                         |
-| recognition   | Put    | /api/recognition/:id/approve                 |
-| recognition   | Put    | /api/recognition/:id/pin                     |
-| recognition   | Put    | /api/recognition/:id/reject                  |
-| recognition   | Put    | /api/recognition/badges/:id                  |
-| recognition   | Put    | /api/recognition/exchange/coin-adjust        |
-| recognition   | Put    | /api/recognition/exchange/orders/:id/approve |
-| recognition   | Put    | /api/recognition/exchange/orders/:id/fulfill |
-| recognition   | Put    | /api/recognition/exchange/orders/:id/reject  |
-| recognition   | Put    | /api/recognition/products/:id                |
-| role          | Put    | /api/roles/:id                               |
-| system-config | Put    | /api/system-config/:id                       |
-| user          | Put    | /api/users/:id/roles                         |
-| user          | Put    | /api/users/:id/status                        |
+| 模块          | 方法   | 路径                                                          |
+| ------------- | ------ | ------------------------------------------------------------- |
+| exchange-rate | Delete | /api/system/exchange-rates/:id                                |
+| field-config  | Delete | /api/field-config/:id                                         |
+| file          | Delete | /api/files/:id                                                |
+| gtm           | Delete | /api/gtm/campaigns/:id                                        |
+| gtm           | Delete | /api/gtm/campaigns/:id                                        |
+| gtm           | Delete | /api/gtm/campaigns/:id                                        |
+| gtm           | Delete | /api/gtm/campaigns/feedbacks/:id                              |
+| ipd           | Delete | /api/ipd/design-tasks/:id                                     |
+| ipd           | Delete | /api/ipd/product-lines/:id                                    |
+| ipd           | Delete | /api/ipd/researches/:id                                       |
+| ipd           | Delete | /api/ipd/reviews/:id                                          |
+| ipd           | Delete | /api/ipd/skus/:id                                             |
+| ipd           | Delete | /api/ipd/spus/:id                                             |
+| isc           | Delete | /api/isc/suppliers/:id                                        |
+| isc           | Delete | /api/isc/suppliers/:id                                        |
+| isc           | Delete | /api/isc/suppliers/:id                                        |
+| isc           | Delete | /api/isc/suppliers/quotes/:quoteId                            |
+| md-doc        | Delete | /api/md-docs/:id                                              |
+| permission    | Delete | /api/permissions/:id                                          |
+| recognition   | Delete | /api/recognition/badges/:id                                   |
+| recognition   | Delete | /api/recognition/products/:id                                 |
+| role          | Delete | /api/roles/:id                                                |
+| system-config | Delete | /api/system-config/:id                                        |
+| voc           | Delete | /api/voc/tickets/:id                                          |
+| audit-log     | Get    | /api/audit-logs                                               |
+| auth          | Get    | /api/auth/feishu/callback                                     |
+| auth          | Get    | /api/auth/feishu/login                                        |
+| auth          | Get    | /api/auth/me                                                  |
+| auth          | Get    | /api/auth/mock-users                                          |
+| exchange-rate | Get    | /api/system/exchange-rates                                    |
+| exchange-rate | Get    | /api/system/exchange-rates/latest                             |
+| field-config  | Get    | /api/field-config                                             |
+| field-config  | Get    | /api/field-config/:id                                         |
+| field-config  | Get    | /api/field-config/options                                     |
+| file          | Get    | /api/files                                                    |
+| file          | Get    | /api/files/:id                                                |
+| gtm           | Get    | /api/gtm/campaigns                                            |
+| gtm           | Get    | /api/gtm/campaigns                                            |
+| gtm           | Get    | /api/gtm/campaigns                                            |
+| gtm           | Get    | /api/gtm/campaigns/:id                                        |
+| gtm           | Get    | /api/gtm/campaigns/gtm/feedbacks                              |
+| gtm           | Get    | /api/gtm/campaigns/gtm/product-lines/:productLineId/feedbacks |
+| ipd           | Get    | /api/ipd/product-lines                                        |
+| ipd           | Get    | /api/ipd/product-lines/:id                                    |
+| ipd           | Get    | /api/ipd/product-lines/:id/decision                           |
+| ipd           | Get    | /api/ipd/product-lines/:id/design-tasks                       |
+| ipd           | Get    | /api/ipd/product-lines/:id/prototype                          |
+| ipd           | Get    | /api/ipd/product-lines/:id/researches                         |
+| ipd           | Get    | /api/ipd/product-lines/:id/reviews                            |
+| ipd           | Get    | /api/ipd/product-lines/:productLineId/spus                    |
+| ipd           | Get    | /api/ipd/spus                                                 |
+| ipd           | Get    | /api/ipd/spus/:id                                             |
+| ipd           | Get    | /api/ipd/spus/:id/skus                                        |
+| isc           | Get    | /api/isc/suppliers                                            |
+| isc           | Get    | /api/isc/suppliers                                            |
+| isc           | Get    | /api/isc/suppliers                                            |
+| isc           | Get    | /api/isc/suppliers/:id                                        |
+| isc           | Get    | /api/isc/suppliers/:id/quotes                                 |
+| isc           | Get    | /api/isc/suppliers/quotes/list                                |
+| md-doc        | Get    | /api/md-docs                                                  |
+| md-doc        | Get    | /api/md-docs/:id                                              |
+| notification  | Get    | /api/notifications                                            |
+| notification  | Get    | /api/notifications/unread-count                               |
+| permission    | Get    | /api/permissions                                              |
+| permission    | Get    | /api/permissions/:id                                          |
+| recognition   | Get    | /api/recognition                                              |
+| recognition   | Get    | /api/recognition/badges                                       |
+| recognition   | Get    | /api/recognition/badges/:id                                   |
+| recognition   | Get    | /api/recognition/badges/options                               |
+| recognition   | Get    | /api/recognition/exchange/coin-account                        |
+| recognition   | Get    | /api/recognition/exchange/coin-transactions                   |
+| recognition   | Get    | /api/recognition/exchange/orders                              |
+| recognition   | Get    | /api/recognition/exchange/pending-count                       |
+| recognition   | Get    | /api/recognition/exchange/stamina                             |
+| recognition   | Get    | /api/recognition/feed                                         |
+| recognition   | Get    | /api/recognition/level                                        |
+| recognition   | Get    | /api/recognition/pending-count                                |
+| recognition   | Get    | /api/recognition/products                                     |
+| recognition   | Get    | /api/recognition/products/:id                                 |
+| role          | Get    | /api/roles                                                    |
+| role          | Get    | /api/roles/options                                            |
+| role          | Get    | /api/roles/permissions                                        |
+| system-config | Get    | /api/system-config/:id                                        |
+| system-log    | Get    | /api/system-logs                                              |
+| user          | Get    | /api/users                                                    |
+| user          | Get    | /api/users/:id/roles                                          |
+| user          | Get    | /api/users/roles                                              |
+| voc           | Get    | /api/voc/tickets                                              |
+| voc           | Get    | /api/voc/tickets/:id                                          |
+| auth          | Post   | /api/auth/logout                                              |
+| auth          | Post   | /api/auth/mock-login                                          |
+| auth          | Post   | /api/auth/refresh                                             |
+| exchange-rate | Post   | /api/system/exchange-rates                                    |
+| field-config  | Post   | /api/field-config                                             |
+| file          | Post   | /api/files/upload                                             |
+| gtm           | Post   | /api/gtm/campaigns                                            |
+| gtm           | Post   | /api/gtm/campaigns/product-lines/:productLineId               |
+| gtm           | Post   | /api/gtm/campaigns/product-lines/:productLineId/feedbacks     |
+| gtm           | Post   | /api/gtm/campaigns/spus/:spuId                                |
+| ipd           | Post   | /api/ipd/product-lines                                        |
+| ipd           | Post   | /api/ipd/product-lines/:id/design-tasks                       |
+| ipd           | Post   | /api/ipd/product-lines/:id/researches                         |
+| ipd           | Post   | /api/ipd/product-lines/:id/reviews                            |
+| ipd           | Post   | /api/ipd/product-lines/:productLineId/spus                    |
+| ipd           | Post   | /api/ipd/spus/:id/skus                                        |
+| isc           | Post   | /api/isc/suppliers                                            |
+| isc           | Post   | /api/isc/suppliers                                            |
+| isc           | Post   | /api/isc/suppliers/quotes                                     |
+| isc           | Post   | /api/isc/suppliers/spus/:spuId                                |
+| md-doc        | Post   | /api/md-docs                                                  |
+| md-doc        | Post   | /api/md-docs/upload-image                                     |
+| notification  | Post   | /api/notifications                                            |
+| permission    | Post   | /api/permissions                                              |
+| recognition   | Post   | /api/recognition                                              |
+| recognition   | Post   | /api/recognition/:id/like                                     |
+| recognition   | Post   | /api/recognition/badges                                       |
+| recognition   | Post   | /api/recognition/exchange/orders                              |
+| recognition   | Post   | /api/recognition/products                                     |
+| role          | Post   | /api/roles                                                    |
+| voc           | Post   | /api/voc/tickets                                              |
+| exchange-rate | Put    | /api/system/exchange-rates/:id                                |
+| field-config  | Put    | /api/field-config/:id                                         |
+| gtm           | Put    | /api/gtm/campaigns/:id                                        |
+| gtm           | Put    | /api/gtm/campaigns/:id                                        |
+| gtm           | Put    | /api/gtm/campaigns/:id                                        |
+| gtm           | Put    | /api/gtm/campaigns/feedbacks/:id                              |
+| ipd           | Put    | /api/ipd/design-tasks/:id                                     |
+| ipd           | Put    | /api/ipd/product-lines/:id                                    |
+| ipd           | Put    | /api/ipd/product-lines/:id/decision                           |
+| ipd           | Put    | /api/ipd/product-lines/:id/prototype                          |
+| ipd           | Put    | /api/ipd/product-lines/:id/stages                             |
+| ipd           | Put    | /api/ipd/researches/:id                                       |
+| ipd           | Put    | /api/ipd/reviews/:id                                          |
+| ipd           | Put    | /api/ipd/skus/:id                                             |
+| ipd           | Put    | /api/ipd/spus/:id                                             |
+| isc           | Put    | /api/isc/suppliers/:id                                        |
+| isc           | Put    | /api/isc/suppliers/:id                                        |
+| isc           | Put    | /api/isc/suppliers/:id                                        |
+| isc           | Put    | /api/isc/suppliers/quotes/:quoteId                            |
+| md-doc        | Put    | /api/md-docs/:id                                              |
+| notification  | Put    | /api/notifications/:id/read                                   |
+| notification  | Put    | /api/notifications/read-all                                   |
+| permission    | Put    | /api/permissions/:id                                          |
+| recognition   | Put    | /api/recognition/:id/approve                                  |
+| recognition   | Put    | /api/recognition/:id/pin                                      |
+| recognition   | Put    | /api/recognition/:id/reject                                   |
+| recognition   | Put    | /api/recognition/badges/:id                                   |
+| recognition   | Put    | /api/recognition/exchange/coin-adjust                         |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/approve                  |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/fulfill                  |
+| recognition   | Put    | /api/recognition/exchange/orders/:id/reject                   |
+| recognition   | Put    | /api/recognition/products/:id                                 |
+| role          | Put    | /api/roles/:id                                                |
+| system-config | Put    | /api/system-config/:id                                        |
+| user          | Put    | /api/users/:id/roles                                          |
+| user          | Put    | /api/users/:id/status                                         |
+| voc           | Put    | /api/voc/tickets/:id                                          |
 
 <!-- AUTO-API-END -->

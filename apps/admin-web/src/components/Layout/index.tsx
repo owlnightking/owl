@@ -57,6 +57,7 @@ export const ADMIN_SIDER_ITEMS: SiderItem[] = [
       { key: "/roles", label: "角色与权限", permission: "system:role:read" },
       { key: "/permissions", label: "权限配置", permission: "system:permission:read" },
       { key: "/field-config", label: "字段配置", permission: "system:field:read" },
+      { key: "/system/exchange-rates", label: "汇率管理", permission: "system:field:read" },
     ],
   },
   {

@@ -270,6 +270,44 @@ async function seed() {
     });
   }
   console.log("seed: coin & stamina accounts done");
+
+  // 汇率定时抓取任务配置（cron-service: exchange-rate:sync）
+  await prisma.schedulerConfig.upsert({
+    where: { name: "exchange-rate-sync" },
+    update: {},
+    create: {
+      name: "exchange-rate-sync",
+      area: "exchange-rate",
+      cron: "30 1 * * *",
+      queue: "default",
+      handler: "sync",
+      tags: ["finance"],
+      module: "exchange-rate",
+      env: "all",
+      retryPolicy: { maxRetries: 3 },
+      timeoutMs: 30_000,
+      enabled: true,
+      description: "每日抓取 CNY→USD 汇率写入汇率表（人工校验后生效口径）",
+    },
+  });
+
+  // 基线汇率（人工维护），保证首次使用折算可用；后续以 cron 抓取 + 人工校验为准
+  const baselineRate = await prisma.exchangeRate.findFirst({
+    where: { base: "CNY", quote: "USD", source: "manual", deletedAt: null },
+  });
+  if (!baselineRate) {
+    await prisma.exchangeRate.create({
+      data: {
+        base: "CNY",
+        quote: "USD",
+        rate: 0.14,
+        source: "manual",
+        verified: true,
+        effectiveDate: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    });
+  }
+  console.log("seed: exchange rate scheduler & baseline done");
 }
 
 seed()

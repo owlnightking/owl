@@ -19,6 +19,11 @@ import { ProjectModule } from "./modules/project/project.module";
 import { RecognitionModule } from "./modules/recognition/recognition.module";
 import { MdDocModule } from "./modules/md-doc/md-doc.module";
 import { SystemLogModule } from "./modules/system-log/system-log.module";
+import { ExchangeRateModule } from "./modules/exchange-rate/exchange-rate.module";
+import { IpdModule } from "./modules/ipd/ipd.module";
+import { GtmModule } from "./modules/gtm/gtm.module";
+import { IscModule } from "./modules/isc/isc.module";
+import { VocModule } from "./modules/voc/voc.module";
 
 @Module({
   imports: [
@@ -41,6 +46,11 @@ import { SystemLogModule } from "./modules/system-log/system-log.module";
     RecognitionModule,
     MdDocModule,
     SystemLogModule,
+    ExchangeRateModule,
+    IpdModule,
+    GtmModule,
+    IscModule,
+    VocModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],

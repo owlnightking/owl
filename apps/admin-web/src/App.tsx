@@ -18,6 +18,7 @@ import { MdDocsPage } from "./pages/MdDocsPage";
 import { MdDocEditorPage } from "./pages/MdDocEditorPage";
 import { MdDocPreviewPage } from "./pages/MdDocPreviewPage";
 import { SampleListPage } from "./pages/SampleListPage";
+import { ExchangeRatesPage } from "./pages/ExchangeRatesPage";
 
 function HomePage() {
   return (
@@ -52,6 +53,7 @@ function AppRoutes() {
         <Route path="/md-docs/:id/edit" element={<MdDocEditorPage />} />
         <Route path="/md-docs/:id/preview" element={<MdDocPreviewPage />} />
         <Route path="/sample-list" element={<SampleListPage />} />
+        <Route path="/system/exchange-rates" element={<ExchangeRatesPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>

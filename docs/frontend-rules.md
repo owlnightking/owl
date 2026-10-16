@@ -163,6 +163,15 @@ import { ImageUpload } from "../components/ImageUpload";
 
 ## 五、列表页布局规范
 
+> **硬性规则：新增模块 / 新页面一律以样板页为参照**。任何新模块（含模块内的页签列表）的列表 UI，
+> 不允许从零自创布局——必须以样板页 `SampleListPage` 为目标结构落地：标题区 → 筛选条件网格
+> （`draft` / `applied` 两段态 + `col-start-4` 的搜索 / 重置）→ 操作行（右端 icon「新增」）→
+> `Spin dot` 列表 + 独立 `Pagination`（`sizeCanChange`，默认 10 条/页）→ 右侧抽屉三态
+> （新增 / 编辑 / 详情，`placement="right"` 宽 480，详情只读 `Descriptions`）→ 行操作 icon +
+> `Tooltip`、操作列 `fixed: "right"`。新页面写完在提交前按此清单逐项人工核对（见 8.3）；
+> **唯一的分页例外**：后端列表接口未提供 `page` / `pageSize` 参数的明细列表（如产品线详情内的调研 /
+> 设计任务 / 复盘列表），可省略分页组件，但仍必须使用 `Spin` 加载态与 icon 行操作。
+
 > **标准样板（可直接复制）**：web 端 `apps/admin-web/src/pages/SampleListPage.tsx`，
 > mobile 端 `apps/mobile-web/src/pages/SampleListPage.tsx`。web 端模板包含：筛选条件网格（输入框 /
 > 多选搜索 / 远程搜索 / 树形选择 / 时间选择器）、页面级 tab 分类切换、多选表格（选中后出现导出与批量删除）、
@@ -544,6 +553,10 @@ AI 写完前端代码后必须运行 `pnpm frontend:check`。清单分三类：*
 
 ### 8.3 人工评审项（脚本无法可靠校验，提交前人工确认）
 
+- **新增模块 / 新页面必须与样板页结构一致（第五节硬性规则）**：逐项核对筛选网格（draft/applied +
+  `col-start-4` 搜索 / 重置）→ 操作行（右端 icon「新增」，无刷新按钮）→ `Spin dot` 列表 → 独立
+  `Pagination`（`sizeCanChange`）→ 右侧抽屉三态（宽 480，详情只读）→ 行操作 icon + `Tooltip` +
+  操作列 `fixed: "right"`；无后端分页参数的明细列表按第五节例外省略分页，其余项不豁免。
 - 目录组织：`src/{api,components,pages,store,utils}`，新增目录需说明理由。
 - 禁止自研 UI 组件：必须使用 `package.json` 中已有的 UI 库组件。
 - 列表页布局：页面标题区 → 筛选区（条件网格，搜索 / 重置 贴最后一项那一行的最右）→ 操作行（左侧状态切换，右侧最右为
