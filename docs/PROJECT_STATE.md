@@ -122,6 +122,7 @@
 | Product           |      |
 | ExchangeOrder     |      |
 | MdDoc             |      |
+| MdDocCollaborator |      |
 | MdDocImage        |      |
 | SystemLog         |      |
 | ProductLine       |      |
@@ -169,6 +170,7 @@
 | 20260920130000_unify_timestamps                      |      |
 | 20260921000000_add_system_log                        |      |
 | 20261015000000_add_product_line_pipeline             |      |
+| 20261023000000_add_md_doc_collaborators              |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -178,9 +180,9 @@
 
 | 目录              | spec 数量 |
 | ----------------- | --------- |
-| apps/api-service  | 6         |
+| apps/api-service  | 7         |
 | apps/cron-service | 1         |
-| **合计**          | **7**     |
+| **合计**          | **8**     |
 
 <!-- AUTO-TESTS-END -->
 
@@ -251,6 +253,8 @@
 | isc           | Get    | /api/isc/suppliers/quotes/list                                |
 | md-doc        | Get    | /api/md-docs                                                  |
 | md-doc        | Get    | /api/md-docs/:id                                              |
+| md-doc        | Get    | /api/md-docs/:id/collaborators                                |
+| md-doc        | Get    | /api/md-docs/collaborator-candidates                          |
 | notification  | Get    | /api/notifications                                            |
 | notification  | Get    | /api/notifications/unread-count                               |
 | permission    | Get    | /api/permissions                                              |
@@ -330,6 +334,7 @@
 | isc           | Put    | /api/isc/suppliers/:id                                        |
 | isc           | Put    | /api/isc/suppliers/quotes/:quoteId                            |
 | md-doc        | Put    | /api/md-docs/:id                                              |
+| md-doc        | Put    | /api/md-docs/:id/collaborators                                |
 | notification  | Put    | /api/notifications/:id/read                                   |
 | notification  | Put    | /api/notifications/read-all                                   |
 | permission    | Put    | /api/permissions/:id                                          |

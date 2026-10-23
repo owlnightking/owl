@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Toast } from "@arco-design/mobile-react";
 import { IconHeart, IconNotice } from "@arco-design/mobile-react/esm/icon";
 import { get, post } from "../api/client";
+import { PersonName } from "./PersonName";
 
 interface FeedItem {
   id: string;
   senderName: string;
   senderAvatar: string | null;
   receiverName: string;
+  receiverAvatar: string | null;
   badgeName: string | null;
   badgeIcon: string | null;
   message: string;
@@ -31,10 +33,10 @@ function RecognitionCard({ item, onLike }: { item: FeedItem; onLike: (id: string
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-gray-800">{item.senderName}</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <PersonName name={item.senderName} avatarUrl={item.senderAvatar} size={18} />
             <span className="text-xs text-gray-400">认可了</span>
-            <span className="text-sm font-semibold text-gray-800">{item.receiverName}</span>
+            <PersonName name={item.receiverName} avatarUrl={item.receiverAvatar} size={18} />
           </div>
           {item.badgeName && <p className="mt-1 text-xs text-blue-500">徽章：{item.badgeName}</p>}
           <p className="mt-1 text-sm text-gray-600 leading-relaxed">{item.message}</p>

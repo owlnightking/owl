@@ -49,6 +49,8 @@ model User {
   staminaAccount  StaminaAccount?
   exchangeOrders  ExchangeOrder[]
   mdDocs          MdDoc[]
+  mdDocUpdates    MdDoc[]             @relation("MdDocUpdater")
+  mdDocCollaborations MdDocCollaborator[]
 
   @@map("user")
 }
@@ -503,17 +505,38 @@ model ExchangeOrder {
 model MdDoc {
   id        Int          @id @default(autoincrement())
   authorId  Int          @map("author_id")
+  updatedBy Int?         @map("updated_by")
   content   String
   excerpt   String?
   createdAt DateTime @db.Timestamp(0)     @default(now()) @map("created_at")
   updatedAt DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @db.Timestamp(0)    @map("deleted_at")
 
-  author User          @relation(fields: [authorId], references: [id])
-  images MdDocImage[]
+  author        User                @relation(fields: [authorId], references: [id])
+  updater       User?               @relation("MdDocUpdater", fields: [updatedBy], references: [id])
+  images        MdDocImage[]
+  collaborators MdDocCollaborator[]
 
   @@index([authorId])
+  @@index([updatedBy])
   @@map("md_doc")
+}
+
+model MdDocCollaborator {
+  id        Int       @id @default(autoincrement())
+  docId     Int       @map("doc_id")
+  userId    Int       @map("user_id")
+  createdAt DateTime  @db.Timestamp(0) @default(now()) @map("created_at")
+  updatedAt DateTime  @db.Timestamp(0) @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+
+  doc  MdDoc @relation(fields: [docId], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([docId, userId])
+  @@index([docId])
+  @@index([userId])
+  @@map("md_doc_collaborator")
 }
 
 model MdDocImage {

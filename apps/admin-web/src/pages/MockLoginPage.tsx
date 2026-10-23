@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Card, Message, Select, Spin } from "@arco-design/web-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { get, post } from "../api/client";
+import { PersonName } from "../components/PersonName";
 import { useAuthStore } from "../store/auth";
 
 interface MockUser {
@@ -65,7 +66,7 @@ export function MockLoginPage() {
         >
           {users.map((u) => (
             <Select.Option key={u.unionId} value={u.unionId}>
-              {u.name}（{u.unionId}）
+              <PersonName name={u.name} avatarUrl={u.avatarUrl} />
             </Select.Option>
           ))}
         </Select>

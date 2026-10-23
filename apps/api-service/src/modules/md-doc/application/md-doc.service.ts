@@ -1,23 +1,18 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import {
   MD_DOC_REPOSITORY,
+  type MdDocCollaboratorItem,
   type MdDocCreateInput,
   type MdDocItem,
   type MdDocListQuery,
   type MdDocRepositoryPort,
   type MdDocUpdateInput,
+  type MdDocUserOption,
 } from "../domain/md-doc.ports";
-
-const ADMIN_ROLE_CODES = new Set(["super_admin", "admin"]);
 
 @Injectable()
 export class MdDocService {
   constructor(@Inject(MD_DOC_REPOSITORY) private readonly repo: MdDocRepositoryPort) {}
-
-  async isAdmin(userId: number): Promise<boolean> {
-    const codes = await this.repo.listRoleCodes(userId);
-    return codes.some((code) => ADMIN_ROLE_CODES.has(code));
-  }
 
   async uploadImage(
     userId: number,
@@ -46,40 +41,68 @@ export class MdDocService {
   }
 
   async update(id: number, userId: number, input: MdDocUpdateInput): Promise<void> {
-    const isAdmin = await this.isAdmin(userId);
-    const doc = await this.repo.findById(id);
-    if (!doc) throw new NotFoundException(`document ${id} not found`);
-    if (!isAdmin && doc.authorId !== userId) {
-      throw new ForbiddenException("no permission to edit this document");
-    }
-    await this.repo.update(id, input);
+    const doc = await this.requireDoc(id);
+    this.assertCanView(doc, userId);
+    await this.repo.update(id, input, userId);
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    const isAdmin = await this.isAdmin(userId);
-    const doc = await this.repo.findById(id);
-    if (!doc) throw new NotFoundException(`document ${id} not found`);
-    if (!isAdmin && doc.authorId !== userId) {
-      throw new ForbiddenException("no permission to delete this document");
-    }
+    const doc = await this.requireDoc(id);
+    this.assertOwner(doc, userId);
     await this.repo.delete(id);
   }
 
   async list(userId: number, query: MdDocListQuery): Promise<{ items: MdDocItem[]; total: number }> {
-    const isAdmin = await this.isAdmin(userId);
-    if (isAdmin) {
-      return this.repo.listAll(query);
-    }
-    return this.repo.listByAuthor(userId, query);
+    return this.repo.listAccessible(userId, query);
   }
 
   async findById(id: number, userId: number): Promise<MdDocItem> {
-    const isAdmin = await this.isAdmin(userId);
+    const doc = await this.requireDoc(id);
+    this.assertCanView(doc, userId);
+    return doc;
+  }
+
+  async listCollaborators(id: number, userId: number): Promise<MdDocCollaboratorItem[]> {
+    const doc = await this.requireDoc(id);
+    this.assertCanView(doc, userId);
+    return doc.collaborators;
+  }
+
+  async setCollaborators(id: number, userId: number, userIds: number[]): Promise<MdDocCollaboratorItem[]> {
+    const doc = await this.requireDoc(id);
+    this.assertOwner(doc, userId);
+
+    const unique = [...new Set(userIds)];
+    if (unique.includes(doc.authorId)) {
+      throw new BadRequestException("owner cannot be added as collaborator");
+    }
+    const existing = await this.repo.findExistingUserIds(unique);
+    const missing = unique.filter((candidate) => !existing.includes(candidate));
+    if (missing.length > 0) {
+      throw new NotFoundException(`user not found: ${missing.join(",")}`);
+    }
+    await this.repo.replaceCollaborators(id, unique);
+    return this.repo.listCollaborators(id);
+  }
+
+  async listUserOptions(keyword?: string): Promise<MdDocUserOption[]> {
+    return this.repo.listUserOptions(keyword);
+  }
+
+  private async requireDoc(id: number): Promise<MdDocItem> {
     const doc = await this.repo.findById(id);
     if (!doc) throw new NotFoundException(`document ${id} not found`);
-    if (!isAdmin && doc.authorId !== userId) {
-      throw new ForbiddenException("no permission to view this document");
-    }
     return doc;
+  }
+
+  private assertCanView(doc: MdDocItem, userId: number): void {
+    if (doc.authorId === userId) return;
+    if (doc.collaborators.some((collaborator) => collaborator.userId === userId)) return;
+    throw new ForbiddenException("no permission to view this document");
+  }
+
+  private assertOwner(doc: MdDocItem, userId: number): void {
+    if (doc.authorId === userId) return;
+    throw new ForbiddenException("only the owner can manage this document");
   }
 }

@@ -1,15 +1,31 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Space, Badge, Notification, Skeleton } from "@arco-design/web-react";
+import { Button, Space, Badge, Notification, Skeleton, Modal, Select } from "@arco-design/web-react";
 import { IconSave, IconLeft } from "@arco-design/web-react/icon";
 import { VditorEditor } from "../components/VditorEditor";
 import { get, post, put } from "../api/client";
+import { PersonName } from "../components/PersonName";
 import { saveDraft, getDraft, deleteDraft } from "../utils/md-doc-draft";
 
 const STABLE_DELAY_MS = 800;
+const COLLABORATOR_SEARCH_DELAY_MS = 300;
 
 interface DocResponse {
   content: string;
+  canManageCollaborators: boolean;
+}
+
+interface CollaboratorOption {
+  id: number;
+  name: string;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
+interface DocCollaborator {
+  userId: number;
+  name: string;
+  avatarUrl: string | null;
 }
 
 export function MdDocEditorPage() {
@@ -20,6 +36,13 @@ export function MdDocEditorPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [canManageCollaborators, setCanManageCollaborators] = useState(false);
+  const [collaboratorVisible, setCollaboratorVisible] = useState(false);
+  const [collaboratorSaving, setCollaboratorSaving] = useState(false);
+  const [collaboratorIds, setCollaboratorIds] = useState<number[]>([]);
+  const [collaboratorOptions, setCollaboratorOptions] = useState<CollaboratorOption[]>([]);
+  const collaboratorSearchTimer = useRef<number | null>(null);
+  const collaboratorLabelCache = useRef(new Map<number, CollaboratorOption>());
   const docIdRef = useRef(id && id !== "new" ? id : "");
   const serverIdRef = useRef(id && id !== "new" ? id : "");
   const contentRef = useRef("");
@@ -48,6 +71,7 @@ export function MdDocEditorPage() {
         .then((doc) => {
           docIdRef.current = id;
           serverIdRef.current = id;
+          setCanManageCollaborators(doc.canManageCollaborators);
           contentRef.current = doc.content;
           baselineRef.current = doc.content;
           serverBaselineRef.current = doc.content;
@@ -151,6 +175,86 @@ export function MdDocEditorPage() {
     [flushLocalDraft]
   );
 
+  useEffect(() => {
+    return () => {
+      if (collaboratorSearchTimer.current !== null) {
+        window.clearTimeout(collaboratorSearchTimer.current);
+      }
+    };
+  }, []);
+
+  const mergeCachedOptions = useCallback((options: CollaboratorOption[]) => {
+    const merged = [...options];
+    for (const cached of collaboratorLabelCache.current.values()) {
+      if (!merged.some((option) => option.id === cached.id)) merged.push(cached);
+    }
+    return merged;
+  }, []);
+
+  const loadCollaboratorOptions = useCallback(
+    async (keyword?: string) => {
+      const options = await get<CollaboratorOption[]>("/md-docs/collaborator-candidates", {
+        q: keyword || undefined,
+      });
+      setCollaboratorOptions(mergeCachedOptions(options));
+    },
+    [mergeCachedOptions]
+  );
+
+  const openCollaboratorModal = async () => {
+    if (isNew || !id) return;
+    try {
+      const [current] = await Promise.all([
+        get<DocCollaborator[]>(`/md-docs/${id}/collaborators`),
+        loadCollaboratorOptions(),
+      ]);
+      for (const item of current) {
+        collaboratorLabelCache.current.set(item.userId, {
+          id: item.userId,
+          name: item.name,
+          email: null,
+          avatarUrl: item.avatarUrl,
+        });
+      }
+      setCollaboratorIds(current.map((item) => item.userId));
+      setCollaboratorOptions((prev) => mergeCachedOptions(prev));
+      setCollaboratorVisible(true);
+    } catch (error) {
+      Notification.error({ content: error instanceof Error ? error.message : "加载文档编辑权限失败" });
+    }
+  };
+
+  const handleCollaboratorChange = (value: (string | number)[]) => {
+    const ids = value.map(Number);
+    setCollaboratorIds(ids);
+    for (const option of collaboratorOptions) {
+      if (ids.includes(option.id)) collaboratorLabelCache.current.set(option.id, option);
+    }
+  };
+
+  const handleCollaboratorSearch = (keyword: string) => {
+    if (collaboratorSearchTimer.current !== null) {
+      window.clearTimeout(collaboratorSearchTimer.current);
+    }
+    collaboratorSearchTimer.current = window.setTimeout(() => {
+      loadCollaboratorOptions(keyword).catch(() => Notification.error({ content: "搜索用户失败" }));
+    }, COLLABORATOR_SEARCH_DELAY_MS);
+  };
+
+  const saveCollaborators = async () => {
+    if (!id) return;
+    setCollaboratorSaving(true);
+    try {
+      await put(`/md-docs/${id}/collaborators`, { userIds: collaboratorIds });
+      Notification.success({ content: "文档编辑权限已更新" });
+      setCollaboratorVisible(false);
+    } catch (error) {
+      Notification.error({ content: error instanceof Error ? error.message : "保存文档编辑权限失败" });
+    } finally {
+      setCollaboratorSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     const ok = await flushToServer();
@@ -196,6 +300,7 @@ export function MdDocEditorPage() {
         </Space>
         <Space>
           <Badge status={dirty ? "error" : "success"} text={dirty ? "未保存" : "已保存"} />
+          {canManageCollaborators && <Button onClick={openCollaboratorModal}>文档编辑权限</Button>}
           <Button type="primary" icon={<IconSave />} loading={saving} onClick={handleSave}>
             保存
           </Button>
@@ -209,6 +314,31 @@ export function MdDocEditorPage() {
           placeholder="开始写作..."
         />
       </div>
+      <Modal
+        title="设置文档编辑权限"
+        visible={collaboratorVisible}
+        confirmLoading={collaboratorSaving}
+        onOk={saveCollaborators}
+        onCancel={() => setCollaboratorVisible(false)}
+        unmountOnExit
+      >
+        <Select
+          mode="multiple"
+          placeholder="搜索并选择人员"
+          value={collaboratorIds}
+          options={collaboratorOptions.map((user) => ({
+            label: <PersonName name={user.name} avatarUrl={user.avatarUrl} />,
+            value: user.id,
+          }))}
+          renderFormat={(_option, value) => {
+            const user = collaboratorOptions.find((item) => item.id === Number(value));
+            return user ? <PersonName name={user.name} avatarUrl={user.avatarUrl} size={18} /> : String(value);
+          }}
+          filterOption={false}
+          onSearch={handleCollaboratorSearch}
+          onChange={handleCollaboratorChange}
+        />
+      </Modal>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Toast, Textarea, NavBar } from "@arco-design/mobile-react";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 interface Badge {
   id: string;
@@ -11,6 +12,7 @@ interface Badge {
 interface User {
   id: string;
   name: string;
+  avatarUrl: string | null;
 }
 
 export function CreateRecognitionPage() {
@@ -71,7 +73,7 @@ export function CreateRecognitionPage() {
                 className={`block w-full rounded-lg px-3 py-2 text-left text-sm ${receiverId === u.id ? "bg-blue-50 text-blue-600" : "text-gray-700"}`}
                 onClick={() => setReceiverId(u.id)}
               >
-                {u.name}
+                <PersonName name={u.name} avatarUrl={u.avatarUrl} size={24} />
               </button>
             ))}
           </div>

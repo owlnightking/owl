@@ -23,6 +23,7 @@ import {
 } from "@arco-design/web-react";
 import { IconDelete, IconEdit, IconEye, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
 import { del, get, post, put } from "../../api/client";
+import { PersonName } from "../PersonName";
 import { KOL_STATUS_LABELS, type KolItem, type PageData, formatUsd } from "../../api/pipeline";
 import { PLATFORM_OPTIONS, notifyError } from "./common";
 
@@ -169,7 +170,7 @@ export function KolTab() {
       width: 180,
       render: (text: string) => (
         <Tooltip content={text}>
-          <span className="block max-w-[160px] truncate">{text}</span>
+          <PersonName name={text} className="max-w-[160px]" />
         </Tooltip>
       ),
     },
@@ -341,7 +342,7 @@ export function KolTab() {
             <Descriptions
               column={1}
               data={[
-                { label: "名称", value: drawerRecord.name },
+                { label: "名称", value: <PersonName name={drawerRecord.name} size={32} /> },
                 { label: "平台", value: drawerRecord.platform },
                 { label: "Handle", value: drawerRecord.handle ?? "-" },
                 { label: "粉丝数", value: drawerRecord.followers.toLocaleString() },

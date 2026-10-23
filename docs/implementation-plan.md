@@ -126,7 +126,7 @@ monorepo / pnpm workspaces / 工程护栏（typecheck、lint、format、arch、A
 
 ### 阶段 B1：付费知识（副业）
 
-md 编辑组件（web + mobile）+ 文档创作入库 + 列表/编辑/预览，作者可见自己的文档；商业化后续。
+md 编辑组件（web + mobile）+ 文档创作入库 + 列表/编辑/预览；每篇文档 owner=创建者，owner 可设置文档编辑权限（可编辑人员），仅 owner / 可编辑人员可见与编辑（管理员不例外）；商业化后续。
 
 ### 阶段 S2：人才中心
 

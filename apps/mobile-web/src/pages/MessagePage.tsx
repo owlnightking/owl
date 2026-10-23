@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Toast, Textarea, NavBar } from "@arco-design/mobile-react";
 import { IconSuccessCircle, IconNotice } from "@arco-design/mobile-react/esm/icon";
 import { get, put } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 interface PendingItem {
   id: string;
   senderName: string;
   senderAvatar: string | null;
   receiverName: string;
+  receiverAvatar: string | null;
   badgeName: string | null;
   message: string;
   createdAt: string;
@@ -47,9 +49,10 @@ function ApprovalCard({
           <IconNotice />
         </div>
         <div className="flex-1">
-          <p className="text-sm text-gray-800">
-            <span className="font-medium">{item.senderName}</span> 认可了{" "}
-            <span className="font-medium">{item.receiverName}</span>
+          <p className="flex flex-wrap items-center gap-1 text-sm text-gray-800">
+            <PersonName name={item.senderName} avatarUrl={item.senderAvatar} size={18} />
+            <span>认可了</span>
+            <PersonName name={item.receiverName} avatarUrl={item.receiverAvatar} size={18} />
           </p>
           {item.badgeName && <p className="mt-1 text-xs text-blue-500">徽章：{item.badgeName}</p>}
           <p className="mt-1 text-sm text-gray-600">{item.message}</p>

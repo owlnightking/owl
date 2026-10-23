@@ -20,14 +20,28 @@ import {
 } from "@arco-design/web-react";
 import { IconDelete, IconEdit, IconEye, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
 import { del, get } from "../api/client";
+import { PersonName } from "../components/PersonName";
+
+interface MdDocCollaborator {
+  userId: number;
+  name: string;
+  avatarUrl: string | null;
+}
 
 interface MdDoc {
   id: number;
   authorId: number;
+  authorName: string | null;
+  authorAvatarUrl: string | null;
+  updatedBy: number | null;
+  updatedByName: string | null;
+  updatedByAvatarUrl: string | null;
   content: string;
   excerpt: string | null;
   createdAt: string;
   updatedAt: string;
+  collaborators: MdDocCollaborator[];
+  canManageCollaborators: boolean;
 }
 
 interface MdDocPage {
@@ -39,8 +53,8 @@ interface MdDocPage {
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-// 列宽合计（280 + 180 + 180 + 140）：超过容器宽度就横向滚动，配合 fixed 列实现左右两端悬浮。增删列时同步这个值
-const TABLE_SCROLL_X = 780;
+// 列宽合计（280 + 140 + 140 + 180 + 180 + 220 + 140）：超过容器宽度就横向滚动，配合 fixed 列实现左右两端悬浮。增删列时同步这个值
+const TABLE_SCROLL_X = 1280;
 
 export function MdDocsPage() {
   const navigate = useNavigate();
@@ -112,8 +126,48 @@ export function MdDocsPage() {
         </Tooltip>
       ),
     },
+    {
+      title: "Owner",
+      dataIndex: "authorName",
+      width: 140,
+      render: (_: unknown, record: MdDoc) => (
+        <PersonName name={record.authorName} avatarUrl={record.authorAvatarUrl} size={20} />
+      ),
+    },
+    {
+      title: "最后更新人",
+      dataIndex: "updatedByName",
+      width: 140,
+      render: (_: unknown, record: MdDoc) => (
+        <PersonName name={record.updatedByName} avatarUrl={record.updatedByAvatarUrl} size={20} />
+      ),
+    },
     { title: "创建时间", dataIndex: "createdAt", width: 180, render: (value: string) => value.slice(0, 10) },
     { title: "更新时间", dataIndex: "updatedAt", width: 180, render: (value: string) => value.slice(0, 10) },
+    {
+      title: "可编辑人员",
+      dataIndex: "collaborators",
+      width: 220,
+      render: (value: MdDocCollaborator[]) => {
+        if (!value || value.length === 0) return "-";
+        const names = value.map((item) => item.name).join("、");
+        return (
+          <Tooltip content={names}>
+            <span className="flex max-w-[190px] flex-wrap items-center gap-x-3 gap-y-1">
+              {value.map((item) => (
+                <PersonName
+                  key={item.userId}
+                  name={item.name}
+                  avatarUrl={item.avatarUrl}
+                  size={20}
+                  className="max-w-[85px]"
+                />
+              ))}
+            </span>
+          </Tooltip>
+        );
+      },
+    },
     {
       title: "操作",
       dataIndex: "actions",
@@ -127,11 +181,13 @@ export function MdDocsPage() {
           <Tooltip content="编辑">
             <Button type="text" icon={<IconEdit />} onClick={() => navigate(`/md-docs/${record.id}/edit`)} />
           </Tooltip>
-          <Tooltip content="删除">
-            <Popconfirm className="w-56" title="确认删除该文档？" onOk={() => removeOne(record.id)}>
-              <Button type="text" status="danger" icon={<IconDelete />} />
-            </Popconfirm>
-          </Tooltip>
+          {record.canManageCollaborators && (
+            <Tooltip content="删除">
+              <Popconfirm className="w-56" title="确认删除该文档？" onOk={() => removeOne(record.id)}>
+                <Button type="text" status="danger" icon={<IconDelete />} />
+              </Popconfirm>
+            </Tooltip>
+          )}
         </Space>
       ),
     },

@@ -72,6 +72,7 @@ import {
   IconRefresh,
   IconSearch,
 } from "@arco-design/web-react/icon";
+import { PersonName } from "../components/PersonName";
 
 type SampleStatus = "enabled" | "disabled";
 
@@ -486,7 +487,12 @@ export function SampleListPage() {
     },
     { title: "所属模块", dataIndex: "module", width: 120 },
     { title: "所属部门", dataIndex: "department", width: 120 },
-    { title: "负责人", dataIndex: "owner", width: 100 },
+    {
+      title: "负责人",
+      dataIndex: "owner",
+      width: 140,
+      render: (value: string) => <PersonName name={value} size={20} />,
+    },
     { title: "来源", dataIndex: "source", width: 120 },
     { title: "数量", dataIndex: "quantity", width: 100 },
     {
@@ -606,7 +612,7 @@ export function SampleListPage() {
         >
           {OWNER_OPTIONS.map((option) => (
             <Select.Option key={option} value={option}>
-              {option}
+              <PersonName name={option} />
             </Select.Option>
           ))}
         </Select>
@@ -767,7 +773,7 @@ export function SampleListPage() {
                 { label: "所属模块", value: detailData.module },
                 { label: "所属部门", value: detailData.department },
                 { label: "关联商品", value: detailData.product },
-                { label: "负责人", value: detailData.owner },
+                { label: "负责人", value: <PersonName name={detailData.owner} size={28} /> },
                 { label: "标签", value: detailData.tags.join("、") },
                 { label: "创建时间", value: detailData.createdAt },
                 { label: "更新时间", value: detailData.updatedAt },

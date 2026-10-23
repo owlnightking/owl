@@ -22,6 +22,7 @@ import {
 import { IconCheck, IconClose, IconSend } from "@arco-design/web-react/icon";
 import type { ColumnProps } from "@arco-design/web-react/es/Table";
 import { get, put } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 type ExchangeOrderStatus = "pending" | "approved" | "rejected" | "fulfilled";
 
@@ -31,6 +32,7 @@ type StatusFilter = ExchangeOrderStatus | "all";
 interface ExchangeOrderItem {
   id: number;
   userName: string;
+  userAvatar: string | null;
   productName: string;
   productImage: string | null;
   quantity: number;
@@ -53,7 +55,7 @@ const STATUS_ALL = "all";
 /** 订单接口前缀，三个流转动作共用 */
 const ORDER_PATH = "/recognition/exchange/orders";
 // 列宽合计（用户 fixed left + 操作 fixed right）：超过容器宽度就横向滚动，两端列始终可见。增删列时同步这个值
-const TABLE_SCROLL_X = 1060;
+const TABLE_SCROLL_X = 1080;
 
 const STATUS_TEXT: Record<ExchangeOrderStatus, string> = {
   pending: "待审批",
@@ -127,10 +129,10 @@ export function ExchangeOrdersPage() {
       title: "用户",
       dataIndex: "userName",
       fixed: "left" as const,
-      width: 180,
-      render: (value: string) => (
+      width: 200,
+      render: (value: string, record: ExchangeOrderItem) => (
         <Tooltip content={value}>
-          <span className="block max-w-[140px] truncate">{value}</span>
+          <PersonName name={value} avatarUrl={record.userAvatar} className="max-w-[160px]" />
         </Tooltip>
       ),
     },

@@ -24,13 +24,14 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
     rejectReason: string | null;
     fulfilledAt: Date | null;
     createdAt: Date;
-    user?: { name: string } | null;
+    user?: { name: string; avatar72: string | null } | null;
     product?: { name: string; image: string | null } | null;
   }): Promise<ExchangeOrderItem> {
     return {
       id: raw.id,
       userId: raw.userId,
       userName: raw.user?.name,
+      userAvatar: raw.user?.avatar72 ?? undefined,
       productId: raw.productId,
       productName: raw.product?.name,
       productImage: raw.product?.image ?? undefined,
@@ -48,7 +49,10 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
   async findById(id: number): Promise<ExchangeOrderItem | null> {
     const row = await this.prisma.exchangeOrder.findUnique({
       where: { id, deletedAt: null },
-      include: { user: { select: { name: true } }, product: { select: { name: true, image: true } } },
+      include: {
+        user: { select: { name: true, avatar72: true } },
+        product: { select: { name: true, image: true } },
+      },
     });
     return row ? this.toItem(row) : null;
   }
@@ -64,7 +68,10 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
         orderBy: { createdAt: "desc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
-        include: { user: { select: { name: true } }, product: { select: { name: true, image: true } } },
+        include: {
+          user: { select: { name: true, avatar72: true } },
+          product: { select: { name: true, image: true } },
+        },
       }),
       this.prisma.exchangeOrder.count({ where }),
     ]);
@@ -86,7 +93,10 @@ export class PrismaExchangeRepository implements ExchangeRepositoryPort {
       });
       return tx.exchangeOrder.create({
         data: { userId, productId: input.productId, quantity, totalCost: product.price * quantity },
-        include: { user: { select: { name: true } }, product: { select: { name: true, image: true } } },
+        include: {
+          user: { select: { name: true, avatar72: true } },
+          product: { select: { name: true, image: true } },
+        },
       });
     });
 

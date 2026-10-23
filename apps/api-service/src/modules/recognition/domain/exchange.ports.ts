@@ -2,6 +2,7 @@ export interface ExchangeOrderItem {
   id: number;
   userId: number;
   userName?: string;
+  userAvatar?: string;
   productId: number;
   productName?: string;
   productImage?: string;

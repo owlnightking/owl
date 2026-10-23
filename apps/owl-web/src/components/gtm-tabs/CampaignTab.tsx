@@ -33,6 +33,7 @@ import {
   IconSearch,
 } from "@arco-design/web-react/icon";
 import { del, get, post, put } from "../../api/client";
+import { PersonName } from "../PersonName";
 import {
   CAMPAIGN_STATUS_LABELS,
   CAMPAIGN_TYPE_LABELS,
@@ -229,7 +230,8 @@ export function CampaignTab() {
       title: "KOL",
       dataIndex: "kolName",
       width: 120,
-      render: (_: unknown, record: CampaignItem) => record.kolName ?? "-",
+      render: (_: unknown, record: CampaignItem) =>
+        record.kolName ? <PersonName name={record.kolName} size={20} /> : "-",
     },
     {
       title: "预算",
@@ -407,7 +409,10 @@ export function CampaignTab() {
                 { label: "类型", value: CAMPAIGN_TYPE_LABELS[drawerRecord.type] ?? drawerRecord.type },
                 { label: "平台", value: drawerRecord.platform },
                 { label: "状态", value: CAMPAIGN_STATUS_LABELS[drawerRecord.status] ?? drawerRecord.status },
-                { label: "KOL", value: drawerRecord.kolName ?? "-" },
+                {
+                  label: "KOL",
+                  value: drawerRecord.kolName ? <PersonName name={drawerRecord.kolName} size={28} /> : "-",
+                },
                 { label: "预算（USD）", value: formatUsd(drawerRecord.budgetUsd) },
                 { label: "已花费（USD）", value: formatUsd(drawerRecord.spentUsd) },
                 { label: "开始日期", value: toDateOnly(drawerRecord.startDate) },

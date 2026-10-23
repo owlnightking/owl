@@ -8,7 +8,6 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import {
-  Avatar,
   Button,
   Notification,
   Pagination,
@@ -23,6 +22,7 @@ import {
 import { IconCheck, IconClose, IconPushpin } from "@arco-design/web-react/icon";
 import type { ColumnProps } from "@arco-design/web-react/es/Table";
 import { get, put } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 type RecognitionStatus = "pending" | "approved" | "rejected";
 
@@ -34,6 +34,7 @@ interface RecognitionItem {
   senderName: string;
   senderAvatar: string | null;
   receiverName: string;
+  receiverAvatar: string | null;
   badgeName: string | null;
   message: string;
   status: RecognitionStatus;
@@ -119,19 +120,17 @@ export function RecognitionsPage() {
       fixed: "left" as const,
       width: 180,
       render: (_: unknown, record: RecognitionItem) => (
-        <div className="flex items-center gap-2">
-          <Avatar size={24} shape="circle">
-            {record.senderAvatar ? (
-              <img src={record.senderAvatar} alt={record.senderName} />
-            ) : (
-              record.senderName.charAt(0)
-            )}
-          </Avatar>
-          <span className="block max-w-[100px] truncate">{record.senderName}</span>
-        </div>
+        <PersonName name={record.senderName} avatarUrl={record.senderAvatar} />
       ),
     },
-    { title: "接收人", dataIndex: "receiverName", width: 160 },
+    {
+      title: "接收人",
+      dataIndex: "receiverName",
+      width: 180,
+      render: (_: unknown, record: RecognitionItem) => (
+        <PersonName name={record.receiverName} avatarUrl={record.receiverAvatar} />
+      ),
+    },
     {
       title: "徽章",
       dataIndex: "badgeName",

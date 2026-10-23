@@ -24,14 +24,14 @@ import {
   ApiPropertyOptional,
   ApiTags,
 } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Type } from "class-transformer";
 import { MD_DOC_SERVICE, type MdDocItem } from "../domain/md-doc.ports";
 import { MdDocService } from "../application/md-doc.service";
 import { ok, page } from "../../../common/response/api-response";
 import { Inject } from "@nestjs/common";
 import { CurrentUser, JwtAuthGuard, PermissionGuard, type AuthPrincipal } from "../../auth/index";
-import { MdDocPageVo, MdDocVo, UploadImageVo } from "./md-doc.vo";
+import { MdDocCollaboratorVo, MdDocPageVo, MdDocUserOptionVo, MdDocVo, UploadImageVo } from "./md-doc.vo";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -59,6 +59,21 @@ class UpdateMdDocDto {
   @IsString()
   @IsNotEmpty()
   content!: string;
+}
+
+class SetCollaboratorsDto {
+  @ApiProperty({ description: "可编辑人员用户 id 列表（传空数组表示清空）", type: [Number], example: [2, 3] })
+  @IsArray()
+  @Type(() => Number)
+  @IsInt({ each: true })
+  userIds!: number[];
+}
+
+class CollaboratorCandidateQueryDto {
+  @ApiPropertyOptional({ description: "姓名 / 邮箱关键字", example: "张三" })
+  @IsOptional()
+  @IsString()
+  q?: string;
 }
 
 class MdDocQueryDto {
@@ -90,13 +105,44 @@ export class MdDocController {
   async list(@Query() query: MdDocQueryDto, @CurrentUser() user: AuthPrincipal) {
     const pageNum = query.page ?? 1;
     const pageSize = query.pageSize ?? DEFAULT_PAGE_SIZE;
-    const result = await this.service.list(Number(user.userId), { page: pageNum, pageSize, q: query.q });
+    const userId = Number(user.userId);
+    const result = await this.service.list(userId, { page: pageNum, pageSize, q: query.q });
     return page(
-      result.items.map((i) => this.toResponse(i)),
+      result.items.map((i) => this.toResponse(i, userId)),
       pageNum,
       pageSize,
       result.total
     );
+  }
+
+  @Get("collaborator-candidates")
+  @ApiOperation({ summary: "文档编辑权限候选用户" })
+  @ApiOkResponse({ description: "候选用户列表", type: [MdDocUserOptionVo] })
+  async listCollaboratorCandidates(@Query() query: CollaboratorCandidateQueryDto) {
+    const items = await this.service.listUserOptions(query.q);
+    return ok(items);
+  }
+
+  @Get(":id/collaborators")
+  @ApiOperation({ summary: "文档可编辑人员列表" })
+  @ApiParam({ name: "id", description: "文档 id", example: 1 })
+  @ApiOkResponse({ description: "可编辑人员列表", type: [MdDocCollaboratorVo] })
+  async listCollaborators(@Param("id", ParseIntPipe) id: number, @CurrentUser() user: AuthPrincipal) {
+    const items = await this.service.listCollaborators(id, Number(user.userId));
+    return ok(items);
+  }
+
+  @Put(":id/collaborators")
+  @ApiOperation({ summary: "设置文档可编辑人员（仅 owner）" })
+  @ApiParam({ name: "id", description: "文档 id", example: 1 })
+  @ApiOkResponse({ description: "设置成功", type: [MdDocCollaboratorVo] })
+  async setCollaborators(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: SetCollaboratorsDto,
+    @CurrentUser() user: AuthPrincipal
+  ) {
+    const items = await this.service.setCollaborators(id, Number(user.userId), dto.userIds);
+    return ok(items);
   }
 
   @Get(":id")
@@ -104,16 +150,18 @@ export class MdDocController {
   @ApiParam({ name: "id", description: "主键 id", example: 1 })
   @ApiOkResponse({ description: "文档详情", type: MdDocVo })
   async findById(@Param("id", ParseIntPipe) id: number, @CurrentUser() user: AuthPrincipal) {
-    const doc = await this.service.findById(id, Number(user.userId));
-    return ok(this.toResponse(doc));
+    const userId = Number(user.userId);
+    const doc = await this.service.findById(id, userId);
+    return ok(this.toResponse(doc, userId));
   }
 
   @Post()
   @ApiOperation({ summary: "新建文档" })
   @ApiCreatedResponse({ description: "新建成功", type: MdDocVo })
   async create(@Body() dto: CreateMdDocDto, @CurrentUser() user: AuthPrincipal) {
-    const doc = await this.service.create(Number(user.userId), dto);
-    return ok(this.toResponse(doc));
+    const userId = Number(user.userId);
+    const doc = await this.service.create(userId, dto);
+    return ok(this.toResponse(doc, userId));
   }
 
   @Put(":id")
@@ -154,14 +202,21 @@ export class MdDocController {
     return ok(result);
   }
 
-  private toResponse(item: MdDocItem) {
+  private toResponse(item: MdDocItem, currentUserId: number) {
     return {
       id: item.id,
       authorId: item.authorId,
+      authorName: item.authorName,
+      authorAvatarUrl: item.authorAvatarUrl,
+      updatedBy: item.updatedBy,
+      updatedByName: item.updatedByName,
+      updatedByAvatarUrl: item.updatedByAvatarUrl,
       content: item.content,
       excerpt: item.excerpt,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
+      collaborators: item.collaborators,
+      canManageCollaborators: item.authorId === currentUserId,
     };
   }
 }

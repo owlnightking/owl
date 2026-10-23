@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Toast, NavBar, Tag } from "@arco-design/mobile-react";
 import { IconNotice, IconSuccessCircle, IconHeart } from "@arco-design/mobile-react/esm/icon";
 import { get, post } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 interface MeData {
   name: string;
@@ -12,7 +13,9 @@ interface MeData {
 interface PendingItem {
   id: string;
   senderName: string;
+  senderAvatar: string | null;
   receiverName: string;
+  receiverAvatar: string | null;
   badgeName: string | null;
   message: string;
   createdAt: string;
@@ -32,6 +35,7 @@ interface FeedItem {
   senderName: string;
   senderAvatar: string | null;
   receiverName: string;
+  receiverAvatar: string | null;
   badgeName: string | null;
   badgeIcon: string | null;
   message: string;
@@ -80,7 +84,13 @@ export function HomePage() {
     ...pending.map((p) => ({
       id: p.id,
       type: "approval" as const,
-      title: `${p.senderName} 认可了 ${p.receiverName}`,
+      title: (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          <PersonName name={p.senderName} avatarUrl={p.senderAvatar} size={18} />
+          <span>认可了</span>
+          <PersonName name={p.receiverName} avatarUrl={p.receiverAvatar} size={18} />
+        </span>
+      ),
       time: p.createdAt,
     })),
     ...notifications.map((n) => ({ id: n.id, type: "system" as const, title: n.title, time: n.createdAt })),
@@ -184,10 +194,10 @@ export function HomePage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-gray-800 truncate">{item.senderName}</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <PersonName name={item.senderName} avatarUrl={item.senderAvatar} size={18} />
                           <span className="text-xs text-gray-400">认可了</span>
-                          <span className="text-sm font-semibold text-gray-800 truncate">{item.receiverName}</span>
+                          <PersonName name={item.receiverName} avatarUrl={item.receiverAvatar} size={18} />
                         </div>
                         <p className="mt-0.5 text-xs text-gray-500 line-clamp-2">{item.message}</p>
                       </div>

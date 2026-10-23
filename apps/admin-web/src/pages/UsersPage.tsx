@@ -10,7 +10,6 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import {
-  Avatar,
   Button,
   Descriptions,
   Drawer,
@@ -27,6 +26,7 @@ import {
 } from "@arco-design/web-react";
 import { IconEdit, IconEye, IconLock, IconRefresh, IconSearch, IconUnlock } from "@arco-design/web-react/icon";
 import { get, put } from "../api/client";
+import { PersonName } from "../components/PersonName";
 
 type UserStatus = "active" | "disabled";
 
@@ -142,7 +142,7 @@ export function UsersPage() {
       return;
     }
     form.resetFields();
-    form.setFieldsValue({ name: user.name, roleIds: user.roles.map((role) => role.id) });
+    form.setFieldsValue({ roleIds: user.roles.map((role) => role.id) });
   };
 
   const closeDrawer = () => {
@@ -184,14 +184,9 @@ export function UsersPage() {
       fixed: "left" as const,
       width: 200,
       render: (_: unknown, record: UserItem) => (
-        <div className="flex items-center gap-2">
-          <Avatar size={24} shape="circle">
-            {record.avatarUrl ? <img src={record.avatarUrl} alt={record.name} /> : record.name?.charAt(0)}
-          </Avatar>
-          <Tooltip content={record.name}>
-            <span className="block max-w-[130px] truncate">{record.name}</span>
-          </Tooltip>
-        </div>
+        <Tooltip content={record.name}>
+          <PersonName name={record.name} avatarUrl={record.avatarUrl} className="max-w-[150px]" />
+        </Tooltip>
       ),
     },
     {
@@ -340,7 +335,7 @@ export function UsersPage() {
           <Descriptions
             column={1}
             data={[
-              { label: "姓名", value: drawerRecord?.name ?? "-" },
+              { label: "姓名", value: <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} /> },
               { label: "unionId", value: drawerRecord?.unionId ?? "-" },
               { label: "邮箱", value: drawerRecord?.email ?? "-" },
               {
@@ -357,9 +352,10 @@ export function UsersPage() {
           />
         ) : (
           <Form form={form} layout="vertical">
-            <Form.Item label="姓名" field="name">
-              <Input disabled />
-            </Form.Item>
+            <div className="mb-4">
+              <div className="mb-1 text-sm text-gray-500">姓名</div>
+              <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} size={32} />
+            </div>
             <Form.Item label="角色" field="roleIds">
               <Select mode="multiple" placeholder="选择角色" style={{ width: "100%" }}>
                 {roleOptions.map((role) => (

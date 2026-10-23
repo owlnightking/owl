@@ -11,6 +11,9 @@ export class ExchangeOrderVo {
   @ApiProperty({ description: "兑换用户姓名", required: false })
   userName?: string;
 
+  @ApiProperty({ description: "兑换用户头像地址", required: false })
+  userAvatar?: string;
+
   @ApiProperty({ description: "商品 id", example: 1 })
   productId!: number;
 
