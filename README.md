@@ -2,9 +2,9 @@
 
 跨境电商内网管理系统（monorepo）。
 
-Owl 以「一条机会从机会判断到利润核算」为核心业务闭环：13 阶段单对象线性流水线，覆盖投入验证、GTM 投流、供应链履约、VOC 售后、财务利润测算与自动利润核算。提供管理后台、内部业务工作台与定时任务控制台三套前端，同一登录态（SSO）贯穿。
+Owl 先服务公司自用经营，按 **P1 系统基座 → P2 人才中心 → P3 财务一期 → P4 业务链路** 四期建设：权限与组织基座、人才全生命周期、记账/报销/出纳、产品立项到模拟渠道的纵向链路。SaaS 后置。
 
-> 项目形态与阶段规划见 `docs/grill-mvp-decisions.md`（MVP 决策集）与 `docs/implementation-plan.md`（分阶段实施计划）。
+> 排期与范围的唯一事实源是 `docs/implementation-plan.md`；业务功能现状见 `docs/business-snapshot.md`；决策见 `docs/decisions/`。`docs/archive/grill-mvp-decisions.md` 已废弃，仅作历史记录。
 
 ---
 
@@ -15,14 +15,17 @@ Owl 以「一条机会从机会判断到利润核算」为核心业务闭环：1
 ```
 owl/
 ├── apps/                       # 应用（互不依赖）
-│   ├── api-service/            # 主服务（NestJS）— 认证/RBAC/审计/业务 pipeline
+│   ├── api-service/            # 主服务（NestJS）— 认证/RBAC/业务模块
 │   ├── cron-service/           # 定时任务执行服务（NestJS + RabbitMQ）
-│   ├── owl-web/                # 内部业务工作台（Vite + React + TS）
 │   ├── admin-web/              # 管理台（Vite + React + TS）
-│   └── cron-web/               # 定时任务控制台（Vite + React + TS）
+│   ├── owl-web/                # 内部业务工作台（Vite + React + TS）
+│   ├── mobile-web/             # 移动端 H5（Vite + React + TS）
+│   ├── cron-web/               # 定时任务控制台（Vite + React + TS）
+│   └── portal/                 # 对外门户（Vite + React + TS）
 ├── packages/                   # 共享包（被一切依赖的最底层）
 │   ├── shared/                 # @owl/shared — 类型/常量/错误码/纯函数
-│   └── database/               # @owl/database — Prisma schema + migrations + seeds
+│   ├── permission/             # @owl/permission — 权限注册表（单一事实源）
+│   ├── database/               # @owl/database — Prisma schema + migrations + seeds
 ├── scripts/                    # 工程护栏脚本（typecheck/lint/arch/残渣扫描/冒烟/发版/状态文档）
 ├── docs/                       # PROJECT_STATE.md 状态快照 + decisions/ 决策日志（见 AGENTS.md 第八节）
 ├── .github/workflows/          # CI/CD（cd.yml）
@@ -33,12 +36,10 @@ owl/
 ### 分层依赖（严格单向）
 
 ```
-packages/shared  → 类型 + 常量 + 错误码（DM 层）
-packages/database → Prisma 数据契约（依赖 shared）
-
-api-service 内聚圆（DDD）：
+packages/shared / permission / database  → 类型、常量、权限码表、数据契约
+api-service 内聚圆（模块级 DDD）：
 presentation → application → domain ← infrastructure
-（controller/dto → use-case → 纯业务模型 ← Prisma/SDK 实现）
+（controller/dto → service → 纯业务模型 ← Prisma/SDK 实现）
 
 apps 之间禁止互依；共享代码一律下沉到 packages/*。
 依赖方向由 scripts/check-architecture.sh 强制校验，违规即 ERROR 阻断。
@@ -183,10 +184,13 @@ Push main 且 package.json 有变化后 `cd.yml` 自动触发（`detect-release`
 
 ## 五、阶段规划
 
-| 阶段                    | 内容                                    | 里程碑     |
-| ----------------------- | --------------------------------------- | ---------- |
-| Phase 0 工程脚手架      | monorepo / 护栏 / CI / 3 前端骨架       | M1 已完成  |
-| Phase 1 认证与权限底座  | 飞书登录 / RBAC / 审计 / SSO            | M2         |
-| Phase 2 业务主干 MVP    | 13 阶段流水线 / 管道看板 / 利润聚合     | M3（关键） |
-| Phase 3 底座补全 + Cron | notification/file/config/mcp + 定时同步 | M4         |
-| Phase 4 部署与交付      | K3s 部署 / 全链路冒烟 / 文档            | M5         |
+| 期  | 内容                                                                                                   | 状态   |
+| --- | ------------------------------------------------------------------------------------------------------ | ------ |
+| P1  | 系统基座：权限码表单源 + 四层校验、角色授权、飞书组织同步、登录兜底、飞书审批记录、编号/导出/字典/审计 | 进行中 |
+| P2  | 人才中心：招聘面试、员工档案、异动、免打卡考勤、薪酬、绩效三档、奖惩、员工自助                         | 规划   |
+| P3  | 财务一期：记账内核、资金出纳、报销与费用（飞书填单解析）、工资/社保/个税入账                           | 规划   |
+| P4  | 业务链路：立项 → 研发设计 → 手办样 → 供应链 → 营销 → TikTok Shop 模拟数据，跑通即可                    | 规划   |
+
+历史基线：Phase 0 工程护栏、Phase 1 飞书登录与 RBAC、S0 支撑域底座、S1 认可中心、B1 md 文档库、M0-v1 产品线骨架。
+
+详细批次、验收与二期范围见 `docs/implementation-plan.md`。

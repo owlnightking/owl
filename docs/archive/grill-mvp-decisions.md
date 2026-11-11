@@ -1,5 +1,11 @@
 # Owl 业务 MVP 决策集（Grilling 输出）
 
+> **状态：已废弃（历史记录）**
+> 本文件的 13 阶段单对象流水线、全员平权权限口径已被后续决策取代：
+> 实施顺序与范围以 `docs/decisions/013-p1-p4-scope-and-order.md` + `docs/implementation-plan.md` 为准；
+> 产品线模型以 `docs/decisions/011-product-line-pipeline.md` 为准；权限以 `docs/decisions/012-permission-registry.md` 为准。
+> 保留本文件仅用于追溯 2026-08 的 MVP 讨论，不再作为开发依据。
+
 > 来源：grilling 会话（2026-08-12）
 > 输入：`跨境电商三支柱运营系统-战略与技术蓝图.md`（MD，业务流程为主）+ 飞书「Owl 项目实施计划」（架构）
 > 定位：本次 MVP 的最小闭环定义。MD 为战略远景，本文件为 MVP 落地裁剪。

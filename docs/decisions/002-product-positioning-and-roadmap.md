@@ -21,4 +21,4 @@
   - owl-web 近期仅承载角色裁剪下的既有页面可见性，不新接支撑域模块；cron 保留现有任务中心基础（表单同步 / 数据监控探针后续挂载）
   - 需同步 `docs/implementation-plan.md` 与 `docs/PROJECT_STATE.md`；后续新增支撑域模块与数据模型（认可 / 人才 / 知识库 / 文档 / 统计 / 监控等）时同 commit 更新状态文档
   - 风险：需求仍在演进，里程碑内细则（如徽章图片素材、体力 / 币额参数、知识库分类）在对应阶段开工前再确认，以 system-config / field-config 承载可调部分
-- 关联：`docs/implementation-plan.md`、`docs/PROJECT_STATE.md`、原 `docs/grill-mvp-decisions.md`（主领域决策集，远期仍适用）、apps/mobile-web、apps/admin-web
+- 关联：`docs/implementation-plan.md`、`docs/PROJECT_STATE.md`、原 `docs/archive/grill-mvp-decisions.md`（主领域决策集，远期仍适用）、apps/mobile-web、apps/admin-web

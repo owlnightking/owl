@@ -6,26 +6,33 @@
 
 ## 当前阶段
 
-- 领域地图（ADR 002）：主领域 = 自研产品跨境电商 13 阶段流水线（远期保留）；组织支撑域 = 认可中心/人才中心/智能客服+知识库/基础配置监控（当前主线）；副业域 = 付费知识 md 文档库
-- 开发顺序：先组织支撑域、再副业域、后主领域（详见 implementation-plan）
-- 里程碑 2'（当前目标）：S0 支撑域底座 ✅ 已完成；S1 认可中心闭环 ✅ 已完成（Badge/Recognition/Coin/Stamina/Product/Exchange 完整 DDD 模块 + admin 4 页面 + mobile Feed/消息/商城/我的 + 种子权限 + API 端到端验证）
-- Phase 1 (M1') 认证与权限底座：代码基本完成，验收项未全部勾选
-- 后续阶段：S2 人才中心 / S3 智能客服+知识库 / S4 基础配置监控 —— 未开始；B1 付费知识核心功能已完成
-- 部署：K3s 已部署；mobile-web（飞书 OAuth，k8s NodePort 9263）已上线但页面全 mock
-- CI/CD：CD 为 main push 触发（paths 命中 package.json + 版本门禁），`v*` tag 仅作版本标记
+- 实施顺序（ADR 013，唯一排期事实源 `docs/implementation-plan.md`）：**P1 系统基座 → P2 人才中心 → P3 财务一期 → P4 业务链路跑通**；SaaS 后置。
+- 当前目标：**P1-1 权限码表统一 + 角色授权**（实施中）。P1 其余批次：组织同步修正、登录兜底、审批记录同步、编号/导出/字典/审计小件。
+- 已完成历史基线：Phase 0 工程护栏与 CI/CD；Phase 1 飞书 OAuth + JWT 双 token；S0 支撑域底座（Prisma 单例 / system-config / permission / notification / file / 二级菜单 / mock 登录）；S1 认可中心闭环（Badge/Recognition/Coin/Stamina/Product/Exchange）；B1 付费知识 md 文档库；M0-v1 产品线骨架（IPD 五期 + SPU/SKU + GTM/ISC/VOC + 汇率）。
+- P2 人才中心 / P3 财务一期 / P4 业务链路：未开始，范围见 implementation-plan。
+- 部署：K3s 已部署；mobile-web（飞书 OAuth，k8s NodePort 9263）已上线但页面全 mock。
+- CI/CD：CD 为 main push 触发（paths 命中 package.json + 版本门禁），`v*` tag 仅作版本标记。
 
 ## 已知缺口（开工前确认，做完一项划一项）
 
 - [x] ~~PrismaClient 每模块各自 new，模块多时需收敛全局单例~~（S0 T1 已完成）
-- [x] ~~permission 模块空壳，无按钮级四层 RBAC~~（S0 T4 已完成：CRUD + controller + 集成）
+- [x] ~~permission 模块空壳，无按钮级四层 RBAC~~（S0 T4 已完成 CRUD；P1-1 补齐码表单源与四层校验）
 - [x] ~~admin 菜单仅一级平铺，缺一级分组 + 二级菜单及按角色权限派生渲染~~（S0 T7 已完成）
 - [x] ~~notification / file / system-config 空壳~~（S0 T2/T5/T6 已完成：CRUD + 集成）
 - [x] ~~本地飞书应用未配置，SSO 本地无法真实跑通~~（S0 T3 mock 登录通道已完成）
-- [x] ~~组织支撑域与副业域领域模块均未建~~（S1 认可中心模块已完成：Badge/Recognition/Coin/Stamina/Product/Exchange；B1 付费知识 md 文档库已完成）
+- [x] ~~组织支撑域与副业域领域模块均未建~~（S1 认可中心与 B1 md 文档库已完成）
 - [x] ~~mobile-web 四个 Tab 与个人中心全为 mock 数据~~（S1 认可中心 Feed/消息/商城/我的已接入真实接口）
-- [ ] 测试覆盖仅 auth.use-case 1 个 spec，user/role/permission/system-config/notification/file 无单测
-- [ ] cron-service 仅 health + ScheduleModule，任务中心未建（人才表单同步 / 数据监控探针后续挂靠）
-- [ ] 主领域（13 阶段流水线）领域后移，project 模块空壳（M0 重启时建）
+- [ ] **P1-1** 权限码三套不一致：种子 21 个、后端 23 个、菜单 10 个；`system:user:read` 等菜单码在种子中不存在，管理台多数菜单对所有人不可见
+- [ ] **P1-1** `ipd` / `gtm` / `isc` / `voc` / `exchange-rate` / `md-doc` 接口零权限校验，任意登录用户可增删改
+- [ ] **P1-1** 前端无路由守卫、无按钮级权限组件；权限每次请求查库，角色变更不即时生效
+- [ ] **P1-2** 飞书组织同步只拉根部门一层、`replaceAll` 重建部门、用户缺工号/职务/职级/上级/入职日/在职状态、离职不处理、同步统计失真
+- [ ] **P1-3** 登录兜底未建：本地无此人不会实时拉飞书单人建号；离职/停用登录拦截未做
+- [ ] **P1-4** 飞书审批记录同步未建（定义 / 实例 / 时间线 / 表单字段）
+- [ ] **P1-5** 统一单据编号、Excel 导出、业务字典、越权与导出审计未建
+- [ ] 数据范围（本人/本部门/下级/全部）按口径暂不做；「我的」接口仍需按当前用户过滤
+- [ ] 单测覆盖低：user/role/permission/system-config/notification/file 缺少成功 + 失败路径
+- [ ] cron-service 任务中心未建（同步任务 / 审批轮询 / 失败告警待挂靠）
+- [ ] `project` 模块空壳：P4 并入 `ipd`，届时删除模块壳
 
 ## ### 自动 ### 应用清单
 
@@ -73,21 +80,26 @@
 
 ### 模块说明（人工维护，改代码时同步）
 
-| 模块          | 说明                                                                             |
-| ------------- | -------------------------------------------------------------------------------- |
-| auth          | 飞书 OAuth 登录 / JWT 双 token / Redis 会话与黑名单 / 无感刷新 / SSO Cookie      |
-| user          | 用户 CRUD、角色分配、启停用；本地 mock 登录切用户/角色通道列入 S0                |
-| role          | 角色 CRUD + 权限绑定                                                             |
-| permission    | 空壳 → S0 填实：权限点管理 API + 按钮级四层 RBAC 校验（菜单/页面/按钮/接口）     |
-| audit-log     | 全局写操作拦截器 → audit_log（操作日志，已有）                                   |
-| field-config  | 动态字段配置（已有）；候选人之类动态表单复用                                     |
-| notification  | 空壳 → S0 填实：内站消息（轮询拉取/已读/事件触发），移动端消息中心与审批通知依赖 |
-| file          | 空壳 → S0 填实：MinIO 预签名上传下载，桶规划（徽章/商品图/头像/md 附件）         |
-| system-config | 空壳 → S0 填实：可配参数（认可币额/体力上限等）+ 字典                            |
-| mcp           | 空壳 → S4：工具注册/会话/调用日志管理台                                          |
-| project       | 空壳 → M0（主领域 13 阶段流水线，远期重启）                                      |
-
-规划新增领域模块（S1 起，未建，落代码后由 update-state.sh 自动入上表）：recognition（徽章/认可贴/币账户/币流水/兑换单/商品）、talent（候选人/面试/员工档案）、knowledge（内部知识库）、paid-knowledge / md-doc（副业文档库）、usage-stats / push-monitor / data-monitor（S4）。
+| 模块          | 说明                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| auth          | 飞书 OAuth 登录 / JWT 双 token / Redis 会话与黑名单 / 无感刷新 / SSO Cookie；P1-1 增加超管与权限缓存 |
+| user          | 用户查询、角色分配、启停用；组织字段由飞书同步维护（P1-2）                                           |
+| role          | 角色 CRUD + 权限绑定；P1-1 角色页按模块分组勾选                                                      |
+| permission    | 权限点管理 + P1-1 单一注册表（`packages/permission`）派生种子/菜单/路由/按钮/接口                    |
+| audit-log     | 全局写操作拦截器 → audit_log；P1-5 增加越权与导出审计                                                |
+| field-config  | 动态字段配置；业务字典 P1-5 补齐                                                                     |
+| notification  | 内站消息（轮询拉取/已读/事件触发）；飞书机器人推送待补                                               |
+| file          | MinIO 预签名上传下载，桶规划（徽章/商品图/头像/md 附件）；P1-1 补上传权限                            |
+| system-config | 可配参数（认可币额/体力上限/绩效系数等）+ 字典                                                       |
+| system-log    | 系统日志查询（与 audit-log 分列）                                                                    |
+| exchange-rate | 汇率体系：cron 每日抓取 + 人工校验；菜单码 P1-1 修正                                                 |
+| ipd           | 产品线 / SPU / SKU / IPD 五期记录；P4 立项、设计、手办样主线                                         |
+| gtm           | campaign / KOL / 社群反馈 / 预售；P4 增加 tiktok_shop 平台与 SPU 关联                                |
+| isc           | 供应商 / 报价 / 生产批次 / 头程；P4 串联试单链路                                                     |
+| voc           | 工单（五渠道）；SLA/知识库二期                                                                       |
+| md-doc        | 付费知识文档库，已停止扩展                                                                           |
+| mcp           | 空壳，暂不投入                                                                                       |
+| project       | 空壳，P4 并入 `ipd` 后删除                                                                           |
 
 ## ### 自动 ### 数据模型
 

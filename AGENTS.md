@@ -10,6 +10,7 @@ pnpm lint             # ESLint（须经 pnpm 调用；脚本依赖 pnpm 注入 n
 pnpm format:check     # Prettier 格式校验
 pnpm arch:check       # 架构依赖方向 + 跨模块导入 + 文件行数（>1000 WARN / >1500 ERROR，均阻断）
 pnpm doc:check        # 文档新鲜度（PROJECT_STATE.md 是否落后于源码）
+pnpm doc:links        # 文档死链检查（docs/scripts/根级文档的本地引用必须存在）
 pnpm business:check   # 业务快照新鲜度（implementation-plan/decisions 有更新未同步快照 → ERROR）
 pnpm feature:check    # 业务特征规则（success 不在 vo 判断、filter 不返回 entity、id 生成放 domain）
 pnpm frontend:check   # 前端 UI 规则（详见第十二节）
@@ -17,8 +18,8 @@ pnpm backend:check    # 后端规范（详见第十三节）
 pnpm test             # 单元测试
 pnpm state:update     # 重新生成 PROJECT_STATE.md 自动段（改代码后必须跑）
 pnpm business:update  # 更新 business-snapshot.md 最近更新记录（改业务需求/计划后必须跑，可带摘要）
-pnpm verify:quick     # = typecheck → lint → format:check → arch:check → doc:check → business:check
-                      #   → scan-ai-residue → feature:check → frontend:check → backend:check → test
+pnpm verify:quick     # = typecheck → lint → format:check → arch:check → doc:check → doc:links
+                      #   → business:check → scan-ai-residue → feature:check → frontend:check → backend:check → test
 pnpm verify:full      # = verify:quick + smoke
 ```
 
@@ -89,9 +90,10 @@ apps/cron-service/src/modules/<feature>/   同上
 | check-backend-rules.sh      | 后端规范检查（自增 id / 软删除 / 按 id 路由 / Swagger，详见第十三节，`pnpm backend:check`） |
 | smoke.sh                    | 冒烟验收（构建后启动心跳检查）                                                              |
 | release.sh                  | 版本发布（verify:quick → version bump → commit，失败自动回滚）                              |
-| verify.sh                   | 完整验证流水线聚合（typecheck → lint → format → arch → doc → 残渣 → test）                  |
+| verify.sh                   | 完整验证流水线聚合（typecheck → lint → format → arch → doc → doc-links → 残渣 → test）      |
 | update-state.sh             | 重新生成 `docs/PROJECT_STATE.md` 自动段（扫描源码，脚本管事实 / 人管"为什么"）              |
 | check-doc-freshness.sh      | 代码改动但状态文档未同步 → ERROR（`--staged` 用于 pre-commit 增量检查；版本 bump 豁免）     |
+| check-doc-links.mjs         | 文档本地引用死链检查（`docs/`、`scripts/`、根级 README/AGENTS；`pnpm doc:links`）           |
 | update-business-snapshot.sh | 更新 `docs/business-snapshot.md`「最近更新」段并格式化（业务需求/计划变化后运行）           |
 | check-business-freshness.sh | 计划/决策文档改动但业务快照未同步 → ERROR（`--staged` 用于 pre-commit 增量检查）            |
 
@@ -128,27 +130,61 @@ apps/cron-service/src/modules/<feature>/   同上
 3. **husky pre-commit**（任一失败即阻断，完整步骤见 `.husky/pre-commit`）：
    检测源码改动 → `update-state.sh` 重生成并暂存 `PROJECT_STATE.md` → `prettier --check` 暂存文件 →
    `check-staged-typecheck.sh` → `scan-ai-residue.sh --staged` → `check-doc-freshness.sh --staged` →
-   `check-business-freshness.sh --staged`（计划/决策改动需同 commit 同步 `business-snapshot.md`）→
+   `check-doc-links.mjs` → `check-business-freshness.sh --staged`（计划/决策改动需同 commit 同步 `business-snapshot.md`）→
    `check-staged-feature-rules.sh` → `check-frontend-rules.sh` → `check-backend-rules.sh`。
    pre-commit **不跑** lint / test，二者由 **pre-push** 的 `pnpm verify:quick` 全量执行。
 4. 提交信息遵循约定式提交 `feat/fix/refactor/chore/docs/test/...`。
 5. **发版（version bump）提交不带版本号**：`chore: bump <app> version`（单 app）或 `chore: bump frontend versions`（多前端一次提交）。禁止 `to 0.1.29` 这类带具体版本号的后缀。`release.sh` 会在 bump commit 后自动打版本 tag（`v<app>-<version>` 单 app / `v<version>` all）仅作版本标记；**CD 监听 main push 的 `package.json` 变化，由 `detect-release` 版本门禁决定是否部署（非版本变化自动跳过）**。
 6. **禁止在代码中硬编码密钥/口令**；统一走环境变量（.env*，不入库）。
 
-## 八、文档新鲜度（Documentation Harness）
+## 八、文档防漂移（Documentation Harness）
 
-**核心原则：文档分四层，各有防漂移机制；任何代码改动必须同 commit 更新状态文档，任何业务需求/计划变化必须同 commit 更新业务快照。**
+**核心原则：每类事实只有一个权威来源；代码改动必须同 commit 更新状态文档，业务需求/计划变化必须同 commit 更新业务快照，文档互引必须真实存在。**
+
+### 8.1 权威顺序（冲突时从上到下）
+
+1. `docs/implementation-plan.md` — **排期、范围、验收的唯一事实源**。
+2. `docs/business-snapshot.md` — 业务功能现状 + 最新计划（人读快照）。
+3. `docs/decisions/README.md` + `docs/decisions/NNN-*.md` — 决策记录；**ADR 冲突以编号更大者为准**，索引中的状态标注是最终口径。
+4. `docs/PROJECT_STATE.md` — 工程状态快照（自动段是事实，人工段是当前阶段/缺口/模块说明）。
+5. `docs/engineering-playbook.md` — 方法层（怎么排期、怎么验收），不定义做什么。
+6. `docs/archive/**` — 已废弃历史文档，**不得作为任何实现依据**。
+
+`docs/frontend-rules.md` / `docs/backend-rules.md` 是各端规则 SSOT，与 `AGENTS.md` 同等有效；冲突时以更具体的那份为准，并修正另一份。
+
+### 8.2 四层文档与维护责任
 
 1. **`docs/PROJECT_STATE.md` — 工程状态快照**：AI/人开工前先读这一个文件拿源码全局，避免重扫全仓。`### 自动 ###` 段由 `scripts/update-state.sh` 扫描源码生成（**禁止手改**），人工只维护"当前阶段 / 已知缺口 / 模块说明"三处。**pre-commit 检测到源码改动会自动重生成并暂存该文档**；人工维护段（如已知缺口）需手动编辑，随改动提交。也可随时 `pnpm state:update` 手动刷新。
 2. **`docs/business-snapshot.md` — 业务功能现状 + 最新计划（快照，AI 读）**：记录各业务功能现状（规则/角色/入口/状态）与最新计划/排期，随业务需求与计划变化更新（不随源码）。「最近更新」段由 `scripts/update-business-snapshot.sh` 维护（**禁止手改**）；功能/计划内容人工维护。计划或决策文档更新后必须同步本文件并随改动提交。也可随时 `pnpm business:update "变更摘要"` 手动记录。
-3. **`docs/decisions/NNN-<slug>.md` — 决策日志（ADR-lite）**：只追加、永不修改；决策变化就新开一条更高编号记录变更。字段：日期 / 背景 / 决策 / 后果 / 关联。
-4. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则与计划层**：低频更新；implementation-plan 变化须同步业务快照。
+3. **`docs/decisions/NNN-<slug>.md` — 决策日志（ADR-lite）**：只追加、永不修改；决策变化就新开一条更高编号记录变更。字段：日期 / 背景 / 决策 / 后果 / 关联。**新增 ADR 必须同步更新 `docs/decisions/README.md` 索引**（编号 / 标题 / 状态 / 取代关系）。
+4. **`AGENTS.md` / `README.md` / `docs/implementation-plan.md` — 稳定规则与计划层**：低频更新；implementation-plan 变化须同步业务快照与下节清单。
 
-**防漂移门禁**：
+### 8.3 改「期次 / 范围 / 顺序」必须同步的清单
+
+任何 P1–P4 范围或顺序调整，必须一次性改完（缺一即视为文档漂移）：
+
+- [ ] 新开更高编号 ADR（不改旧 ADR 正文），更新 `docs/decisions/README.md` 索引状态
+- [ ] `docs/implementation-plan.md`
+- [ ] `docs/business-snapshot.md`（`pnpm business:update "摘要"`）
+- [ ] `docs/PROJECT_STATE.md` 人工段（当前阶段 / 已知缺口）
+- [ ] `README.md` 第五节阶段规划
+- [ ] 其它引用旧口径的文档（`grep` 关键词 + `pnpm doc:links` 自查）
+
+### 8.4 废弃与归档规则
+
+- **整份文档作废**：移到 `docs/archive/`，顶部写明「已废弃 + 取代它的文档」，并更新 `docs/decisions/README.md` 归档表与全部引用。
+- **局部结论作废**：旧 ADR 原文不动，新开更高编号 ADR，并在索引标注「部分取代 / 已废弃」。
+- 活跃目录（`docs/` 根与 `docs/decisions/`）**不允许保留已废弃文档**。
+- 删除文档前先 `grep -rn` 清理引用，`pnpm doc:links` 必须通过。
+
+### 8.5 防漂移门禁
 
 - `scripts/check-doc-freshness.sh` 对比源码与 `PROJECT_STATE.md` 的最近提交时间，源码新 → ERROR（提示运行 `pnpm state:update`）；pre-commit 增量检查暂存区。
 - `scripts/check-business-freshness.sh` 对比 `docs/implementation-plan.md` + `docs/decisions/` 与 `docs/business-snapshot.md` 的最近提交时间，计划/决策新 → ERROR（提示运行 `pnpm business:update`）；pre-commit 增量检查暂存区。
+- `scripts/check-doc-links.mjs`（`pnpm doc:links`）校验 `docs/`、`scripts/`、根级 `README.md` / `AGENTS.md` 的本地引用（内联链接 + 反引号路径）；失效即 ERROR，glob / 占位符 / gitignore 文件跳过。pre-commit 与 `verify:quick` 均执行。
 - **版本 bump（仅 package.json）豁免**。新增扫描/校验脚本时同步更新本条与 CI。
+
+> 脚本只能拦住「时间过期」与「引用失效」，**拦不住语义写错**（例如把已确认的 P2 写成冻结）。结论正确性由 8.1 权威顺序 + 8.3 同步清单人工保证，评审时必须对照这两节。
 
 ## 九、生产环境 Secret 管理（SOPS + age）
 

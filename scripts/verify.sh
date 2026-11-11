@@ -21,6 +21,9 @@ pnpm arch:check || exit 1
 step "doc-freshness"
 pnpm doc:check || exit 1
 
+step "doc-links"
+pnpm doc:links || exit 1
+
 step "ai-residue"
 bash scripts/scan-ai-residue.sh || exit 1
 
