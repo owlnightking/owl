@@ -8,6 +8,7 @@ import type {
   PermissionRepositoryPort,
   PermissionUpdateInput,
 } from "../domain/permission.ports";
+import { splitPermissionCode } from "../domain/permission.ports";
 
 type PermissionRow = {
   id: number;
@@ -195,13 +196,4 @@ export class PrismaPermissionRepository implements PermissionRepositoryPort {
     });
     return rows.map((row) => row.permissionId);
   }
-}
-
-/** 权限码 `<resource>:<action>`，resource 可含冒号（如 recognition:badge:read） */
-export function splitPermissionCode(code: string): { resource: string; action: string } {
-  const index = code.lastIndexOf(":");
-  if (index <= 0) {
-    return { resource: code, action: "read" };
-  }
-  return { resource: code.slice(0, index), action: code.slice(index + 1) };
 }

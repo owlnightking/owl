@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { Notification, Pagination, Spin, Table, Tag, Tooltip } from "@arco-design/web-react";
-import { APP_ROUTES } from "@owl/permission";
+import { PERMISSION_REGISTRY, getAppName } from "@owl/permission";
 import { get } from "../api/client";
 
 interface PermissionItem {
@@ -46,17 +46,16 @@ export function PermissionsPage() {
 
   const syncedCodes = new Set(backendPermissions.map((item) => item.code));
 
-  const allRows = APP_ROUTES.flatMap((app) =>
-    app.routes.map((route) => ({
-      key: `${app.app}:${route.permission}`,
-      app: app.app,
-      appName: app.name,
-      name: route.name,
-      path: route.path,
-      permission: route.permission,
-      synced: syncedCodes.has(route.permission),
-    }))
-  );
+  // PERMISSION_REGISTRY 已把 APP_ROUTES 的 nodes 树展平为带 code 的权限点
+  const allRows = PERMISSION_REGISTRY.map((item) => ({
+    key: `${item.app}:${item.code}`,
+    app: item.app,
+    appName: getAppName(item.app),
+    name: item.name,
+    path: item.path ?? "",
+    permission: item.code,
+    synced: syncedCodes.has(item.code),
+  }));
   const unsyncedCount = allRows.filter((row) => !row.synced).length;
   const pagedRows = allRows.slice((page - 1) * pageSize, page * pageSize);
 

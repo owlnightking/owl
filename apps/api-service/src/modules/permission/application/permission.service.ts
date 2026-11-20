@@ -9,8 +9,8 @@ import {
   type PermissionTreeNode,
   type PermissionTreeResult,
   type PermissionUpdateInput,
+  splitPermissionCode,
 } from "../domain/permission.ports";
-import { splitPermissionCode } from "../infrastructure/prisma-permission.repository";
 
 /** 手工节点编码：模块:资源:动作，允许额外的中段（如 admin:users:tab:history） */
 const PERMISSION_CODE_PATTERN = /^[a-z][a-z0-9-]*(:[a-z][a-z0-9-]*)+$/;
