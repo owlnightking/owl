@@ -4,36 +4,31 @@
  * 结构：标题区 → 筛选区（条件网格 + 搜索/重置贴最后一行最右）→ 列表区（Spin 加载、
  * 分页默认 10 条 + 总数 + 每页条数、左端固定「姓名」、右端固定「操作」、超长截断）。
  *
- * 接口只支持「列表 / 分配角色 / 启停用」：没有新增、删除与详情接口，因此不设操作行，
+ * 接口只支持「列表 / 用户组 / 启停用」：角色绑定在用户组上（见 user-group 模块），
+ * 没有按用户的分配角色接口，也没有新增、删除与详情接口，因此不设操作行，
  * 操作列不放「删除」，详情直接展示列表行已有字段（不额外取数，抽屉内也不需要骨架屏）。
- * 编辑（分配角色）与详情共用右侧抽屉。
  */
 import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Descriptions,
   Drawer,
-  Form,
   Input,
   Notification,
   Pagination,
-  Select,
   Space,
   Spin,
   Table,
   Tag,
   Tooltip,
 } from "@arco-design/web-react";
-import { IconEdit, IconEye, IconLock, IconRefresh, IconSearch, IconUnlock } from "@arco-design/web-react/icon";
+import { IconEye, IconLock, IconRefresh, IconSearch, IconUnlock } from "@arco-design/web-react/icon";
 import { get, put } from "../api/client";
 import { PersonName } from "../components/PersonName";
 
 type UserStatus = "active" | "disabled";
 
-/** 右侧抽屉的两种用途：编辑（分配角色）/ 详情 */
-type DrawerMode = "edit" | "detail";
-
-interface UserRole {
+interface UserGroupBrief {
   id: number;
   code: string;
   name: string;
@@ -48,7 +43,7 @@ interface UserItem {
   status: UserStatus;
   lastLoginAt: string | null;
   createdAt: string;
-  roles: UserRole[];
+  groups: UserGroupBrief[];
 }
 
 interface UserPageData {
@@ -58,19 +53,6 @@ interface UserPageData {
   total: number;
 }
 
-interface RoleOption {
-  id: number;
-  code: string;
-  name: string;
-  isSystem: boolean;
-}
-
-interface UserFormValues {
-  name?: string;
-  roleIds?: number[];
-}
-
-const DRAWER_TITLE: Record<DrawerMode, string> = { edit: "分配角色", detail: "用户详情" };
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const STATUS_TEXT: Record<UserStatus, string> = { active: "启用", disabled: "禁用" };
@@ -90,10 +72,7 @@ export function UsersPage() {
   const [draftKeyword, setDraftKeyword] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
   const [loading, setLoading] = useState(true);
-  const [roleOptions, setRoleOptions] = useState<RoleOption[]>([]);
-  const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
   const [drawerRecord, setDrawerRecord] = useState<UserItem | null>(null);
-  const [form] = Form.useForm<UserFormValues>();
 
   const load = useCallback(async (currentPage: number, size: number, search: string) => {
     setLoading(true);
@@ -116,14 +95,6 @@ export function UsersPage() {
     void load(page, pageSize, appliedKeyword);
   }, [page, pageSize, appliedKeyword, load]);
 
-  useEffect(() => {
-    void get<RoleOption[]>("/roles/options")
-      .then(setRoleOptions)
-      .catch((error: unknown) => {
-        Notification.error({ title: "失败", content: error instanceof Error ? error.message : "角色列表加载失败" });
-      });
-  }, []);
-
   const handleSearch = () => {
     setAppliedKeyword(draftKeyword);
     setPage(1);
@@ -135,34 +106,12 @@ export function UsersPage() {
     setPage(1);
   };
 
-  const openDrawer = (mode: DrawerMode, user: UserItem) => {
-    setDrawerMode(mode);
+  const openDetail = (user: UserItem) => {
     setDrawerRecord(user);
-    if (mode === "detail") {
-      return;
-    }
-    form.resetFields();
-    form.setFieldsValue({ roleIds: user.roles.map((role) => role.id) });
   };
 
   const closeDrawer = () => {
-    setDrawerMode(null);
     setDrawerRecord(null);
-  };
-
-  const saveRoles = async () => {
-    const values = await form.validate();
-    if (!drawerRecord) {
-      return;
-    }
-    try {
-      await put<void>(`/users/${drawerRecord.id}/roles`, { roleIds: values.roleIds ?? [] });
-      Notification.success({ title: "成功", content: "角色已更新" });
-      closeDrawer();
-      void load(page, pageSize, appliedKeyword);
-    } catch (error) {
-      Notification.error({ title: "失败", content: error instanceof Error ? error.message : "保存失败" });
-    }
   };
 
   const toggleStatus = async (user: UserItem) => {
@@ -213,17 +162,17 @@ export function UsersPage() {
         ),
     },
     {
-      title: "角色",
-      dataIndex: "roles",
+      title: "用户组",
+      dataIndex: "groups",
       width: 220,
-      render: (roles: UserRole[]) =>
-        roles.length === 0 ? (
+      render: (groups: UserGroupBrief[]) =>
+        groups.length === 0 ? (
           <span className="text-gray-400">未分配</span>
         ) : (
           <Space>
-            {roles.map((role) => (
-              <Tag key={role.id} color="arcoblue">
-                {role.name}
+            {groups.map((group) => (
+              <Tag key={group.id} color="arcoblue">
+                {group.name}
               </Tag>
             ))}
           </Space>
@@ -249,10 +198,7 @@ export function UsersPage() {
       render: (_: unknown, record: UserItem) => (
         <Space>
           <Tooltip content="详情">
-            <Button type="text" icon={<IconEye />} onClick={() => openDrawer("detail", record)} />
-          </Tooltip>
-          <Tooltip content="分配角色">
-            <Button type="text" icon={<IconEdit />} onClick={() => openDrawer("edit", record)} />
+            <Button type="text" icon={<IconEye />} onClick={() => openDetail(record)} />
           </Tooltip>
           {record.status === "active" ? (
             <Tooltip content="禁用">
@@ -319,54 +265,34 @@ export function UsersPage() {
         </div>
       </div>
 
-      {/* 5. 右侧抽屉：编辑（分配角色）/ 详情共用 */}
+      {/* 5. 右侧抽屉：详情（直接用列表行已有字段，没有单独的详情接口） */}
       <Drawer
-        visible={drawerMode !== null}
+        visible={drawerRecord !== null}
         placement="right"
         width={480}
-        title={drawerMode ? DRAWER_TITLE[drawerMode] : ""}
+        title="用户详情"
         unmountOnExit
-        footer={drawerMode === "detail" ? null : undefined}
-        onOk={saveRoles}
+        footer={null}
         onCancel={closeDrawer}
       >
-        {drawerMode === "detail" ? (
-          // 详情直接用列表行已有字段，没有单独的详情接口
-          <Descriptions
-            column={1}
-            data={[
-              { label: "姓名", value: <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} /> },
-              { label: "unionId", value: drawerRecord?.unionId ?? "-" },
-              { label: "邮箱", value: drawerRecord?.email ?? "-" },
-              {
-                label: "状态",
-                value: drawerRecord ? STATUS_TEXT[drawerRecord.status] : "-",
-              },
-              {
-                label: "角色",
-                value: drawerRecord?.roles.map((role) => role.name).join("、") || "未分配",
-              },
-              { label: "最近登录时间", value: formatTime(drawerRecord?.lastLoginAt ?? null) },
-              { label: "创建时间", value: drawerRecord?.createdAt ?? "-" },
-            ]}
-          />
-        ) : (
-          <Form form={form} layout="vertical">
-            <div className="mb-4">
-              <div className="mb-1 text-sm text-gray-500">姓名</div>
-              <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} size={32} />
-            </div>
-            <Form.Item label="角色" field="roleIds">
-              <Select mode="multiple" placeholder="选择角色" style={{ width: "100%" }}>
-                {roleOptions.map((role) => (
-                  <Select.Option key={role.id} value={role.id}>
-                    {role.name}（{role.code}）
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Form>
-        )}
+        <Descriptions
+          column={1}
+          data={[
+            { label: "姓名", value: <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} /> },
+            { label: "unionId", value: drawerRecord?.unionId ?? "-" },
+            { label: "邮箱", value: drawerRecord?.email ?? "-" },
+            {
+              label: "状态",
+              value: drawerRecord ? STATUS_TEXT[drawerRecord.status] : "-",
+            },
+            {
+              label: "用户组",
+              value: drawerRecord?.groups.map((group) => group.name).join("、") || "未分配",
+            },
+            { label: "最近登录时间", value: formatTime(drawerRecord?.lastLoginAt ?? null) },
+            { label: "创建时间", value: drawerRecord?.createdAt ?? "-" },
+          ]}
+        />
       </Drawer>
     </div>
   );
