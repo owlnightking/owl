@@ -8,6 +8,7 @@ import { ApiExceptionFilter } from "./common/response/api-exception.filter";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UserModule } from "./modules/user/user.module";
 import { RoleModule } from "./modules/role/role.module";
+import { UserGroupModule } from "./modules/user-group/user-group.module";
 import { PermissionModule } from "./modules/permission/permission.module";
 import { AuditLogModule } from "./modules/audit-log/audit-log.module";
 import { NotificationModule } from "./modules/notification/notification.module";
@@ -34,6 +35,7 @@ import { VocModule } from "./modules/voc/voc.module";
     }),
     AuthModule,
     UserModule,
+    UserGroupModule,
     RoleModule,
     PermissionModule,
     AuditLogModule,

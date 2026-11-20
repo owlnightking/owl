@@ -49,9 +49,8 @@ function buildMocks() {
       roleCodes: [],
     })),
     list: vi.fn(async () => ({ items: [], total: 0 })),
-    assignRoles: vi.fn(async () => {}),
     updateLoginTime: vi.fn(async () => {}),
-    findPermissionCodes: vi.fn(async () => ["user:read"]),
+    findPermissionCodes: vi.fn(async () => ["system:user:read"]),
   };
   const oauthStateStore: OAuthStateStorePort = {
     save: vi.fn(async () => {}),

@@ -117,6 +117,9 @@ importers:
       '@owl/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@owl/permission':
+        specifier: workspace:*
+        version: link:../../packages/permission
       '@owl/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -450,6 +453,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@owl/permission':
+        specifier: workspace:*
+        version: link:../permission
       '@prisma/client':
         specifier: ^6.3.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)

@@ -1,6 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
+import { SUPER_PERMISSION_CODE } from "@owl/permission";
 import { PERMISSIONS_KEY, type AuthPrincipal } from "../presentation/auth.decorators";
 import { USER_REPOSITORY_PORT, type UserRepository } from "../domain/auth.ports";
 
@@ -24,6 +25,10 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException("missing auth principal");
     }
     const codes = await this.users.findPermissionCodes(req.auth.userId);
+    // 超管直接放行，避免每新增一个权限点都要同步给 admin 角色
+    if (codes.includes(SUPER_PERMISSION_CODE)) {
+      return true;
+    }
     const hasAll = required.every((code) => codes.includes(code));
     if (!hasAll) {
       throw new ForbiddenException("permission denied");

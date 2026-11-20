@@ -17,6 +17,7 @@
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/swagger": "^7.4.2",
     "@owl/database": "workspace:*",
+    "@owl/permission": "workspace:*",
     "@owl/shared": "workspace:*",
     "axios": "^1.19.0",
     "class-transformer": "^0.5.1",

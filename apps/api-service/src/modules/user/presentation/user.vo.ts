@@ -1,14 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { PageMetaVo } from "../../../common/response/page.vo";
 
-export class UserRoleVo {
-  @ApiProperty({ description: "角色 id", example: 1 })
+export class UserGroupBriefVo {
+  @ApiProperty({ description: "用户组 id", example: 1 })
   id!: number;
 
-  @ApiProperty({ description: "角色编码", example: "admin" })
+  @ApiProperty({ description: "用户组编码", example: "all_staff" })
   code!: string;
 
-  @ApiProperty({ description: "角色名称", example: "系统管理员" })
+  @ApiProperty({ description: "用户组名称", example: "全员" })
   name!: string;
 }
 
@@ -40,25 +40,11 @@ export class UserVo {
   @ApiProperty({ description: "创建时间", example: "2026-09-20T10:00:00.000Z" })
   createdAt!: Date;
 
-  @ApiProperty({ description: "角色列表", type: [UserRoleVo] })
-  roles!: UserRoleVo[];
+  @ApiProperty({ description: "所属用户组", type: [UserGroupBriefVo] })
+  groups!: UserGroupBriefVo[];
 }
 
 export class UserPageVo extends PageMetaVo {
   @ApiProperty({ description: "用户列表", type: [UserVo] })
   list!: UserVo[];
-}
-
-export class RoleOptionVo {
-  @ApiProperty({ description: "角色 id", example: 1 })
-  id!: number;
-
-  @ApiProperty({ description: "角色编码", example: "admin" })
-  code!: string;
-
-  @ApiProperty({ description: "角色名称", example: "系统管理员" })
-  name!: string;
-
-  @ApiProperty({ description: "是否系统内置", example: true })
-  isSystem!: boolean;
 }

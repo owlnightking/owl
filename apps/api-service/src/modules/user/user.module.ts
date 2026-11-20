@@ -1,13 +1,12 @@
 import { Module } from "@nestjs/common";
-import { UserService, USER_SERVICE } from "./application/user.service";
-import { UserController } from "./presentation/user.controller";
-import { PrismaUserRepository } from "./infrastructure/prisma-user.repository";
-import { USER_REPOSITORY } from "./domain/user.ports";
-import { RoleModule } from "../role/role.module";
 import { AuthModule } from "../auth/auth.module";
+import { UserService, USER_SERVICE } from "./application/user.service";
+import { USER_REPOSITORY } from "./domain/user.ports";
+import { PrismaUserRepository } from "./infrastructure/prisma-user.repository";
+import { UserController } from "./presentation/user.controller";
 
 @Module({
-  imports: [RoleModule, AuthModule],
+  imports: [AuthModule],
   controllers: [UserController],
   providers: [
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },

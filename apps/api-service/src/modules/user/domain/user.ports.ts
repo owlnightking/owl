@@ -1,3 +1,9 @@
+export interface UserGroupBrief {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface UserListItem {
   id: number;
   unionId: string;
@@ -8,7 +14,7 @@ export interface UserListItem {
   status: string;
   lastLoginAt: Date | null;
   createdAt: Date;
-  roles: { id: number; code: string; name: string }[];
+  groups: UserGroupBrief[];
 }
 
 export interface UserQuery {
@@ -20,11 +26,8 @@ export interface UserQuery {
 export interface UserRepositoryPort {
   list(query: UserQuery): Promise<{ items: UserListItem[]; total: number }>;
   findById(id: number): Promise<UserListItem | null>;
-  assignRoles(userId: number, roleIds: number[]): Promise<void>;
   updateStatus(userId: number, status: string): Promise<void>;
-  listRoles(): Promise<{ id: number; code: string; name: string; isSystem: boolean }[]>;
+  listGroups(): Promise<UserGroupBrief[]>;
 }
 
 export const USER_REPOSITORY = Symbol("USER_REPOSITORY");
-export const ROLE_REPOSITORY = Symbol("ROLE_REPOSITORY");
-export const PERMISSION_REPOSITORY = Symbol("PERMISSION_REPOSITORY");

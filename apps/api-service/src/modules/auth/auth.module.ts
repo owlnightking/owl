@@ -9,6 +9,7 @@ import { RedisSessionStore } from "./infrastructure/redis-session.store";
 import { JwtAuthGuard } from "./application/jwt-auth.guard";
 import { PermissionGuard } from "./application/permission.guard";
 import { RedisOAuthStateStore } from "./infrastructure/redis-oauth-state.store";
+import { PermissionCacheService } from "./infrastructure/permission-cache.service";
 import {
   AUTH_PORT,
   AUTH_SERVICE,
@@ -27,11 +28,20 @@ import {
     { provide: SESSION_STORE_PORT, useClass: RedisSessionStore },
     { provide: OAUTH_STATE_STORE_PORT, useClass: RedisOAuthStateStore },
     { provide: TOKEN_PORT, useClass: JwtTokenService },
+    PermissionCacheService,
     { provide: USER_REPOSITORY_PORT, useClass: PrismaUserRepository },
     { provide: AUTH_SERVICE, useClass: AuthService },
     JwtAuthGuard,
     PermissionGuard,
   ],
-  exports: [TOKEN_PORT, AUTH_SERVICE, SESSION_STORE_PORT, USER_REPOSITORY_PORT, JwtAuthGuard, PermissionGuard],
+  exports: [
+    TOKEN_PORT,
+    AUTH_SERVICE,
+    SESSION_STORE_PORT,
+    USER_REPOSITORY_PORT,
+    JwtAuthGuard,
+    PermissionGuard,
+    PermissionCacheService,
+  ],
 })
 export class AuthModule {}

@@ -24,7 +24,6 @@ export interface UserRepository {
   findByUnionId(unionId: string): Promise<StoredUser | null>;
   upsertFromFeishu(info: FeishuUserInfo): Promise<StoredUser>;
   list(options: { keyword?: string; page: number; pageSize: number }): Promise<{ items: StoredUser[]; total: number }>;
-  assignRoles(userId: number, roleIds: number[]): Promise<void>;
   updateLoginTime(userId: number): Promise<void>;
   findPermissionCodes(userId: number): Promise<string[]>;
 }

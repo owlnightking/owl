@@ -1,3 +1,15 @@
+export interface RolePermissionItem {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface RoleGroupItem {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface RoleItem {
   id: number;
   code: string;
@@ -5,7 +17,8 @@ export interface RoleItem {
   description: string | null;
   isSystem: boolean;
   createdAt: Date;
-  permissions: { id: number; code: string; name: string }[];
+  permissions: RolePermissionItem[];
+  groups: RoleGroupItem[];
 }
 
 export interface RoleCreateInput {
@@ -19,14 +32,6 @@ export interface RoleUpdateInput {
   name?: string;
   description?: string;
   permissionIds?: number[];
-}
-
-export interface PermissionItem {
-  id: number;
-  code: string;
-  name: string;
-  resource: string;
-  action: string;
 }
 
 export interface RoleQuery {
@@ -51,7 +56,8 @@ export interface RoleRepositoryPort {
   create(input: RoleCreateInput): Promise<RoleItem>;
   update(id: number, input: RoleUpdateInput): Promise<RoleItem | null>;
   delete(id: number): Promise<void>;
-  listPermissions(): Promise<PermissionItem[]>;
+  listGroups(roleId: number): Promise<RoleGroupItem[]>;
+  setGroups(roleId: number, groupIds: number[]): Promise<RoleGroupItem[]>;
 }
 
 export const ROLE_REPOSITORY = Symbol("ROLE_REPOSITORY");
@@ -60,8 +66,9 @@ export const ROLE_SERVICE = Symbol("ROLE_SERVICE");
 export interface RoleServicePort {
   list(query: RoleQuery): Promise<{ items: RoleItem[]; total: number }>;
   listOptions(): Promise<RoleOption[]>;
-  listPermissions(): Promise<PermissionItem[]>;
   create(input: RoleCreateInput): Promise<RoleItem>;
   update(id: number, input: RoleUpdateInput): Promise<RoleItem>;
   delete(id: number): Promise<void>;
+  getGroups(id: number): Promise<RoleGroupItem[]>;
+  setGroups(id: number, groupIds: number[]): Promise<RoleGroupItem[]>;
 }

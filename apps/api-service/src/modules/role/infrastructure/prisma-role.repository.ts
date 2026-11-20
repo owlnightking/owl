@@ -2,8 +2,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { DATABASE_CLIENT } from "@owl/database/provider";
 import type { PrismaClient } from "@owl/database";
 import type {
-  PermissionItem,
   RoleCreateInput,
+  RoleGroupItem,
   RoleItem,
   RoleOption,
   RoleQuery,
@@ -11,19 +11,27 @@ import type {
   RoleUpdateInput,
 } from "../domain/role.ports";
 
+type RoleRow = {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  createdAt: Date;
+  permissions: { permission: { id: number; code: string; name: string } }[];
+  groups: { group: { id: number; code: string; name: string } }[];
+};
+
+const ROLE_INCLUDE = {
+  permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
+  groups: { where: { deletedAt: null, group: { deletedAt: null } }, include: { group: true } },
+} as const;
+
 @Injectable()
 export class PrismaRoleRepository implements RoleRepositoryPort {
   constructor(@Inject(DATABASE_CLIENT) private readonly prisma: PrismaClient) {}
 
-  private toItem(raw: {
-    id: number;
-    code: string;
-    name: string;
-    description: string | null;
-    isSystem: boolean;
-    createdAt: Date;
-    permissions: { permission: { id: number; code: string; name: string } }[];
-  }): RoleItem {
+  private toItem(raw: RoleRow): RoleItem {
     return {
       id: raw.id,
       code: raw.code,
@@ -32,6 +40,7 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
       isSystem: raw.isSystem,
       createdAt: raw.createdAt,
       permissions: raw.permissions.map((p) => p.permission),
+      groups: raw.groups.map((g) => g.group),
     };
   }
 
@@ -43,16 +52,14 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
     const [rows, total] = await Promise.all([
       this.prisma.role.findMany({
         where,
-        include: {
-          permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-        },
+        include: ROLE_INCLUDE,
         orderBy: { createdAt: "asc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
       }),
       this.prisma.role.count({ where }),
     ]);
-    return { items: rows.map((r) => this.toItem(r)), total };
+    return { items: rows.map((row) => this.toItem(row)), total };
   }
 
   async listOptions(): Promise<RoleOption[]> {
@@ -60,15 +67,13 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
       where: { deletedAt: null },
       orderBy: { createdAt: "asc" },
     });
-    return rows.map((r) => ({ id: r.id, code: r.code, name: r.name, isSystem: r.isSystem }));
+    return rows.map((row) => ({ id: row.id, code: row.code, name: row.name, isSystem: row.isSystem }));
   }
 
   async findById(id: number): Promise<RoleItem | null> {
     const role = await this.prisma.role.findUnique({
       where: { id, deletedAt: null },
-      include: {
-        permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-      },
+      include: ROLE_INCLUDE,
     });
     return role ? this.toItem(role) : null;
   }
@@ -76,9 +81,7 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
   async findByCode(code: string): Promise<RoleItem | null> {
     const role = await this.prisma.role.findUnique({
       where: { code, deletedAt: null },
-      include: {
-        permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-      },
+      include: ROLE_INCLUDE,
     });
     return role ? this.toItem(role) : null;
   }
@@ -102,17 +105,16 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
           create: { roleId: target.id, permissionId },
         });
       }
-      return tx.role.findUniqueOrThrow({
-        where: { id: target.id },
-        include: {
-          permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-        },
-      });
+      return tx.role.findUniqueOrThrow({ where: { id: target.id }, include: ROLE_INCLUDE });
     });
     return this.toItem(role);
   }
 
   async update(id: number, input: RoleUpdateInput): Promise<RoleItem | null> {
+    const exists = await this.prisma.role.findUnique({ where: { id, deletedAt: null } });
+    if (!exists) {
+      return null;
+    }
     const role = await this.prisma.$transaction(async (tx) => {
       if (input.permissionIds) {
         await tx.rolePermission.updateMany({ where: { roleId: id }, data: { deletedAt: new Date() } });
@@ -125,29 +127,42 @@ export class PrismaRoleRepository implements RoleRepositoryPort {
         }
       }
       return tx.role.update({
-        where: { id, deletedAt: null },
+        where: { id },
         data: { name: input.name, description: input.description },
-        include: {
-          permissions: { where: { deletedAt: null, permission: { deletedAt: null } }, include: { permission: true } },
-        },
+        include: ROLE_INCLUDE,
       });
     });
     return this.toItem(role);
   }
 
   async delete(id: number): Promise<void> {
+    const now = new Date();
     await this.prisma.$transaction([
-      this.prisma.role.update({ where: { id }, data: { deletedAt: new Date() } }),
-      this.prisma.rolePermission.updateMany({ where: { roleId: id }, data: { deletedAt: new Date() } }),
-      this.prisma.userRole.updateMany({ where: { roleId: id }, data: { deletedAt: new Date() } }),
+      this.prisma.role.update({ where: { id }, data: { deletedAt: now } }),
+      this.prisma.rolePermission.updateMany({ where: { roleId: id }, data: { deletedAt: now } }),
+      this.prisma.roleGroup.updateMany({ where: { roleId: id }, data: { deletedAt: now } }),
     ]);
   }
 
-  async listPermissions(): Promise<PermissionItem[]> {
-    const rows = await this.prisma.permission.findMany({
-      where: { deletedAt: null },
-      orderBy: [{ resource: "asc" }, { action: "asc" }],
+  async listGroups(roleId: number): Promise<RoleGroupItem[]> {
+    const rows = await this.prisma.roleGroup.findMany({
+      where: { roleId, deletedAt: null, group: { deletedAt: null } },
+      include: { group: true },
     });
-    return rows.map((p) => ({ id: p.id, code: p.code, name: p.name, resource: p.resource, action: p.action }));
+    return rows.map((row) => ({ id: row.group.id, code: row.group.code, name: row.group.name }));
+  }
+
+  async setGroups(roleId: number, groupIds: number[]): Promise<RoleGroupItem[]> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.roleGroup.updateMany({ where: { roleId }, data: { deletedAt: new Date() } });
+      for (const groupId of groupIds) {
+        await tx.roleGroup.upsert({
+          where: { roleId_groupId: { roleId, groupId } },
+          update: { deletedAt: null },
+          create: { roleId, groupId },
+        });
+      }
+    });
+    return this.listGroups(roleId);
   }
 }

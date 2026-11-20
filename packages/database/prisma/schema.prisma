@@ -35,7 +35,7 @@ model User {
   updatedAt      DateTime @db.Timestamp(0)     @default(now()) @updatedAt @map("updated_at")
   deletedAt      DateTime? @db.Timestamp(0)    @map("deleted_at")
   department     Department?  @relation(fields: [departmentId], references: [feishuDepartmentId], onDelete: SetNull)
-  roles          UserRole[]
+  groups         UserGroupMember[]
   sessions       AuthSession[]
   auditLogs      AuditLog[]
   notifications  Notification[]
@@ -104,24 +104,79 @@ model Role {
   createdAt   DateTime @db.Timestamp(0)         @default(now()) @map("created_at")
   updatedAt   DateTime @db.Timestamp(0)         @default(now()) @updatedAt @map("updated_at")
   deletedAt   DateTime? @db.Timestamp(0)        @map("deleted_at")
-  users       UserRole[]
+  groups      RoleGroup[]
   permissions RolePermission[]
 
   @@map("role")
+}
+
+model UserGroup {
+  id          Int               @id @default(autoincrement())
+  code        String            @unique
+  name        String
+  description String?
+  isSystem    Boolean           @default(false) @map("is_system")
+  createdAt   DateTime @db.Timestamp(0)          @default(now()) @map("created_at")
+  updatedAt   DateTime @db.Timestamp(0)          @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @db.Timestamp(0)         @map("deleted_at")
+  members     UserGroupMember[]
+  roles       RoleGroup[]
+
+  @@map("user_group")
+}
+
+model UserGroupMember {
+  id        Int       @id @default(autoincrement())
+  groupId   Int       @map("group_id")
+  userId    Int       @map("user_id")
+  createdAt DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+  group     UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@map("user_group_member")
+}
+
+model RoleGroup {
+  id        Int       @id @default(autoincrement())
+  roleId    Int       @map("role_id")
+  groupId   Int       @map("group_id")
+  createdAt DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
+  updatedAt DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  group     UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, groupId])
+  @@index([groupId])
+  @@map("role_group")
 }
 
 model Permission {
   id          Int              @id @default(autoincrement())
   code        String           @unique
   name        String
+  type        String           @default("button") // directory / menu / page / tab / button
+  parentId    Int?             @map("parent_id")
+  app         String?
+  path        String?
+  sort        Int              @default(0)
+  source      String           @default("manual") // route / manual
   resource    String
   action      String
   description String?
   createdAt   DateTime @db.Timestamp(0)         @default(now()) @map("created_at")
   updatedAt   DateTime @db.Timestamp(0)         @default(now()) @updatedAt @map("updated_at")
   deletedAt   DateTime? @db.Timestamp(0)        @map("deleted_at")
+  parent      Permission?      @relation("PermissionTree", fields: [parentId], references: [id])
+  children    Permission[]     @relation("PermissionTree")
   roles       RolePermission[]
 
+  @@index([parentId])
+  @@index([app, type])
   @@map("permission")
 }
 
@@ -137,20 +192,6 @@ model RolePermission {
 
   @@unique([roleId, permissionId])
   @@map("role_permission")
-}
-
-model UserRole {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  roleId    Int       @map("role_id")
-  createdAt DateTime @db.Timestamp(0)  @default(now()) @map("created_at")
-  updatedAt DateTime @db.Timestamp(0)  @default(now()) @updatedAt @map("updated_at")
-  deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, roleId])
-  @@map("user_role")
 }
 
 model AuthSession {

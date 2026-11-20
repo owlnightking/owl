@@ -25,7 +25,7 @@ import { IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } 
 import { ok, page } from "../../../common/response/api-response";
 import { JwtAuthGuard, PermissionGuard, RequirePermission } from "../../auth/index";
 import { ROLE_SERVICE, type RoleServicePort } from "../domain/role.ports";
-import { RoleOptionVo, RolePageVo, RolePermissionVo, RoleVo } from "./role.vo";
+import { RoleGroupVo, RoleOptionVo, RolePageVo, RoleVo } from "./role.vo";
 
 class ListRolesQueryDto {
   @ApiPropertyOptional({ description: "角色编码 / 名称关键字", example: "运营" })
@@ -40,13 +40,13 @@ class ListRolesQueryDto {
   @Min(1)
   page: number = 1;
 
-  @ApiPropertyOptional({ description: "每页条数", example: 10, default: 10 })
+  @ApiPropertyOptional({ description: "每页条数", example: 100, default: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
-  pageSize: number = 10;
+  @Max(200)
+  pageSize: number = 100;
 }
 
 class CreateRoleDto {
@@ -96,6 +96,14 @@ class UpdateRoleDto {
   permissionIds?: number[];
 }
 
+class SetRoleGroupsDto {
+  @ApiProperty({ description: "用户组 id 列表", type: [Number], example: [1, 2] })
+  @IsArray()
+  @Type(() => Number)
+  @IsInt({ each: true })
+  groupIds!: number[];
+}
+
 @ApiTags("角色管理")
 @Controller("roles")
 @UseGuards(JwtAuthGuard, PermissionGuard)
@@ -103,7 +111,7 @@ export class RoleController {
   constructor(@Inject(ROLE_SERVICE) private readonly roleService: RoleServicePort) {}
 
   @Get()
-  @RequirePermission("role:read")
+  @RequirePermission("system:role:read")
   @ApiOperation({ summary: "角色分页列表" })
   @ApiOkResponse({ description: "角色分页列表", type: RolePageVo })
   async list(@Query() query: ListRolesQueryDto) {
@@ -112,24 +120,33 @@ export class RoleController {
   }
 
   @Get("options")
-  @RequirePermission("role:read")
+  @RequirePermission("system:role:read")
   @ApiOperation({ summary: "角色下拉选项（不分页）" })
   @ApiOkResponse({ description: "角色下拉选项", type: [RoleOptionVo] })
   async options() {
     return ok(await this.roleService.listOptions());
   }
 
-  @Get("permissions")
-  @RequirePermission("role:read")
-  @ApiOperation({ summary: "权限下拉选项" })
-  @ApiOkResponse({ description: "权限列表", type: [RolePermissionVo] })
-  async permissions() {
-    const items = await this.roleService.listPermissions();
-    return ok(items);
+  @Get(":id/groups")
+  @RequirePermission("system:role:read")
+  @ApiOperation({ summary: "角色已绑定的用户组" })
+  @ApiParam({ name: "id", description: "角色 id", example: 1 })
+  @ApiOkResponse({ description: "用户组列表", type: [RoleGroupVo] })
+  async groups(@Param("id", ParseIntPipe) id: number) {
+    return ok(await this.roleService.getGroups(id));
+  }
+
+  @Put(":id/groups")
+  @RequirePermission("system:role:grant")
+  @ApiOperation({ summary: "绑定角色到用户组" })
+  @ApiParam({ name: "id", description: "角色 id", example: 1 })
+  @ApiOkResponse({ description: "用户组列表", type: [RoleGroupVo] })
+  async setGroups(@Param("id", ParseIntPipe) id: number, @Body() dto: SetRoleGroupsDto) {
+    return ok(await this.roleService.setGroups(id, dto.groupIds));
   }
 
   @Post()
-  @RequirePermission("role:write")
+  @RequirePermission("system:role:create")
   @ApiOperation({ summary: "新建角色" })
   @ApiCreatedResponse({ description: "新建成功", type: RoleVo })
   async create(@Body() dto: CreateRoleDto) {
@@ -138,7 +155,7 @@ export class RoleController {
   }
 
   @Put(":id")
-  @RequirePermission("role:write")
+  @RequirePermission("system:role:update")
   @ApiOperation({ summary: "编辑角色" })
   @ApiParam({ name: "id", description: "主键 id", example: 1 })
   @ApiOkResponse({ description: "编辑成功", type: RoleVo })
@@ -148,7 +165,7 @@ export class RoleController {
   }
 
   @Delete(":id")
-  @RequirePermission("role:write")
+  @RequirePermission("system:role:delete")
   @ApiOperation({ summary: "删除角色" })
   @ApiParam({ name: "id", description: "主键 id", example: 1 })
   @ApiOkResponse({ description: "删除成功" })

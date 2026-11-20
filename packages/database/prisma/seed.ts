@@ -1,4 +1,5 @@
 import { PrismaClient } from "../src/generated";
+import { PERMISSION_REGISTRY } from "@owl/permission";
 
 const prisma = new PrismaClient();
 
@@ -20,65 +21,21 @@ const PRODUCT_PRICES = {
   MONITOR_STAND: { price: 600, stock: 25 },
 } as const;
 
-const PERMISSIONS = [
-  { code: "user:read", name: "查看用户", resource: "user", action: "read" },
-  { code: "user:write", name: "管理用户", resource: "user", action: "write" },
-  { code: "role:read", name: "查看角色", resource: "role", action: "read" },
-  { code: "role:write", name: "管理角色", resource: "role", action: "write" },
-  { code: "project:read", name: "查看项目", resource: "project", action: "read" },
-  { code: "project:write", name: "管理项目", resource: "project", action: "write" },
-  { code: "system-config:read", name: "查看系统配置", resource: "system-config", action: "read" },
-  { code: "system-config:write", name: "管理系统配置", resource: "system-config", action: "write" },
-  { code: "recognition:badge:read", name: "查看徽章", resource: "recognition:badge", action: "read" },
-  { code: "recognition:badge:write", name: "管理徽章", resource: "recognition:badge", action: "write" },
-  { code: "recognition:recognition:read", name: "查看认可", resource: "recognition:recognition", action: "read" },
-  { code: "recognition:recognition:write", name: "管理认可", resource: "recognition:recognition", action: "write" },
-  { code: "recognition:recognition:approve", name: "审批认可", resource: "recognition:recognition", action: "approve" },
-  { code: "recognition:recognition:create", name: "发起认可", resource: "recognition:recognition", action: "create" },
-  { code: "recognition:recognition:like", name: "点赞认可", resource: "recognition:recognition", action: "like" },
-  { code: "recognition:product:read", name: "查看商品", resource: "recognition:product", action: "read" },
-  { code: "recognition:product:write", name: "管理商品", resource: "recognition:product", action: "write" },
-  { code: "recognition:exchange:read", name: "查看兑换单", resource: "recognition:exchange", action: "read" },
-  { code: "recognition:exchange:write", name: "管理兑换单", resource: "recognition:exchange", action: "write" },
-  { code: "recognition:exchange:approve", name: "审批兑换单", resource: "recognition:exchange", action: "approve" },
-  { code: "recognition:exchange:create", name: "发起兑换", resource: "recognition:exchange", action: "create" },
-];
+const SUPER_PERMISSION = { code: "system:super", name: "超级管理员", resource: "system", action: "super" };
 
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin: PERMISSIONS.map((p) => p.code),
-  business_user: [
-    "user:read",
-    "role:read",
-    "project:read",
-    "project:write",
-    "recognition:badge:read",
-    "recognition:recognition:read",
-    "recognition:recognition:create",
-    "recognition:recognition:like",
-    "recognition:product:read",
-    "recognition:exchange:read",
-    "recognition:exchange:create",
-  ],
-  reader: [
-    "user:read",
-    "role:read",
-    "project:read",
-    "recognition:badge:read",
-    "recognition:recognition:read",
-    "recognition:product:read",
-    "recognition:exchange:read",
-  ],
-  member: [
-    "user:read",
-    "project:read",
-    "recognition:badge:read",
-    "recognition:recognition:read",
-    "recognition:recognition:create",
-    "recognition:recognition:like",
-    "recognition:product:read",
-    "recognition:exchange:create",
-  ],
-};
+function splitPermissionCode(code: string): { resource: string; action: string } {
+  const parts = code.split(":");
+  const action = parts.length > 1 ? parts[parts.length - 1] : "read";
+  const resource = parts.length > 1 ? parts.slice(0, -1).join(":") : code;
+  return { resource, action };
+}
+
+/** 只读页面码：action 为 read / view */
+function isReadPage(code: string): boolean {
+  const def = PERMISSION_REGISTRY.find((item) => item.code === code);
+  if (!def || def.type !== "page") return false;
+  return def.code.endsWith(":read") || def.code.endsWith(":view");
+}
 
 async function seed() {
   const roles: Record<string, number> = {};
@@ -97,16 +54,73 @@ async function seed() {
     roles[code] = role.id;
   }
 
-  for (const perm of PERMISSIONS) {
-    await prisma.permission.upsert({
-      where: { code: perm.code },
-      update: { name: perm.name, resource: perm.resource, action: perm.action },
-      create: perm,
+  const permissionByCode = new Map<string, number>();
+
+  // 1. 权限树：页面与默认按钮来自 @owl/permission 注册表（source=route）
+  for (const def of PERMISSION_REGISTRY) {
+    const { resource, action } = splitPermissionCode(def.code);
+    const parentId = def.parentCode ? permissionByCode.get(def.parentCode) : null;
+    const permission = await prisma.permission.upsert({
+      where: { code: def.code },
+      update: {
+        name: def.name,
+        type: def.type,
+        app: def.app,
+        path: def.path ?? null,
+        sort: def.sort,
+        source: "route",
+        resource,
+        action,
+        parentId: parentId ?? null,
+        deletedAt: null,
+      },
+      create: {
+        code: def.code,
+        name: def.name,
+        type: def.type,
+        app: def.app,
+        path: def.path ?? null,
+        sort: def.sort,
+        source: "route",
+        resource,
+        action,
+        parentId: parentId ?? null,
+      },
     });
+    permissionByCode.set(def.code, permission.id);
   }
 
-  const allPermissions = await prisma.permission.findMany();
-  const permissionByCode = new Map(allPermissions.map((p) => [p.code, p.id]));
+  // 2. 超管标记：不在权限树中展示，只授予 admin 角色
+  const superPermission = await prisma.permission.upsert({
+    where: { code: SUPER_PERMISSION.code },
+    update: { ...SUPER_PERMISSION, type: "button", source: "system", deletedAt: null },
+    create: { ...SUPER_PERMISSION, type: "button", source: "system" },
+  });
+  permissionByCode.set(SUPER_PERMISSION.code, superPermission.id);
+
+  // 3. 清理注册表里已移除的路由节点（手工节点不动）
+  await prisma.permission.updateMany({
+    where: { source: "route", code: { notIn: [...PERMISSION_REGISTRY.map((item) => item.code)] } },
+    data: { deletedAt: new Date() },
+  });
+
+  const readCodes = PERMISSION_REGISTRY.filter((item) => isReadPage(item.code)).map((item) => item.code);
+  const owlWriteCodes = PERMISSION_REGISTRY.filter(
+    (item) =>
+      item.app === "owl" && item.type === "button" && (item.code.endsWith(":write") || item.code.endsWith(":create"))
+  ).map((item) => item.code);
+  const recognitionMemberCodes = [
+    "recognition:recognition:create",
+    "recognition:recognition:like",
+    "recognition:exchange:create",
+  ];
+
+  const ROLE_PERMISSIONS: Record<string, string[]> = {
+    admin: [...PERMISSION_REGISTRY.map((item) => item.code), SUPER_PERMISSION.code],
+    business_user: [...readCodes, ...owlWriteCodes, ...recognitionMemberCodes],
+    reader: readCodes,
+    member: [...readCodes, "recognition:recognition:create", "recognition:recognition:like"],
+  };
 
   for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
     const roleId = roles[roleCode];
@@ -114,13 +128,45 @@ async function seed() {
       continue;
     }
     const permIds = permCodes.map((code) => permissionByCode.get(code)).filter((id): id is number => Boolean(id));
-    await prisma.rolePermission.createMany({
-      data: permIds.map((permissionId) => ({ roleId, permissionId })),
-      skipDuplicates: true,
+    await prisma.$transaction(async (tx) => {
+      await tx.rolePermission.updateMany({ where: { roleId }, data: { deletedAt: new Date() } });
+      for (const permissionId of permIds) {
+        await tx.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId, permissionId } },
+          update: { deletedAt: null },
+          create: { roleId, permissionId },
+        });
+      }
     });
   }
 
-  console.log("seed: roles & permissions done");
+  // 4. 用户组：全员组（默认角色 member）+ 管理组（admin）
+  const allStaff = await prisma.userGroup.upsert({
+    where: { code: "all_staff" },
+    update: { name: "全员", description: "所有员工默认加入", isSystem: true, deletedAt: null },
+    create: { code: "all_staff", name: "全员", description: "所有员工默认加入", isSystem: true },
+  });
+  const adminGroup = await prisma.userGroup.upsert({
+    where: { code: "admin_group" },
+    update: { name: "管理组", description: "系统管理员用户组", isSystem: true, deletedAt: null },
+    create: { code: "admin_group", name: "管理组", description: "系统管理员用户组", isSystem: true },
+  });
+
+  const groupRoles: Array<[number, string]> = [
+    [allStaff.id, "member"],
+    [adminGroup.id, "admin"],
+  ];
+  for (const [groupId, roleCode] of groupRoles) {
+    const roleId = roles[roleCode];
+    if (!roleId) continue;
+    await prisma.roleGroup.upsert({
+      where: { roleId_groupId: { roleId, groupId } },
+      update: { deletedAt: null },
+      create: { roleId, groupId },
+    });
+  }
+
+  console.log("seed: roles, permissions & user groups done");
 
   const badges = [
     {
@@ -244,16 +290,23 @@ async function seed() {
   }
   console.log("seed: products done");
 
-  // Assign admin role to all existing users (mock users)
-  const allUsers = await prisma.user.findMany();
-  const adminRoleId = roles["admin"];
-  if (adminRoleId && allUsers.length > 0) {
-    await prisma.userRole.createMany({
-      data: allUsers.map((u) => ({ userId: u.id, roleId: adminRoleId })),
-      skipDuplicates: true,
+  // 所有既有用户加入全员组；第一个用户加入管理组，保证开发环境始终有超管
+  const allUsers = await prisma.user.findMany({ orderBy: { id: "asc" } });
+  for (const [index, user] of allUsers.entries()) {
+    await prisma.userGroupMember.upsert({
+      where: { groupId_userId: { groupId: allStaff.id, userId: user.id } },
+      update: { deletedAt: null },
+      create: { groupId: allStaff.id, userId: user.id },
     });
-    console.log(`seed: assigned admin role to ${allUsers.length} users`);
+    if (index === 0) {
+      await prisma.userGroupMember.upsert({
+        where: { groupId_userId: { groupId: adminGroup.id, userId: user.id } },
+        update: { deletedAt: null },
+        create: { groupId: adminGroup.id, userId: user.id },
+      });
+    }
   }
+  console.log(`seed: assigned ${allUsers.length} users to groups`);
 
   // Create coin accounts and stamina accounts for all users
   const currentMonth = new Date().toISOString().slice(0, 7);

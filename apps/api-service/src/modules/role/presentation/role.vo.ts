@@ -5,17 +5,22 @@ export class RolePermissionVo {
   @ApiProperty({ description: "权限 id", example: 1 })
   id!: number;
 
-  @ApiProperty({ description: "权限编码", example: "role:read" })
+  @ApiProperty({ description: "权限编码", example: "system:role:read" })
   code!: string;
 
   @ApiProperty({ description: "权限名称", example: "查看角色" })
   name!: string;
+}
 
-  @ApiProperty({ description: "资源", example: "role" })
-  resource!: string;
+export class RoleGroupVo {
+  @ApiProperty({ description: "用户组 id", example: 1 })
+  id!: number;
 
-  @ApiProperty({ description: "操作", example: "read" })
-  action!: string;
+  @ApiProperty({ description: "用户组编码", example: "all_staff" })
+  code!: string;
+
+  @ApiProperty({ description: "用户组名称", example: "全员" })
+  name!: string;
 }
 
 export class RoleVo {
@@ -39,6 +44,9 @@ export class RoleVo {
 
   @ApiProperty({ description: "权限列表", type: [RolePermissionVo] })
   permissions!: RolePermissionVo[];
+
+  @ApiProperty({ description: "已绑定的用户组", type: [RoleGroupVo] })
+  groups!: RoleGroupVo[];
 }
 
 export class RolePageVo extends PageMetaVo {

@@ -57,7 +57,7 @@
 | 模块          | app | dom | infra | pres | 状态    |
 | ------------- | --- | --- | ----- | ---- | ------- |
 | audit-log     | 2   | 2   | 3     | 2    | ✅ 完整 |
-| auth          | 3   | 1   | 5     | 3    | ✅ 完整 |
+| auth          | 3   | 1   | 6     | 3    | ✅ 完整 |
 | exchange-rate | 1   | 1   | 1     | 2    | ✅ 完整 |
 | field-config  | 1   | 1   | 1     | 2    | ✅ 完整 |
 | file          | 1   | 3   | 2     | 2    | ✅ 完整 |
@@ -74,6 +74,7 @@
 | system-config | 1   | 1   | 1     | 2    | ✅ 完整 |
 | system-log    | 1   | 1   | 1     | 2    | ✅ 完整 |
 | user          | 1   | 1   | 1     | 2    | ✅ 完整 |
+| user-group    | 1   | 1   | 1     | 2    | ✅ 完整 |
 | voc           | 1   | 1   | 1     | 1    | ✅ 完整 |
 
 <!-- AUTO-MODULES-END -->
@@ -111,9 +112,11 @@
 | Department        |      |
 | SyncLog           |      |
 | Role              |      |
+| UserGroup         |      |
+| UserGroupMember   |      |
+| RoleGroup         |      |
 | Permission        |      |
 | RolePermission    |      |
-| UserRole          |      |
 | AuthSession       |      |
 | AuditLog          |      |
 | Notification      |      |
@@ -183,6 +186,7 @@
 | 20260921000000_add_system_log                        |      |
 | 20261015000000_add_product_line_pipeline             |      |
 | 20261023000000_add_md_doc_collaborators              |      |
+| 20261111000000_add_user_group_and_permission_tree    |      |
 
 <!-- AUTO-MIGRATIONS-END -->
 
@@ -227,6 +231,7 @@
 | recognition   | Delete | /api/recognition/products/:id                                 |
 | role          | Delete | /api/roles/:id                                                |
 | system-config | Delete | /api/system-config/:id                                        |
+| user-group    | Delete | /api/user-groups/:id                                          |
 | voc           | Delete | /api/voc/tickets/:id                                          |
 | audit-log     | Get    | /api/audit-logs                                               |
 | auth          | Get    | /api/auth/feishu/callback                                     |
@@ -270,7 +275,7 @@
 | notification  | Get    | /api/notifications                                            |
 | notification  | Get    | /api/notifications/unread-count                               |
 | permission    | Get    | /api/permissions                                              |
-| permission    | Get    | /api/permissions/:id                                          |
+| permission    | Get    | /api/permissions/tree                                         |
 | recognition   | Get    | /api/recognition                                              |
 | recognition   | Get    | /api/recognition/badges                                       |
 | recognition   | Get    | /api/recognition/badges/:id                                   |
@@ -286,13 +291,15 @@
 | recognition   | Get    | /api/recognition/products                                     |
 | recognition   | Get    | /api/recognition/products/:id                                 |
 | role          | Get    | /api/roles                                                    |
+| role          | Get    | /api/roles/:id/groups                                         |
 | role          | Get    | /api/roles/options                                            |
-| role          | Get    | /api/roles/permissions                                        |
 | system-config | Get    | /api/system-config/:id                                        |
 | system-log    | Get    | /api/system-logs                                              |
 | user          | Get    | /api/users                                                    |
-| user          | Get    | /api/users/:id/roles                                          |
-| user          | Get    | /api/users/roles                                              |
+| user          | Get    | /api/users/groups                                             |
+| user-group    | Get    | /api/user-groups                                              |
+| user-group    | Get    | /api/user-groups/:id/members                                  |
+| user-group    | Get    | /api/user-groups/options                                      |
 | voc           | Get    | /api/voc/tickets                                              |
 | voc           | Get    | /api/voc/tickets/:id                                          |
 | auth          | Post   | /api/auth/logout                                              |
@@ -319,12 +326,14 @@
 | md-doc        | Post   | /api/md-docs/upload-image                                     |
 | notification  | Post   | /api/notifications                                            |
 | permission    | Post   | /api/permissions                                              |
+| permission    | Post   | /api/permissions/sync                                         |
 | recognition   | Post   | /api/recognition                                              |
 | recognition   | Post   | /api/recognition/:id/like                                     |
 | recognition   | Post   | /api/recognition/badges                                       |
 | recognition   | Post   | /api/recognition/exchange/orders                              |
 | recognition   | Post   | /api/recognition/products                                     |
 | role          | Post   | /api/roles                                                    |
+| user-group    | Post   | /api/user-groups                                              |
 | voc           | Post   | /api/voc/tickets                                              |
 | exchange-rate | Put    | /api/system/exchange-rates/:id                                |
 | field-config  | Put    | /api/field-config/:id                                         |
@@ -360,9 +369,12 @@
 | recognition   | Put    | /api/recognition/exchange/orders/:id/reject                   |
 | recognition   | Put    | /api/recognition/products/:id                                 |
 | role          | Put    | /api/roles/:id                                                |
+| role          | Put    | /api/roles/:id/groups                                         |
 | system-config | Put    | /api/system-config/:id                                        |
-| user          | Put    | /api/users/:id/roles                                          |
 | user          | Put    | /api/users/:id/status                                         |
+| user-group    | Put    | /api/user-groups/:id                                          |
+| user-group    | Put    | /api/user-groups/:id/members                                  |
+| user-group    | Put    | /api/user-groups/:id/roles                                    |
 | voc           | Put    | /api/voc/tickets/:id                                          |
 
 <!-- AUTO-API-END -->
