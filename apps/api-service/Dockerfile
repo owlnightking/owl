@@ -3,6 +3,7 @@ WORKDIR /app
 RUN npm install -g pnpm@10.12.4
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared/package.json packages/shared/package.json
+COPY packages/permission/package.json packages/permission/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/database/prisma packages/database/prisma
 COPY apps/api-service/package.json apps/api-service/package.json
@@ -17,6 +18,7 @@ COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps/api-service ./apps/api-service
 COPY . .
 RUN pnpm --filter @owl/shared build
+RUN pnpm --filter @owl/permission build
 RUN pnpm --filter @owl/api-service typecheck
 RUN pnpm --filter @owl/api-service build
 
