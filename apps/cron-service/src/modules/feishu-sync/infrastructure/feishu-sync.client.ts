@@ -86,6 +86,8 @@ export class FeishuSyncClient implements FeishuSyncPort {
   async getDepartmentTree(): Promise<FeishuDepartment[]> {
     const token = await this.getTenantAccessToken();
     const departments = new Map<string, FeishuDepartment>();
+    // 飞书 parent_department_id 默认要 open_department_id；显式 department_id_type=department_id 后
+    // 请求参数与返回的 parent 均为 department_id（与库内 feishuDepartmentId 一致）。根节点用 "0"。
     const queue: string[] = [ROOT_DEPARTMENT_ID];
     const visitedParents = new Set<string>();
 
@@ -100,7 +102,12 @@ export class FeishuSyncClient implements FeishuSyncPort {
         do {
           const res = await axios.get(FEISHU_DEPARTMENT_URL, {
             headers: { Authorization: `Bearer ${token}` },
-            params: { page_size: PAGE_SIZE, parent_department_id: parentId, page_token: pageToken },
+            params: {
+              page_size: PAGE_SIZE,
+              parent_department_id: parentId,
+              page_token: pageToken,
+              department_id_type: "department_id",
+            },
             timeout: FEISHU_API_TIMEOUT_MS,
           });
           const body = res.data as {
@@ -121,7 +128,10 @@ export class FeishuSyncClient implements FeishuSyncPort {
                 openDepartmentId: item.open_department_id,
                 name: item.name,
                 i18nName: item.i18n_name,
-                parentId: item.parent_department_id === ROOT_DEPARTMENT_ID ? null : (item.parent_department_id ?? null),
+                parentId:
+                  !item.parent_department_id || item.parent_department_id === ROOT_DEPARTMENT_ID
+                    ? null
+                    : item.parent_department_id,
                 order: Number(item.order ?? 0),
                 leaderUserId: item.leader_user_id,
                 leaders: item.leaders,
