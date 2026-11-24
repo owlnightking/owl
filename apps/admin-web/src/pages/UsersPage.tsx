@@ -7,6 +7,7 @@
  * 接口只支持「列表 / 用户组 / 启停用」：角色绑定在用户组上（见 user-group 模块），
  * 没有按用户的分配角色接口，也没有新增、删除与详情接口，因此不设操作行，
  * 操作列不放「删除」，详情直接展示列表行已有字段（不额外取数，抽屉内也不需要骨架屏）。
+ * 别称与部门来自飞书同步（feishu-sync）；离职人员同步后软删，不出现在本列表。
  */
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -34,13 +35,21 @@ interface UserGroupBrief {
   name: string;
 }
 
+interface UserDepartmentBrief {
+  id: number;
+  name: string;
+  path: string;
+}
+
 interface UserItem {
   id: number;
   unionId: string;
   name: string;
+  nickname: string | null;
   avatarUrl: string | null;
   email: string | null;
   status: UserStatus;
+  department: UserDepartmentBrief | null;
   lastLoginAt: string | null;
   createdAt: string;
   groups: UserGroupBrief[];
@@ -56,8 +65,8 @@ interface UserPageData {
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const STATUS_TEXT: Record<UserStatus, string> = { active: "启用", disabled: "禁用" };
-// 列宽合计：姓名 200 + unionId 200 + 邮箱 220 + 角色 220 + 状态 100 + 最近登录时间 180 + 操作 140。增删列时同步
-const TABLE_SCROLL_X = 1260;
+// 列宽合计：姓名 160 + 别称 100 + 部门 180 + unionId 180 + 邮箱 200 + 用户组 180 + 状态 90 + 最近登录 160 + 操作 140。增删列时同步
+const TABLE_SCROLL_X = 1390;
 
 function formatTime(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "-";
@@ -131,31 +140,57 @@ export function UsersPage() {
       title: "姓名",
       dataIndex: "name",
       fixed: "left" as const,
-      width: 200,
+      width: 160,
       render: (_: unknown, record: UserItem) => (
         <Tooltip content={record.name}>
-          <PersonName name={record.name} avatarUrl={record.avatarUrl} className="max-w-[150px]" />
+          <PersonName name={record.name} avatarUrl={record.avatarUrl} className="max-w-[110px]" />
         </Tooltip>
       ),
     },
     {
+      title: "别称",
+      dataIndex: "nickname",
+      width: 100,
+      render: (value: string | null) =>
+        value ? (
+          <Tooltip content={value}>
+            <span className="block max-w-[80px] truncate">{value}</span>
+          </Tooltip>
+        ) : (
+          <span className="text-gray-400">-</span>
+        ),
+    },
+    {
+      title: "部门",
+      dataIndex: "department",
+      width: 180,
+      render: (department: UserDepartmentBrief | null) =>
+        department ? (
+          <Tooltip content={department.path}>
+            <span className="block max-w-[160px] truncate">{department.path}</span>
+          </Tooltip>
+        ) : (
+          <span className="text-gray-400">-</span>
+        ),
+    },
+    {
       title: "unionId",
       dataIndex: "unionId",
-      width: 200,
+      width: 180,
       render: (value: string) => (
         <Tooltip content={value}>
-          <span className="block max-w-[170px] truncate">{value}</span>
+          <span className="block max-w-[160px] truncate">{value}</span>
         </Tooltip>
       ),
     },
     {
       title: "邮箱",
       dataIndex: "email",
-      width: 220,
+      width: 200,
       render: (value: string | null) =>
         value ? (
           <Tooltip content={value}>
-            <span className="block max-w-[190px] truncate">{value}</span>
+            <span className="block max-w-[180px] truncate">{value}</span>
           </Tooltip>
         ) : (
           "-"
@@ -164,7 +199,7 @@ export function UsersPage() {
     {
       title: "用户组",
       dataIndex: "groups",
-      width: 220,
+      width: 180,
       render: (groups: UserGroupBrief[]) =>
         groups.length === 0 ? (
           <span className="text-gray-400">未分配</span>
@@ -181,13 +216,13 @@ export function UsersPage() {
     {
       title: "状态",
       dataIndex: "status",
-      width: 100,
+      width: 90,
       render: (value: UserStatus) => <Tag color={value === "active" ? "green" : "red"}>{STATUS_TEXT[value]}</Tag>,
     },
     {
       title: "最近登录时间",
       dataIndex: "lastLoginAt",
-      width: 180,
+      width: 160,
       render: (value: string | null) => formatTime(value),
     },
     {
@@ -224,7 +259,7 @@ export function UsersPage() {
       {/* 2. 筛选区：条件网格 + 搜索/重置贴最后一行最右 */}
       <div className="grid grid-cols-4 gap-3">
         <Input
-          placeholder="姓名 / 邮箱"
+          placeholder="姓名 / 别称 / 邮箱"
           style={{ width: "100%" }}
           value={draftKeyword}
           onChange={setDraftKeyword}
@@ -279,6 +314,8 @@ export function UsersPage() {
           column={1}
           data={[
             { label: "姓名", value: <PersonName name={drawerRecord?.name} avatarUrl={drawerRecord?.avatarUrl} /> },
+            { label: "别称", value: drawerRecord?.nickname ?? "-" },
+            { label: "部门", value: drawerRecord?.department?.path ?? "-" },
             { label: "unionId", value: drawerRecord?.unionId ?? "-" },
             { label: "邮箱", value: drawerRecord?.email ?? "-" },
             {

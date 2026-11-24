@@ -59,6 +59,9 @@ model Example {
 
 - 所有数据表必须有 `deletedAt DateTime? @db.Timestamp(0) @map("deleted_at")`。
 - 删除 = 更新 `deletedAt` 为当前时间，**禁止 `prisma.<model>.delete()` / `deleteMany()` 硬删除**。
+- **唯一例外（ADR 014）**：`feishu-sync` 对同步产生的孤儿部门硬删，仅允许
+  `apps/cron-service/src/modules/feishu-sync/infrastructure/prisma-department.repository.ts`；
+  该路径由 `check_hard_delete` 白名单放行，其余文件仍禁止。离职人员一律软删，不得硬删用户。
 - 所有读查询默认过滤 `deletedAt: null`，软删除记录不得出现在列表、详情、统计中。
 - 关联清理（如 `user_role`）同样是软删除；软删除后如需恢复，用同一业务键 upsert 并将 `deletedAt` 置空。
 - 注意：软删除记录仍占用唯一约束，重建同名记录前需处理冲突。

@@ -85,45 +85,56 @@ export class FeishuSyncClient implements FeishuSyncPort {
 
   async getDepartmentTree(): Promise<FeishuDepartment[]> {
     const token = await this.getTenantAccessToken();
-    const departments: FeishuDepartment[] = [];
-    let pageToken: string | undefined;
+    const departments = new Map<string, FeishuDepartment>();
+    const queue: string[] = [ROOT_DEPARTMENT_ID];
+    const visitedParents = new Set<string>();
 
-    this.logger.log("Fetching department tree...");
+    this.logger.log("Fetching department tree (recursive)...");
     try {
-      do {
-        const res = await axios.get(FEISHU_DEPARTMENT_URL, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { page_size: PAGE_SIZE, parent_department_id: ROOT_DEPARTMENT_ID, page_token: pageToken },
-          timeout: FEISHU_API_TIMEOUT_MS,
-        });
-        const body = res.data as {
-          code: number;
-          msg: string;
-          data?: { items?: FeishuDeptRaw[]; page_token?: string; has_more?: boolean };
-        };
-        this.logger.log(
-          `Department response: code=${body.code}, msg=${body.msg}, items=${body.data?.items?.length ?? 0}`
-        );
-        if (body.code !== 0) {
-          throw new Error(`Failed to fetch departments: ${body.msg}`);
-        }
-        for (const item of body.data?.items ?? []) {
-          departments.push({
-            feishuId: item.department_id,
-            openDepartmentId: item.open_department_id,
-            name: item.name,
-            i18nName: item.i18n_name,
-            parentId: item.parent_department_id === ROOT_DEPARTMENT_ID ? null : (item.parent_department_id ?? null),
-            order: Number(item.order ?? 0),
-            leaderUserId: item.leader_user_id,
-            leaders: item.leaders,
-            memberCount: item.member_count,
-            primaryMemberCount: item.primary_member_count,
-            isDeleted: item.status?.is_deleted,
+      while (queue.length > 0) {
+        const parentId = queue.shift();
+        if (parentId === undefined || visitedParents.has(parentId)) continue;
+        visitedParents.add(parentId);
+
+        let pageToken: string | undefined;
+        do {
+          const res = await axios.get(FEISHU_DEPARTMENT_URL, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { page_size: PAGE_SIZE, parent_department_id: parentId, page_token: pageToken },
+            timeout: FEISHU_API_TIMEOUT_MS,
           });
-        }
-        pageToken = body.data?.has_more ? body.data.page_token : undefined;
-      } while (pageToken);
+          const body = res.data as {
+            code: number;
+            msg: string;
+            data?: { items?: FeishuDeptRaw[]; page_token?: string; has_more?: boolean };
+          };
+          this.logger.log(
+            `Department response parent=${parentId}: code=${body.code}, msg=${body.msg}, items=${body.data?.items?.length ?? 0}`
+          );
+          if (body.code !== 0) {
+            throw new Error(`Failed to fetch departments: ${body.msg}`);
+          }
+          for (const item of body.data?.items ?? []) {
+            if (!departments.has(item.department_id)) {
+              departments.set(item.department_id, {
+                feishuId: item.department_id,
+                openDepartmentId: item.open_department_id,
+                name: item.name,
+                i18nName: item.i18n_name,
+                parentId: item.parent_department_id === ROOT_DEPARTMENT_ID ? null : (item.parent_department_id ?? null),
+                order: Number(item.order ?? 0),
+                leaderUserId: item.leader_user_id,
+                leaders: item.leaders,
+                memberCount: item.member_count,
+                primaryMemberCount: item.primary_member_count,
+                isDeleted: item.status?.is_deleted,
+              });
+              queue.push(item.department_id);
+            }
+          }
+          pageToken = body.data?.has_more ? body.data.page_token : undefined;
+        } while (pageToken);
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
@@ -134,8 +145,9 @@ export class FeishuSyncClient implements FeishuSyncPort {
       throw error;
     }
 
-    this.logger.log(`Fetched ${departments.length} departments from Feishu`);
-    return departments;
+    const list = Array.from(departments.values());
+    this.logger.log(`Fetched ${list.length} departments from Feishu`);
+    return list;
   }
 
   async getAllUsers(departmentIds: string[]): Promise<FeishuUser[]> {

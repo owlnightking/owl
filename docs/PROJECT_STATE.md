@@ -197,8 +197,8 @@
 | 目录              | spec 数量 |
 | ----------------- | --------- |
 | apps/api-service  | 7         |
-| apps/cron-service | 1         |
-| **合计**          | **8**     |
+| apps/cron-service | 2         |
+| **合计**          | **9**     |
 
 <!-- AUTO-TESTS-END -->
 

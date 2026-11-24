@@ -64,11 +64,23 @@ check_schema() {
 }
 
 # 3. 禁止 Prisma 硬删除
+# 例外（ADR 014）：feishu-sync 孤儿部门同步硬删，仅放行该唯一路径
+HARD_DELETE_ALLOWLIST=(
+  "apps/cron-service/src/modules/feishu-sync/infrastructure/prisma-department.repository.ts"
+)
 check_hard_delete() {
-  local files
+  local files file allowed
   files="$(find apps/api-service/src apps/cron-service/src packages/database/src -name '*.ts' 2>/dev/null | grep -v generated | grep -v node_modules || true)"
   while IFS= read -r file; do
     [ -z "$file" ] && continue
+    allowed=0
+    for allow_path in "${HARD_DELETE_ALLOWLIST[@]}"; do
+      if [ "$file" = "$allow_path" ]; then
+        allowed=1
+        break
+      fi
+    done
+    [ "$allowed" -eq 1 ] && continue
     while IFS= read -r line; do
       [ -z "$line" ] && continue
       error "$file" "禁止硬删除（软删除请 update deletedAt）: $(echo "$line" | sed 's/^[0-9]*: *//')"

@@ -12,6 +12,17 @@ export class UserGroupBriefVo {
   name!: string;
 }
 
+export class UserDepartmentBriefVo {
+  @ApiProperty({ description: "部门 id", example: 1 })
+  id!: number;
+
+  @ApiProperty({ description: "部门名称", example: "后端组" })
+  name!: string;
+
+  @ApiProperty({ description: "组织架构路径", example: "总公司/技术部/后端组" })
+  path!: string;
+}
+
 export class UserVo {
   @ApiProperty({ description: "用户 id", example: 1 })
   id!: number;
@@ -25,6 +36,9 @@ export class UserVo {
   @ApiProperty({ description: "姓名", example: "张三" })
   name!: string;
 
+  @ApiProperty({ description: "别称", nullable: true, example: "老张" })
+  nickname!: string | null;
+
   @ApiProperty({ description: "头像地址", nullable: true })
   avatarUrl!: string | null;
 
@@ -33,6 +47,9 @@ export class UserVo {
 
   @ApiProperty({ description: "状态（active / disabled）", example: "active" })
   status!: string;
+
+  @ApiProperty({ description: "所属部门", nullable: true, type: UserDepartmentBriefVo })
+  department!: UserDepartmentBriefVo | null;
 
   @ApiProperty({ description: "最近登录时间", nullable: true, example: "2026-09-20T10:00:00.000Z" })
   lastLoginAt!: Date | null;

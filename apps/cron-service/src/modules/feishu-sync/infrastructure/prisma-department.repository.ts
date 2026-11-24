@@ -1,17 +1,22 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaClient, type Prisma } from "@owl/database";
-import type { DepartmentRepositoryPort, FeishuDepartment } from "../domain/feishu-sync.ports";
+import type { DepartmentRepositoryPort, DepartmentSyncResult, FeishuDepartment } from "../domain/feishu-sync.ports";
 
 @Injectable()
 export class PrismaDepartmentRepository implements DepartmentRepositoryPort {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async replaceAll(depts: FeishuDepartment[]): Promise<void> {
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  async replaceAll(depts: FeishuDepartment[]): Promise<DepartmentSyncResult> {
+    if (depts.length === 0) {
+      // 空列表由 Service 中止；此处双保险，禁止清空本地部门
+      return { upserted: 0, hardDeleted: 0 };
+    }
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient): Promise<DepartmentSyncResult> => {
       const feishuIds = depts.map((dept) => dept.feishuId);
-      await tx.department.updateMany({
-        where: { feishuDepartmentId: { notIn: feishuIds }, deletedAt: null },
-        data: { deletedAt: new Date() },
+      // ADR 014：孤儿部门硬删（唯一允许 deleteMany 的路径）
+      const deleted = await tx.department.deleteMany({
+        where: { feishuDepartmentId: { notIn: feishuIds } },
       });
 
       for (const dept of depts) {
@@ -33,6 +38,8 @@ export class PrismaDepartmentRepository implements DepartmentRepositoryPort {
           update: { ...data, deletedAt: null },
         });
       }
+
+      return { upserted: depts.length, hardDeleted: deleted.count };
     });
   }
 }

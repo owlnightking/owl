@@ -29,19 +29,28 @@ export class FeishuSyncService {
       this.logger.log("Starting Feishu sync...");
 
       const departments = await this.feishuClient.getDepartmentTree();
-      await this.deptRepo.replaceAll(departments);
-      this.logger.log(`Synced ${departments.length} departments`);
+      if (departments.length === 0) {
+        throw new Error("Feishu returned empty department list; aborting sync to avoid wiping local data");
+      }
+      const deptResult = await this.deptRepo.replaceAll(departments);
+      this.logger.log(`Synced ${departments.length} departments (hardDeleted orphans=${deptResult.hardDeleted})`);
 
       const departmentIds = departments.map((d) => d.openDepartmentId);
       const users = await this.feishuClient.getAllUsers(departmentIds);
-      await this.userRepo.upsertBatch(users);
+      if (users.length === 0) {
+        throw new Error("Feishu returned empty user list; aborting sync to avoid soft-deleting all users");
+      }
+      const userResult = await this.userRepo.upsertBatch(users);
       total = users.length;
-      this.logger.log(`Synced ${users.length} users`);
+      this.logger.log(
+        `Synced ${users.length} users (created=${userResult.created}, updated=${userResult.updated}, softDeleted resigned=${userResult.softDeleted})`
+      );
 
       await this.syncLogRepo.update(logId, {
         status: "success",
         total,
-        created: total,
+        created: userResult.created,
+        updated: userResult.updated,
       });
 
       this.logger.log("Feishu sync completed successfully");

@@ -35,12 +35,25 @@ export interface FeishuSyncPort {
   getAllUsers(departmentIds: string[]): Promise<FeishuUser[]>;
 }
 
+export interface DepartmentSyncResult {
+  upserted: number;
+  hardDeleted: number;
+}
+
+export interface UserSyncResult {
+  created: number;
+  updated: number;
+  softDeleted: number;
+}
+
 export interface DepartmentRepositoryPort {
-  replaceAll(depts: FeishuDepartment[]): Promise<void>;
+  /** upsert 本次全量部门，并硬删飞书已不存在的孤儿部门（ADR 014）；空列表由 Service 中止，不在此清空 */
+  replaceAll(depts: FeishuDepartment[]): Promise<DepartmentSyncResult>;
 }
 
 export interface UserSyncRepositoryPort {
-  upsertBatch(users: FeishuUser[]): Promise<void>;
+  /** upsert 本次全量用户（含别称/部门），并软删未出现的离职人员；复活时清 deletedAt */
+  upsertBatch(users: FeishuUser[]): Promise<UserSyncResult>;
 }
 
 export interface SyncLogRepositoryPort {

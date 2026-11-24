@@ -8,7 +8,7 @@ import { USER_SERVICE, type UserServicePort } from "../application/user.service"
 import { UserGroupBriefVo, UserPageVo } from "./user.vo";
 
 class ListUsersQueryDto {
-  @ApiPropertyOptional({ description: "姓名 / 邮箱关键字", example: "张三" })
+  @ApiPropertyOptional({ description: "姓名 / 别称 / 邮箱关键字", example: "张三" })
   @IsOptional()
   @IsString()
   keyword?: string;

@@ -4,14 +4,23 @@ export interface UserGroupBrief {
   name: string;
 }
 
+export interface UserDepartmentBrief {
+  id: number;
+  name: string;
+  /** 从根到当前部门的路径，如「总公司/技术部/后端组」 */
+  path: string;
+}
+
 export interface UserListItem {
   id: number;
   unionId: string;
   openId: string;
   name: string;
+  nickname: string | null;
   avatarUrl: string | null;
   email: string | null;
   status: string;
+  department: UserDepartmentBrief | null;
   lastLoginAt: Date | null;
   createdAt: Date;
   groups: UserGroupBrief[];
