@@ -5,7 +5,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Descriptions,
   Drawer,
   Form,
   Input,
@@ -14,16 +13,14 @@ import {
   Pagination,
   Popconfirm,
   Select,
-  Skeleton,
   Space,
   Spin,
-  Table,
   Tag,
   Tooltip,
   Tree,
   type TreeProps,
 } from "@arco-design/web-react";
-import { IconDelete, IconEdit, IconEye, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
+import { IconDelete, IconEdit, IconPlus, IconRefresh, IconSearch } from "@arco-design/web-react/icon";
 import { del, get, post, put } from "../../api/client";
 import {
   TYPE_LABEL,
@@ -33,19 +30,16 @@ import {
   type RolePageData,
 } from "./types";
 
-type DrawerMode = "create" | "edit" | "detail" | "add-node";
+type DrawerMode = "create" | "edit" | "add-node";
 
 const DRAWER_TITLE: Record<DrawerMode, string> = {
   create: "新增角色",
   edit: "编辑角色",
-  detail: "角色详情",
   "add-node": "新增按钮 / Tab",
 };
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-// 左栏角色表：编码 140 + 名称 120 + 权限数 90 + 类型 90 + 操作 130
-const ROLE_TABLE_SCROLL_X = 570;
 /** 系统角色编码：不可删除（与后端 RoleService 一致） */
 const SYSTEM_ROLE_CODES = new Set(["super_admin"]);
 
@@ -69,15 +63,6 @@ interface NodeFormValues {
   code?: string;
   name?: string;
   type?: "tab" | "button";
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Skeleton text={{ rows: 2 }} />
-      <Skeleton text={{ rows: 3 }} />
-    </div>
-  );
 }
 
 function collectCheckableKeys(nodes: PermissionTreeNode[], out: string[] = []): string[] {
@@ -243,7 +228,6 @@ export function RoleConfigTab() {
     setDrawerMode(mode);
     setDrawerRecord(record ?? null);
     setSaving(false);
-    if (mode === "detail") return;
     if (mode === "add-node") {
       nodeForm.resetFields();
       nodeForm.setFieldsValue({ type: "button" });
@@ -389,59 +373,6 @@ export function RoleConfigTab() {
     setExpandedKeys(keys);
   };
 
-  const roleColumns = [
-    { title: "编码", dataIndex: "code", fixed: "left" as const, width: 140 },
-    { title: "名称", dataIndex: "name", width: 120 },
-    {
-      title: "权限",
-      dataIndex: "permissions",
-      width: 90,
-      render: (items: RoleItem["permissions"]) => <Tag>{items.length}</Tag>,
-    },
-    {
-      title: "类型",
-      dataIndex: "isSystem",
-      width: 90,
-      render: (value: boolean) => <Tag color={value ? "gray" : "green"}>{value ? "系统" : "自定义"}</Tag>,
-    },
-    {
-      title: "操作",
-      dataIndex: "actions",
-      fixed: "right" as const,
-      width: 130,
-      render: (_: unknown, record: RoleItem) => (
-        <Space>
-          <Tooltip content="详情">
-            <Button type="text" icon={<IconEye />} onClick={() => openDrawer("detail", record)} />
-          </Tooltip>
-          <Tooltip content="编辑">
-            <Button
-              type="text"
-              icon={<IconEdit />}
-              disabled={record.isSystem}
-              onClick={() => openDrawer("edit", record)}
-            />
-          </Tooltip>
-          <Tooltip content={roleDeleteDisabled(record).reason || "删除"}>
-            <Popconfirm
-              className="w-56"
-              title="确认删除该角色？"
-              disabled={roleDeleteDisabled(record).disabled}
-              onOk={() => removeOne(record.id)}
-            >
-              <Button
-                type="text"
-                status="danger"
-                icon={<IconDelete />}
-                disabled={roleDeleteDisabled(record).disabled}
-              />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
   // 树节点渲染：名称 + 类型标签 + 编码 + 手工按钮操作
   const renderTitle = (node: PermissionTreeNode) => {
     const canAdd = node.type === "page" || node.type === "tab";
@@ -523,19 +454,64 @@ export function RoleConfigTab() {
             </Tooltip>
           </div>
           <Spin loading={loading} dot block>
-            <Table
-              rowKey="id"
-              columns={roleColumns}
-              data={data}
-              pagination={false}
-              scroll={{ x: ROLE_TABLE_SCROLL_X, y: 420 }}
-              rowClassName={(record: RoleItem) =>
-                selectedRole?.id === record.id ? "bg-blue-50 cursor-pointer" : "cursor-pointer"
-              }
-              onRow={(record: RoleItem) => ({
-                onClick: () => setSelectedRole(record),
-              })}
-            />
+            <div className="flex max-h-[420px] flex-col gap-1 overflow-y-auto">
+              {data.length === 0 ? (
+                <div className="flex h-40 items-center justify-center text-sm text-gray-400">暂无角色</div>
+              ) : (
+                data.map((record) => {
+                  const deleteState = roleDeleteDisabled(record);
+                  const isEditDisabled = record.isSystem || SYSTEM_ROLE_CODES.has(record.code);
+                  return (
+                    <div
+                      key={record.id}
+                      role="button"
+                      tabIndex={0}
+                      className={`flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 ${
+                        selectedRole?.id === record.id ? "bg-blue-50" : "hover:bg-gray-50"
+                      }`}
+                      onClick={() => setSelectedRole(record)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedRole(record);
+                        }
+                      }}
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm text-gray-800">{record.name}</span>
+                      <Tooltip content={isEditDisabled ? "系统角色不可编辑名称" : "编辑"}>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<IconEdit />}
+                          disabled={isEditDisabled}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDrawer("edit", record);
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip content={deleteState.reason || "删除"}>
+                        <Popconfirm
+                          className="w-56"
+                          title="确认删除该角色？"
+                          disabled={deleteState.disabled}
+                          onOk={() => removeOne(record.id)}
+                        >
+                          <Button
+                            type="text"
+                            status="danger"
+                            size="small"
+                            icon={<IconDelete />}
+                            disabled={deleteState.disabled}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </Popconfirm>
+                      </Tooltip>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </Spin>
           <div className="flex justify-end">
             <Pagination
@@ -627,65 +603,35 @@ export function RoleConfigTab() {
 
       {/* 角色抽屉 */}
       <Drawer
-        visible={drawerMode === "create" || drawerMode === "edit" || drawerMode === "detail"}
+        visible={drawerMode === "create" || drawerMode === "edit"}
         placement="right"
         width={480}
         title={drawerMode ? DRAWER_TITLE[drawerMode] : ""}
         unmountOnExit
         footer={
-          drawerMode === "detail" ? null : (
-            <>
-              <Button onClick={closeDrawer} className="mr-2">
-                取消
-              </Button>
-              <Button type="primary" loading={saving} onClick={saveRole}>
-                保存
-              </Button>
-            </>
-          )
+          <>
+            <Button onClick={closeDrawer} className="mr-2">
+              取消
+            </Button>
+            <Button type="primary" loading={saving} onClick={saveRole}>
+              保存
+            </Button>
+          </>
         }
         onCancel={closeDrawer}
       >
-        {drawerMode === "detail" ? (
-          drawerRecord ? (
-            <Descriptions
-              column={1}
-              data={[
-                { label: "编码", value: drawerRecord.code },
-                { label: "名称", value: drawerRecord.name },
-                { label: "描述", value: drawerRecord.description ?? "-" },
-                { label: "类型", value: drawerRecord.isSystem ? "系统" : "自定义" },
-                {
-                  label: "权限数",
-                  value: String(drawerRecord.permissions.length),
-                },
-                {
-                  label: "权限",
-                  value: drawerRecord.permissions.map((item) => item.code).join("、") || "无权限",
-                },
-                {
-                  label: "用户组",
-                  value: drawerRecord.groups.map((item) => item.name).join("、") || "未绑定",
-                },
-              ]}
-            />
-          ) : (
-            <DetailSkeleton />
-          )
-        ) : (
-          <Form form={form} layout="vertical">
-            <Form.Item label="编码" field="code" rules={[{ required: true, message: "请输入角色编码" }]}>
-              <Input placeholder="如 ops" disabled={drawerMode === "edit"} />
-            </Form.Item>
-            <Form.Item label="名称" field="name" rules={[{ required: true, message: "请输入角色名称" }]}>
-              <Input placeholder="如 运维" />
-            </Form.Item>
-            <Form.Item label="描述" field="description">
-              <Input.TextArea placeholder="角色说明（可选）" autoSize={{ minRows: 3, maxRows: 6 }} />
-            </Form.Item>
-            <div className="text-sm text-gray-500">创建后在右侧权限树勾选权限并保存。</div>
-          </Form>
-        )}
+        <Form form={form} layout="vertical">
+          <Form.Item label="编码" field="code" rules={[{ required: true, message: "请输入角色编码" }]}>
+            <Input placeholder="如 ops" disabled={drawerMode === "edit"} />
+          </Form.Item>
+          <Form.Item label="名称" field="name" rules={[{ required: true, message: "请输入角色名称" }]}>
+            <Input placeholder="如 运维" />
+          </Form.Item>
+          <Form.Item label="描述" field="description">
+            <Input.TextArea placeholder="角色说明（可选）" autoSize={{ minRows: 3, maxRows: 6 }} />
+          </Form.Item>
+          <div className="text-sm text-gray-500">创建后在右侧权限树勾选权限并保存。</div>
+        </Form>
       </Drawer>
 
       {/* 新增按钮 / Tab */}
