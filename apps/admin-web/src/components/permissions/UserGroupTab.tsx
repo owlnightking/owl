@@ -24,6 +24,7 @@ import {
   IconDelete,
   IconEdit,
   IconEye,
+  IconLock,
   IconPlus,
   IconRefresh,
   IconSearch,
@@ -51,8 +52,21 @@ const DRAWER_TITLE: Record<DrawerMode, string> = {
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
-// 列宽合计（含多选列 50）：编码 140 + 名称 140 + 说明 220 + 成员 90 + 角色 220 + 类型 90 + 创建 160 + 操作 150
-const TABLE_SCROLL_X = 1260;
+// 列宽合计（含多选列 50）：编码 140 + 名称 140 + 说明 220 + 成员 90 + 角色 220 + 类型 90 + 创建 160 + 操作 190
+const TABLE_SCROLL_X = 1300;
+/** 系统管理组内不可移除的成员（与后端 UserGroupService 保持一致） */
+const PROTECTED_MEMBER_NAMES = new Set(["Calvin"]);
+
+/** 系统组：不可编辑/删除；自定义组仍绑定角色时也不可删 */
+function groupEditDisabled(record: UserGroupItem): boolean {
+  return record.isSystem;
+}
+
+function groupDeleteDisabled(record: UserGroupItem): { disabled: boolean; reason: string } {
+  if (record.isSystem) return { disabled: true, reason: "系统用户组不可删除" };
+  if (record.roles.length > 0) return { disabled: true, reason: "仍绑定角色，请先解绑" };
+  return { disabled: false, reason: "" };
+}
 
 interface GroupFormValues {
   code?: string;
@@ -270,9 +284,17 @@ export function UserGroupTab() {
   };
 
   const removeSelected = async () => {
+    const deletable = selectedKeys.filter((id) => {
+      const record = data.find((item) => item.id === id);
+      return record ? !groupDeleteDisabled(record).disabled : false;
+    });
+    if (deletable.length === 0) {
+      Notification.warning({ title: "无法删除", content: "选中项均为系统组或仍绑定角色" });
+      return;
+    }
     try {
-      await Promise.all(selectedKeys.map((id) => del<void>(`/user-groups/${id}`)));
-      Notification.success({ title: "成功", content: `已删除 ${selectedKeys.length} 项` });
+      await Promise.all(deletable.map((id) => del<void>(`/user-groups/${id}`)));
+      Notification.success({ title: "成功", content: `已删除 ${deletable.length} 项` });
       setSelectedKeys([]);
       setPage(1);
       void load(1, pageSize, keyword);
@@ -336,7 +358,7 @@ export function UserGroupTab() {
       title: "操作",
       dataIndex: "actions",
       fixed: "right" as const,
-      width: 150,
+      width: 190,
       render: (_: unknown, record: UserGroupItem) => (
         <Space>
           <Tooltip content="详情">
@@ -345,17 +367,35 @@ export function UserGroupTab() {
           <Tooltip content="成员">
             <Button type="text" icon={<IconUser />} onClick={() => openDrawer("members", record)} />
           </Tooltip>
+          <Tooltip content={record.isSystem ? "系统组不可改角色" : "挂钩角色"}>
+            <Button
+              type="text"
+              icon={<IconLock />}
+              disabled={record.isSystem}
+              onClick={() => openDrawer("roles", record)}
+            />
+          </Tooltip>
           <Tooltip content="编辑">
             <Button
               type="text"
               icon={<IconEdit />}
-              disabled={record.isSystem}
+              disabled={groupEditDisabled(record)}
               onClick={() => openDrawer("edit", record)}
             />
           </Tooltip>
-          <Tooltip content="删除">
-            <Popconfirm className="w-56" title="确认删除该用户组？" onOk={() => removeOne(record.id)}>
-              <Button type="text" status="danger" icon={<IconDelete />} disabled={record.isSystem} />
+          <Tooltip content={groupDeleteDisabled(record).reason || "删除"}>
+            <Popconfirm
+              className="w-56"
+              title="确认删除该用户组？"
+              disabled={groupDeleteDisabled(record).disabled}
+              onOk={() => removeOne(record.id)}
+            >
+              <Button
+                type="text"
+                status="danger"
+                icon={<IconDelete />}
+                disabled={groupDeleteDisabled(record).disabled}
+              />
             </Popconfirm>
           </Tooltip>
         </Space>
@@ -364,7 +404,17 @@ export function UserGroupTab() {
   ];
 
   const memberColumns = [
-    { title: "姓名", dataIndex: "name", width: 140 },
+    {
+      title: "姓名",
+      dataIndex: "name",
+      width: 140,
+      render: (value: string) => (
+        <span className="inline-flex items-center gap-1">
+          {value}
+          {PROTECTED_MEMBER_NAMES.has(value) ? <Tag color="blue">固定</Tag> : null}
+        </span>
+      ),
+    },
     {
       title: "邮箱",
       dataIndex: "email",
@@ -386,6 +436,25 @@ export function UserGroupTab() {
       render: (value: string) => new Date(value).toLocaleString(),
     },
   ];
+
+  const memberNameById = new Map(userOptions.map((u) => [u.id, u.name]));
+  for (const m of members) memberNameById.set(m.id, m.name);
+
+  const handleChangeMembers = (keys: (string | number)[]) => {
+    const next = keys as number[];
+    const protectedIds = new Set<number>();
+    for (const [id, name] of memberNameById) {
+      if (PROTECTED_MEMBER_NAMES.has(name)) protectedIds.add(id);
+    }
+    // 只阻止「取消勾选受保护成员」
+    const removedProtected = [...protectedIds].filter((id) => memberIds.includes(id) && !next.includes(id));
+    if (removedProtected.length > 0) {
+      Notification.warning({ title: "不可移除", content: "系统管理组固定成员不可删除" });
+      setMemberIds([...next, ...removedProtected]);
+      return;
+    }
+    setMemberIds(next);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -434,7 +503,9 @@ export function UserGroupTab() {
             rowSelection={{
               fixed: true,
               selectedRowKeys: selectedKeys,
-              checkboxProps: (record: UserGroupItem) => ({ disabled: record.isSystem }),
+              checkboxProps: (record: UserGroupItem) => ({
+                disabled: groupDeleteDisabled(record).disabled,
+              }),
               onChange: (keys) => setSelectedKeys(keys as number[]),
             }}
           />
@@ -539,7 +610,7 @@ export function UserGroupTab() {
               placeholder="选择成员（可搜索）"
               style={{ width: "100%" }}
               value={memberIds}
-              onChange={(keys) => setMemberIds(keys as number[])}
+              onChange={handleChangeMembers}
               filterOption={false}
               showSearch
               onSearch={(value) => void loadUserOptions(value)}

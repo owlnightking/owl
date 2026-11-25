@@ -30,30 +30,34 @@ function splitPermissionCode(code: string): { resource: string; action: string }
   return { resource, action };
 }
 
-/** 只读页面码：action 为 read / view */
-function isReadPage(code: string): boolean {
-  const def = PERMISSION_REGISTRY.find((item) => item.code === code);
-  if (!def || def.type !== "page") return false;
-  return def.code.endsWith(":read") || def.code.endsWith(":view");
-}
-
 async function seed() {
-  const roles: Record<string, number> = {};
+  const now = new Date();
 
-  for (const [code, name, isSystem, description] of [
-    ["admin", "系统管理员", true, "系统内置管理员角色"],
-    ["super_admin", "超级管理员", true, "默认超级管理员角色，权限树全选"],
-    ["business_user", "业务用户", true, "业务操作用户，可读写业务数据"],
-    ["reader", "只读用户", true, "只读用户，仅可查看"],
-    ["member", "普通成员", true, "系统内置普通成员角色"],
-  ] as const) {
-    const role = await prisma.role.upsert({
-      where: { code },
-      update: { name, isSystem, description },
-      create: { code, name, isSystem, description },
-    });
-    roles[code] = role.id;
-  }
+  // 仅保留默认角色：系统超级管理员（权限树全选）
+  const superAdminRole = await prisma.role.upsert({
+    where: { code: "super_admin" },
+    update: { name: "系统超级管理员", isSystem: true, description: "默认系统超级管理员，权限树全选", deletedAt: null },
+    create: {
+      code: "super_admin",
+      name: "系统超级管理员",
+      isSystem: true,
+      description: "默认系统超级管理员，权限树全选",
+    },
+  });
+
+  // 多余角色软删（含历史 admin/business_user/reader/member 及自定义残留）
+  await prisma.role.updateMany({
+    where: { code: { not: "super_admin" }, deletedAt: null },
+    data: { deletedAt: now },
+  });
+  await prisma.rolePermission.updateMany({
+    where: { role: { code: { not: "super_admin" } }, deletedAt: null },
+    data: { deletedAt: now },
+  });
+  await prisma.roleGroup.updateMany({
+    where: { role: { code: { not: "super_admin" } }, deletedAt: null },
+    data: { deletedAt: now },
+  });
 
   const permissionByCode = new Map<string, number>();
 
@@ -91,7 +95,7 @@ async function seed() {
     permissionByCode.set(def.code, permission.id);
   }
 
-  // 2. 超管标记：不在权限树中展示，只授予 admin 角色
+  // 2. 超管标记：不在权限树中展示，只授予系统超级管理员
   const superPermission = await prisma.permission.upsert({
     where: { code: SUPER_PERMISSION.code },
     update: { ...SUPER_PERMISSION, type: "button", source: "system", deletedAt: null },
@@ -102,78 +106,81 @@ async function seed() {
   // 3. 清理注册表里已移除的路由节点（手工节点不动）
   await prisma.permission.updateMany({
     where: { source: "route", code: { notIn: [...PERMISSION_REGISTRY.map((item) => item.code)] } },
-    data: { deletedAt: new Date() },
+    data: { deletedAt: now },
   });
 
-  const readCodes = PERMISSION_REGISTRY.filter((item) => isReadPage(item.code)).map((item) => item.code);
-  const owlWriteCodes = PERMISSION_REGISTRY.filter(
-    (item) =>
-      item.app === "owl" && item.type === "button" && (item.code.endsWith(":write") || item.code.endsWith(":create"))
-  ).map((item) => item.code);
-  const recognitionMemberCodes = [
-    "recognition:recognition:create",
-    "recognition:recognition:like",
-    "recognition:exchange:create",
-  ];
-
-  const ROLE_PERMISSIONS: Record<string, string[]> = {
-    admin: [...PERMISSION_REGISTRY.map((item) => item.code), SUPER_PERMISSION.code],
-    // 默认超级管理员：权限树全选 + 超管 bypass
-    super_admin: [...PERMISSION_REGISTRY.map((item) => item.code), SUPER_PERMISSION.code],
-    business_user: [...readCodes, ...owlWriteCodes, ...recognitionMemberCodes],
-    reader: readCodes,
-    member: [...readCodes, "recognition:recognition:create", "recognition:recognition:like"],
-  };
-
-  for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
-    const roleId = roles[roleCode];
-    if (!roleId) {
-      continue;
+  // 系统超级管理员：权限树全选 + 超管 bypass
+  const superAdminPermIds = [
+    ...PERMISSION_REGISTRY.map((item) => permissionByCode.get(item.code)),
+    permissionByCode.get(SUPER_PERMISSION.code),
+  ].filter((id): id is number => Boolean(id));
+  await prisma.$transaction(async (tx) => {
+    await tx.rolePermission.updateMany({ where: { roleId: superAdminRole.id }, data: { deletedAt: now } });
+    for (const permissionId of superAdminPermIds) {
+      await tx.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: superAdminRole.id, permissionId } },
+        update: { deletedAt: null },
+        create: { roleId: superAdminRole.id, permissionId },
+      });
     }
-    const permIds = permCodes.map((code) => permissionByCode.get(code)).filter((id): id is number => Boolean(id));
-    await prisma.$transaction(async (tx) => {
-      await tx.rolePermission.updateMany({ where: { roleId }, data: { deletedAt: new Date() } });
-      for (const permissionId of permIds) {
-        await tx.rolePermission.upsert({
-          where: { roleId_permissionId: { roleId, permissionId } },
-          update: { deletedAt: null },
-          create: { roleId, permissionId },
-        });
-      }
-    });
-  }
-
-  // 4. 用户组：全员组（默认角色 member）+ 管理组（admin）
-  const allStaff = await prisma.userGroup.upsert({
-    where: { code: "all_staff" },
-    update: { name: "全员", description: "所有员工默认加入", isSystem: true, deletedAt: null },
-    create: { code: "all_staff", name: "全员", description: "所有员工默认加入", isSystem: true },
-  });
-  const adminGroup = await prisma.userGroup.upsert({
-    where: { code: "admin_group" },
-    update: { name: "管理组", description: "系统管理员用户组", isSystem: true, deletedAt: null },
-    create: { code: "admin_group", name: "管理组", description: "系统管理员用户组", isSystem: true },
-  });
-  // 默认超级管理员用户组：绑定超级管理员角色（权限树全选）
-  const superAdminGroup = await prisma.userGroup.upsert({
-    where: { code: "super_admin_group" },
-    update: { name: "超级管理员", description: "默认超级管理员用户组", isSystem: true, deletedAt: null },
-    create: { code: "super_admin_group", name: "超级管理员", description: "默认超级管理员用户组", isSystem: true },
   });
 
-  const groupRoles: Array<[number, string]> = [
-    [allStaff.id, "member"],
-    [adminGroup.id, "admin"],
-    [superAdminGroup.id, "super_admin"],
-  ];
-  for (const [groupId, roleCode] of groupRoles) {
-    const roleId = roles[roleCode];
-    if (!roleId) continue;
-    await prisma.roleGroup.upsert({
-      where: { roleId_groupId: { roleId, groupId } },
+  // 4. 用户组：仅保留「系统管理」，绑定系统超级管理员；多余组软删
+  const systemAdminGroup = await prisma.userGroup.upsert({
+    where: { code: "system_admin" },
+    update: {
+      name: "系统管理",
+      description: "系统内置用户组，不可编辑删除",
+      isSystem: true,
+      deletedAt: null,
+    },
+    create: {
+      code: "system_admin",
+      name: "系统管理",
+      description: "系统内置用户组，不可编辑删除",
+      isSystem: true,
+    },
+  });
+
+  await prisma.userGroup.updateMany({
+    where: { code: { not: "system_admin" }, deletedAt: null },
+    data: { deletedAt: now },
+  });
+  await prisma.userGroupMember.updateMany({
+    where: { group: { code: { not: "system_admin" } }, deletedAt: null },
+    data: { deletedAt: now },
+  });
+  await prisma.roleGroup.updateMany({
+    where: { group: { code: { not: "system_admin" } }, deletedAt: null },
+    data: { deletedAt: now },
+  });
+
+  await prisma.roleGroup.upsert({
+    where: { roleId_groupId: { roleId: superAdminRole.id, groupId: systemAdminGroup.id } },
+    update: { deletedAt: null },
+    create: { roleId: superAdminRole.id, groupId: systemAdminGroup.id },
+  });
+
+  // 系统管理仅保留 Calvin；先清空再按需写入
+  await prisma.userGroupMember.updateMany({
+    where: { groupId: systemAdminGroup.id },
+    data: { deletedAt: now },
+  });
+  const calvin = await prisma.user.findFirst({
+    where: {
+      deletedAt: null,
+      OR: [{ name: "Calvin" }, { nickname: "Calvin" }, { enName: "Calvin" }],
+    },
+    orderBy: { id: "asc" },
+  });
+  if (calvin) {
+    await prisma.userGroupMember.upsert({
+      where: { groupId_userId: { groupId: systemAdminGroup.id, userId: calvin.id } },
       update: { deletedAt: null },
-      create: { roleId, groupId },
+      create: { groupId: systemAdminGroup.id, userId: calvin.id },
     });
+  } else {
+    console.warn("seed: user Calvin not found; system_admin group left empty until sync");
   }
 
   console.log("seed: roles, permissions & user groups done");
@@ -300,28 +307,8 @@ async function seed() {
   }
   console.log("seed: products done");
 
-  // 所有既有用户加入全员组；第一个用户加入管理组，保证开发环境始终有超管
   const allUsers = await prisma.user.findMany({ orderBy: { id: "asc" } });
-  for (const [index, user] of allUsers.entries()) {
-    await prisma.userGroupMember.upsert({
-      where: { groupId_userId: { groupId: allStaff.id, userId: user.id } },
-      update: { deletedAt: null },
-      create: { groupId: allStaff.id, userId: user.id },
-    });
-    if (index === 0) {
-      await prisma.userGroupMember.upsert({
-        where: { groupId_userId: { groupId: adminGroup.id, userId: user.id } },
-        update: { deletedAt: null },
-        create: { groupId: adminGroup.id, userId: user.id },
-      });
-      await prisma.userGroupMember.upsert({
-        where: { groupId_userId: { groupId: superAdminGroup.id, userId: user.id } },
-        update: { deletedAt: null },
-        create: { groupId: superAdminGroup.id, userId: user.id },
-      });
-    }
-  }
-  console.log(`seed: assigned ${allUsers.length} users to groups`);
+  console.log(`seed: system_admin group ready (${calvin ? `member=${calvin.name}` : "Calvin missing"})`);
 
   // Create coin accounts and stamina accounts for all users
   const currentMonth = new Date().toISOString().slice(0, 7);

@@ -46,6 +46,18 @@ const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 // 左栏角色表：编码 140 + 名称 120 + 权限数 90 + 类型 90 + 操作 130
 const ROLE_TABLE_SCROLL_X = 570;
+/** 系统角色编码：不可删除（与后端 RoleService 一致） */
+const SYSTEM_ROLE_CODES = new Set(["super_admin"]);
+
+function roleDeleteDisabled(record: RoleItem): { disabled: boolean; reason: string } {
+  if (record.isSystem || SYSTEM_ROLE_CODES.has(record.code)) {
+    return { disabled: true, reason: "系统角色不可删除" };
+  }
+  if (record.groups.length > 0) {
+    return { disabled: true, reason: "仍被用户组绑定，请先解绑" };
+  }
+  return { disabled: false, reason: "" };
+}
 
 interface RoleFormValues {
   code?: string;
@@ -410,9 +422,19 @@ export function RoleConfigTab() {
               onClick={() => openDrawer("edit", record)}
             />
           </Tooltip>
-          <Tooltip content="删除">
-            <Popconfirm className="w-56" title="确认删除该角色？" onOk={() => removeOne(record.id)}>
-              <Button type="text" status="danger" icon={<IconDelete />} disabled={record.isSystem} />
+          <Tooltip content={roleDeleteDisabled(record).reason || "删除"}>
+            <Popconfirm
+              className="w-56"
+              title="确认删除该角色？"
+              disabled={roleDeleteDisabled(record).disabled}
+              onOk={() => removeOne(record.id)}
+            >
+              <Button
+                type="text"
+                status="danger"
+                icon={<IconDelete />}
+                disabled={roleDeleteDisabled(record).disabled}
+              />
             </Popconfirm>
           </Tooltip>
         </Space>

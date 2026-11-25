@@ -12,7 +12,8 @@ import {
   type RoleServicePort,
 } from "../domain/role.ports";
 
-const SYSTEM_ROLE_CODES = new Set(["admin", "business_user", "reader", "member", "super_admin"]);
+/** 系统内置角色：不可删除（当前仅「系统超级管理员」） */
+const SYSTEM_ROLE_CODES = new Set(["super_admin"]);
 
 @Injectable()
 export class RoleService implements RoleServicePort {
@@ -57,8 +58,15 @@ export class RoleService implements RoleServicePort {
 
   async delete(id: number): Promise<void> {
     const role = await this.getRoleOrThrow(id);
-    if (SYSTEM_ROLE_CODES.has(role.code)) {
+    if (SYSTEM_ROLE_CODES.has(role.code) || role.isSystem) {
       throw new ConflictException({ code: ApiErrorCode.FORBIDDEN, message: `系统角色不可删除: ${role.code}` });
+    }
+    // 其他角色：仍被用户组绑定时不可删
+    if (role.groups.length > 0) {
+      throw new ConflictException({
+        code: ApiErrorCode.CONFLICT,
+        message: `角色仍被用户组绑定（${role.groups.map((g) => g.name).join("、")}），请先解绑后再删除`,
+      });
     }
     await this.roles.delete(id);
   }
