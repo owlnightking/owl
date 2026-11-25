@@ -17,4 +17,4 @@
   - 正向：权限码只有一处定义，改一处全局生效；管理台菜单恢复正确；主链数据不再对任意登录用户开放。
   - 负向：需要一次性迁移后端 60+ 处装饰器与前端菜单；旧权限数据需重新 seed。
   - 约束：新增模块必须先向注册表登记权限点，否则无法授权；删除权限点只能软删除，避免历史角色授权悬空。
-- 关联：`packages/permission/src/permissions.ts`、`packages/database/prisma/seed.ts`、`apps/api-service/src/modules/**/presentation/*.controller.ts`、`apps/admin-web/src/components/Layout/index.tsx`、`apps/admin-web/src/pages/RolesPage.tsx`
+- 关联：`packages/permission/src/routes.ts`、`packages/database/prisma/seed.ts`、`apps/api-service/src/modules/**/presentation/*.controller.ts`、`apps/admin-web/src/components/Layout/index.tsx`、`apps/admin-web/src/pages/PermissionsPage.tsx`

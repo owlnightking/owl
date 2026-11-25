@@ -42,6 +42,7 @@ async function seed() {
 
   for (const [code, name, isSystem, description] of [
     ["admin", "系统管理员", true, "系统内置管理员角色"],
+    ["super_admin", "超级管理员", true, "默认超级管理员角色，权限树全选"],
     ["business_user", "业务用户", true, "业务操作用户，可读写业务数据"],
     ["reader", "只读用户", true, "只读用户，仅可查看"],
     ["member", "普通成员", true, "系统内置普通成员角色"],
@@ -117,6 +118,8 @@ async function seed() {
 
   const ROLE_PERMISSIONS: Record<string, string[]> = {
     admin: [...PERMISSION_REGISTRY.map((item) => item.code), SUPER_PERMISSION.code],
+    // 默认超级管理员：权限树全选 + 超管 bypass
+    super_admin: [...PERMISSION_REGISTRY.map((item) => item.code), SUPER_PERMISSION.code],
     business_user: [...readCodes, ...owlWriteCodes, ...recognitionMemberCodes],
     reader: readCodes,
     member: [...readCodes, "recognition:recognition:create", "recognition:recognition:like"],
@@ -151,10 +154,17 @@ async function seed() {
     update: { name: "管理组", description: "系统管理员用户组", isSystem: true, deletedAt: null },
     create: { code: "admin_group", name: "管理组", description: "系统管理员用户组", isSystem: true },
   });
+  // 默认超级管理员用户组：绑定超级管理员角色（权限树全选）
+  const superAdminGroup = await prisma.userGroup.upsert({
+    where: { code: "super_admin_group" },
+    update: { name: "超级管理员", description: "默认超级管理员用户组", isSystem: true, deletedAt: null },
+    create: { code: "super_admin_group", name: "超级管理员", description: "默认超级管理员用户组", isSystem: true },
+  });
 
   const groupRoles: Array<[number, string]> = [
     [allStaff.id, "member"],
     [adminGroup.id, "admin"],
+    [superAdminGroup.id, "super_admin"],
   ];
   for (const [groupId, roleCode] of groupRoles) {
     const roleId = roles[roleCode];
@@ -303,6 +313,11 @@ async function seed() {
         where: { groupId_userId: { groupId: adminGroup.id, userId: user.id } },
         update: { deletedAt: null },
         create: { groupId: adminGroup.id, userId: user.id },
+      });
+      await prisma.userGroupMember.upsert({
+        where: { groupId_userId: { groupId: superAdminGroup.id, userId: user.id } },
+        update: { deletedAt: null },
+        create: { groupId: superAdminGroup.id, userId: user.id },
       });
     }
   }

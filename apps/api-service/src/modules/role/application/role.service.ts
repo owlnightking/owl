@@ -12,7 +12,7 @@ import {
   type RoleServicePort,
 } from "../domain/role.ports";
 
-const SYSTEM_ROLE_CODES = new Set(["admin", "business_user", "reader", "member"]);
+const SYSTEM_ROLE_CODES = new Set(["admin", "business_user", "reader", "member", "super_admin"]);
 
 @Injectable()
 export class RoleService implements RoleServicePort {

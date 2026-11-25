@@ -4,7 +4,6 @@ import { qiankunWindow } from "vite-plugin-qiankun/dist/helper";
 import { AuthGuard } from "./components/AuthGuard";
 import { Layout, ADMIN_SIDER_ITEMS } from "./components/Layout";
 import { UsersPage } from "./pages/UsersPage";
-import { RolesPage } from "./pages/RolesPage";
 import { PermissionsPage } from "./pages/PermissionsPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { SystemLogsPage } from "./pages/SystemLogsPage";
@@ -39,7 +38,6 @@ function AppRoutes() {
       <Route element={<Layout siderItems={ADMIN_SIDER_ITEMS} />}>
         <Route path="/home" element={<HomePage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/roles" element={<RolesPage />} />
         <Route path="/permissions" element={<PermissionsPage />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
         <Route path="/system-logs" element={<SystemLogsPage />} />

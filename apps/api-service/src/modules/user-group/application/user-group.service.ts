@@ -13,8 +13,8 @@ import {
   type UserGroupUpdateInput,
 } from "../domain/user-group.ports";
 
-/** 系统内置用户组：不允许删除，避免全员组/管理组被误删导致所有人掉权限 */
-const SYSTEM_GROUP_CODES = new Set(["all_staff", "admin_group"]);
+/** 系统内置用户组：不允许删除，避免全员组/管理组/超管组被误删导致所有人掉权限 */
+const SYSTEM_GROUP_CODES = new Set(["all_staff", "admin_group", "super_admin_group"]);
 
 @Injectable()
 export class UserGroupService implements UserGroupServicePort {
