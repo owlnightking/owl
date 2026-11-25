@@ -84,7 +84,7 @@ export class UserGroupService implements UserGroupServicePort {
 
   async setMembers(id: number, userIds: number[]): Promise<{ count: number }> {
     const group = await this.getGroupOrThrow(id);
-    let unique = Array.from(new Set(userIds));
+    const unique = Array.from(new Set(userIds));
     if (this.isSystemGroup(group)) {
       // 系统管理组：受保护成员（Calvin）不可移除——从组内按姓名找回并强制保留
       for (const name of PROTECTED_MEMBER_NAMES) {

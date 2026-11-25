@@ -101,6 +101,8 @@
 
 <!-- RECENT-BEGIN -->
 
+- 2026-11-25: 修正用户组 setMembers prefer-const lint
+
 - 2026-11-24: 飞书同步：离职用户软删、孤儿部门硬删（ADR 014）、递归部门树；用户列表增加别称与部门路径
 
 - 2026-11-11: 文档防漂移加固：新增决策索引、归档废弃 MVP 文档、新增 doc:links 死链门禁并接入 verify:quick/pre-commit、AGENTS 第八节改为权威顺序+同步清单+归档规则
