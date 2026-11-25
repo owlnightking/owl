@@ -65,15 +65,6 @@ interface NodeFormValues {
   type?: "tab" | "button";
 }
 
-function collectCheckableKeys(nodes: PermissionTreeNode[], out: string[] = []): string[] {
-  for (const node of nodes) {
-    // 目录/菜单无 permissionId，不参与勾选；页面/Tab/按钮可勾选
-    if (node.permissionId != null) out.push(node.key);
-    if (node.children?.length) collectCheckableKeys(node.children, out);
-  }
-  return out;
-}
-
 function keyToPermissionId(key: string): number | null {
   if (!key.startsWith("perm:")) return null;
   const id = Number(key.slice(5));
@@ -108,13 +99,13 @@ function findNodeByKey(nodes: PermissionTreeNode[], key: string): PermissionTree
   return null;
 }
 
-/** 权限树 → Arco TreeData：title 用名称，原始节点挂在 __node 供 renderTitle 使用 */
+/** 权限树 → Arco TreeData：目录/菜单/页面均可勾选（级联与半选由 Tree 处理） */
 function toTreeData(nodes: PermissionTreeNode[]): NonNullable<TreeProps["treeData"]> {
   return nodes.map((node) => ({
     key: node.key,
     title: node.name,
-    // 目录/菜单仅分组展示，不落库、不可勾选
-    disableCheckbox: node.permissionId == null,
+    // 无权限落库且无子节点的空节点不可勾选
+    disableCheckbox: node.permissionId == null && !node.children?.length,
     children: node.children?.length ? toTreeData(node.children) : undefined,
     __node: node,
   }));
@@ -210,8 +201,6 @@ export function RoleConfigTab() {
     () => checkedKeys.map(keyToPermissionId).filter((id): id is number => id != null).length,
     [checkedKeys]
   );
-
-  const checkableKeySet = useMemo(() => new Set(collectCheckableKeys(treeNodes)), [treeNodes]);
 
   const handleSearch = () => {
     setKeyword(inputValue);
@@ -353,9 +342,8 @@ export function RoleConfigTab() {
   };
 
   const handleCheck = (keys: (string | number)[]) => {
-    // 只保留可勾选节点（页面/Tab/按钮），过滤目录与菜单等父级 key
-    const allowed = keys.map(String).filter((key) => checkableKeySet.has(key));
-    setCheckedKeys(allowed);
+    // 保留目录/菜单/页面等全部 key：半选与级联展示依赖父级 key；保存时只提交 permissionId
+    setCheckedKeys(keys.map(String));
     setTreeDirty(true);
   };
 
@@ -595,8 +583,8 @@ export function RoleConfigTab() {
           </Spin>
 
           <div className="text-xs text-gray-400">
-            页面 / 菜单结构来自 common 菜单树（注册表同步）；按钮与 Tab
-            需在节点上手工添加。勾选后点「保存权限」写入角色。
+            页面 / 菜单结构来自 common 菜单树（注册表同步）；目录与菜单可整组勾选，
+            子项部分勾选时父级显示半选。勾选后点「保存权限」写入角色。
           </div>
         </div>
       </div>
